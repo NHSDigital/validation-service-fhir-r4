@@ -1,0 +1,3 @@
+[submodule "Digital-Medicine-Implementation-Guide"]
+	path = Digital-Medicine-Implementation-Guide
+	url = git@github.com:NHSDigital/Digital-Medicine-Implementation-Guide.git
