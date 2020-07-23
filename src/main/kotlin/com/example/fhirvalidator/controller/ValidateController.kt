@@ -1,11 +1,10 @@
-package com.example.fhirvalidator
+package com.example.fhirvalidator.controller
 
 import ca.uhn.fhir.context.FhirContext
 import ca.uhn.fhir.validation.FhirValidator
-import org.hl7.fhir.r4.model.Bundle
+import com.example.fhirvalidator.service.MessageDefinitionApplier
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 @RestController

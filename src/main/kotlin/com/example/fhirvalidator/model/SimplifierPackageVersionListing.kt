@@ -1,4 +1,4 @@
-package com.example.fhirvalidator
+package com.example.fhirvalidator.model
 
 import java.util.LinkedHashMap
 

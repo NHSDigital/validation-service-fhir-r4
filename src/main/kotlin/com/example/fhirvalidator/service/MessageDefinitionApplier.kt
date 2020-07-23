@@ -1,4 +1,4 @@
-package com.example.fhirvalidator
+package com.example.fhirvalidator.service
 
 import org.hl7.fhir.instance.model.api.IBaseResource
 import org.hl7.fhir.r4.model.Bundle

@@ -1,4 +1,4 @@
-package com.example.fhirvalidator
+package com.example.fhirvalidator.service
 
 import ca.uhn.fhir.context.FhirContext
 import org.hl7.fhir.common.hapi.validation.support.PrePopulatedValidationSupport

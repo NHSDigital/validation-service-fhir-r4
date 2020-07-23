@@ -1,11 +1,12 @@
-package com.example.fhirvalidator
+package com.example.fhirvalidator.configuration
 
 import ca.uhn.fhir.context.FhirContext
+import com.example.fhirvalidator.model.SimplifierPackageVersion
+import com.example.fhirvalidator.model.SimplifierPackageVersionListing
 import mu.KLogging
 import org.hl7.fhir.utilities.cache.NpmPackage
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.core.io.ClassPathResource
 import org.springframework.core.io.Resource
 import org.springframework.web.client.RestTemplate
 

@@ -1,4 +1,4 @@
-package com.example.fhirvalidator
+package com.example.fhirvalidator.service
 
 import ca.uhn.fhir.context.FhirContext
 import ca.uhn.fhir.rest.client.api.IGenericClient
