@@ -13,8 +13,8 @@ class ValidateController(
         private val validator: FhirValidator,
         private val messageDefinitionApplier: MessageDefinitionApplier
 ) {
-    @PostMapping("/\$validate")
-    fun validate(@RequestBody input: String): String? {
+    @PostMapping("/\$validate", produces = ["application/json"])
+    fun validate(@RequestBody input: String): String {
         val jsonParser = fhirContext.newJsonParser()
         val inputResource = jsonParser.parseResource(input)
         messageDefinitionApplier.applyMessageDefinition(inputResource)
