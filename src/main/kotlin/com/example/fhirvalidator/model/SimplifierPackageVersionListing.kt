@@ -1,6 +1,6 @@
 package com.example.fhirvalidator.model
 
-import java.util.LinkedHashMap
+import java.util.*
 
 data class SimplifierPackageVersionListing(
         val name: String,

@@ -17,23 +17,23 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
 @Configuration
-class ValidationConfiguration(private val fhirContext: FhirContext, private val implementationGuideParser: ImplementationGuideParser) {
+class ValidationConfiguration(private val implementationGuideParser: ImplementationGuideParser) {
     companion object : KLogging()
 
     @Bean
-    fun validator(fhirContext: FhirContext, validationSupportChain: CachingValidationSupport): FhirValidator {
-        val validatorModule = FhirInstanceValidator(validationSupportChain)
+    fun validator(fhirContext: FhirContext, validationSupport: IValidationSupport): FhirValidator {
+        val validatorModule = FhirInstanceValidator(validationSupport)
         return fhirContext.newValidator().registerValidatorModule(validatorModule)
     }
 
     @Bean
-    fun validationSupportChain(npmPackages: Array<NpmPackage>): CachingValidationSupport {
+    fun validationSupport(fhirContext: FhirContext, npmPackages: Array<NpmPackage>): CachingValidationSupport {
         val supportChain = ValidationSupportChain(
                 DefaultProfileValidationSupport(fhirContext),
                 InMemoryTerminologyServerValidationSupport(fhirContext),
                 SnapshotGeneratingValidationSupport(fhirContext)
         )
-        npmPackages.map { implementationGuideParser.createPrePopulatedValidationSupport(it) }.forEach(supportChain::addValidationSupport)
+        npmPackages.map(implementationGuideParser::createPrePopulatedValidationSupport).forEach(supportChain::addValidationSupport)
         generateSnapshots(supportChain)
         return CachingValidationSupport(supportChain)
     }
@@ -41,7 +41,9 @@ class ValidationConfiguration(private val fhirContext: FhirContext, private val 
     fun generateSnapshots(supportChain: IValidationSupport) {
         supportChain.fetchAllStructureDefinitions<StructureDefinition>()
                 .filter { shouldGenerateSnapshot(it) }
-                .sortedByDescending { it.baseDefinition.startsWith("http://hl7.org/fhir/") }
+                .partition { it.baseDefinition.startsWith("http://hl7.org/fhir/") }
+                .toList()
+                .flatten()
                 .forEach { supportChain.generateSnapshot(supportChain, it, it.url, "https://fhir.nhs.uk/R4", it.name) }
     }
 
