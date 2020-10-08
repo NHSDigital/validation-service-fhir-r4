@@ -1,0 +1,2 @@
+release:
+	mvn clean package
