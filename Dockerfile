@@ -7,4 +7,4 @@ RUN chmod -R a+x /app
 
 USER nobody
 
-CMD ["java", "-jar", "fhir-validator.jar"]
+CMD ["java", "-Xms1500m", "-Xmx1500m", "-jar", "fhir-validator.jar"]
