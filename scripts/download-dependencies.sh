@@ -1,4 +1,4 @@
-cd ../src/main/resources || exit
+cd ./src/main/resources || exit
 rm -f ./*.pkg
 rm packages.txt
 jq -r '.[] | ("https://packages.simplifier.net/" + .packageName + "/" + .version)' <./manifest.json >>packages.txt
