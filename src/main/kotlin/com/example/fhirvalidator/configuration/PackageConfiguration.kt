@@ -22,8 +22,8 @@ class PackageConfiguration {
         val packageList = emptyArray<NpmPackage>()
 
         packages.forEach{
-            val name = "${it.packageName}-${it.version}".replace(".", "-") + ".pkg"
-            packageList.plus(NpmPackage.fromPackage(ClassPathResource(name).inputStream))
+            val packageFileName = "${it.packageName}-${it.version}".replace(".", "-") + ".pkg"
+            packageList.plus(NpmPackage.fromPackage(ClassPathResource(packageFileName).inputStream))
         }
 
         return packageList
