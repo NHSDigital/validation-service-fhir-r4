@@ -27,7 +27,7 @@ class ValidationConfiguration(private val implementationGuideParser: Implementat
     }
 
     @Bean
-    fun validationSupport(fhirContext: FhirContext, npmPackages: Array<NpmPackage>): CachingValidationSupport {
+    fun validationSupport(fhirContext: FhirContext, npmPackages: List<NpmPackage>): CachingValidationSupport {
         val supportChain = ValidationSupportChain(
                 DefaultProfileValidationSupport(fhirContext),
                 InMemoryTerminologyServerValidationSupport(fhirContext),
