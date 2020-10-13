@@ -29,9 +29,9 @@ class ValidationConfiguration(private val implementationGuideParser: Implementat
     @Bean
     fun validationSupport(fhirContext: FhirContext, npmPackages: Array<NpmPackage>): CachingValidationSupport {
         val supportChain = ValidationSupportChain(
-                DefaultProfileValidationSupport(fhirContext),
-                InMemoryTerminologyServerValidationSupport(fhirContext),
-                SnapshotGeneratingValidationSupport(fhirContext)
+            DefaultProfileValidationSupport(fhirContext),
+            InMemoryTerminologyServerValidationSupport(fhirContext),
+            SnapshotGeneratingValidationSupport(fhirContext)
         )
         npmPackages.map(implementationGuideParser::createPrePopulatedValidationSupport).forEach(supportChain::addValidationSupport)
         generateSnapshots(supportChain)
@@ -40,11 +40,17 @@ class ValidationConfiguration(private val implementationGuideParser: Implementat
 
     fun generateSnapshots(supportChain: IValidationSupport) {
         supportChain.fetchAllStructureDefinitions<StructureDefinition>()
-                .filter { shouldGenerateSnapshot(it) }
-                .partition { it.baseDefinition.startsWith("http://hl7.org/fhir/") }
-                .toList()
-                .flatten()
-                .forEach { supportChain.generateSnapshot(supportChain, it, it.url, "https://fhir.nhs.uk/R4", it.name) }
+            .filter { shouldGenerateSnapshot(it) }
+            .partition { it.baseDefinition.startsWith("http://hl7.org/fhir/") }
+            .toList()
+            .flatten()
+            .forEach {
+                try {
+                    supportChain.generateSnapshot(supportChain, it, it.url, "https://fhir.nhs.uk/R4", it.name)
+                } catch (e: IndexOutOfBoundsException) {
+                    logger.error("Failed to generate snapshot for $it", e)
+                }
+            }
     }
 
     private fun shouldGenerateSnapshot(structureDefinition: StructureDefinition): Boolean {
