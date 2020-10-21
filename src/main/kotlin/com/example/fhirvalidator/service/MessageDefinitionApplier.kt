@@ -8,7 +8,7 @@ import org.hl7.fhir.utilities.cache.NpmPackage
 import org.springframework.stereotype.Service
 
 @Service
-class MessageDefinitionApplier(implementationGuideParser: ImplementationGuideParser, npmPackages: Array<NpmPackage>) {
+class MessageDefinitionApplier(implementationGuideParser: ImplementationGuideParser, npmPackages: List<NpmPackage>) {
     val messageDefinitions = npmPackages.map(implementationGuideParser::getMessageDefinitions).flatten()
 
     fun applyMessageDefinition(resource: IBaseResource) {
