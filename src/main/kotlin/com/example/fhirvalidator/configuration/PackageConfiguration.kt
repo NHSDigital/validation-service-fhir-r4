@@ -19,7 +19,7 @@ class PackageConfiguration(val objectMapper: ObjectMapper) {
         val inputStream = ClassPathResource("manifest.json").inputStream
         val packages = objectMapper.readValue(inputStream, Array<SimplifierPackage>::class.java)
         return Arrays.stream(packages)
-                .map { "${it.packageName}-${it.version}".replace(".", "-") + ".pkg" }
+                .map { it.packageName.replace(".", "-") + ".pkg" }
                 .map { ClassPathResource(it).inputStream }
                 .map { NpmPackage.fromPackage(it) }
                 .toList()
