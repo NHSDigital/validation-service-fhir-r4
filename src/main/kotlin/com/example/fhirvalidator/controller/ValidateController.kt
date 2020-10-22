@@ -17,7 +17,10 @@ class ValidateController(
     fun validate(@RequestBody input: String): String {
         val jsonParser = fhirContext.newJsonParser()
         val inputResource = jsonParser.parseResource(input)
-        messageDefinitionApplier.applyMessageDefinition(inputResource)
+        val messageDefinitionErrors = messageDefinitionApplier.applyMessageDefinition(inputResource)
+        if (messageDefinitionErrors != null) {
+            return jsonParser.encodeResourceToString(messageDefinitionErrors)
+        }
         val result = validator.validateWithResult(inputResource).toOperationOutcome()
         return jsonParser.encodeResourceToString(result)
     }
