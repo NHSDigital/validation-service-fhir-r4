@@ -60,13 +60,18 @@
         </dependency>
         <dependency>
             <groupId>ca.uhn.hapi.fhir</groupId>
+            <artifactId>hapi-fhir-structures-r5</artifactId>
+            <version>5.1.0</version>
+        </dependency>
+        <dependency>
+            <groupId>ca.uhn.hapi.fhir</groupId>
             <artifactId>hapi-fhir-structures-r4</artifactId>
             <version>5.1.0</version>
         </dependency>
         <dependency>
             <groupId>ca.uhn.hapi.fhir</groupId>
-            <artifactId>hapi-fhir-structures-r5</artifactId>
-            <version>5.1.0</version>
+            <artifactId>hapi-fhir-structures-dstu2</artifactId>
+            <version>4.0.3</version>
         </dependency>
         <dependency>
             <groupId>ca.uhn.hapi.fhir</groupId>

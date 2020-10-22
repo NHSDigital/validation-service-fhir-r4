@@ -21,44 +21,62 @@ class ValidationConfiguration(private val implementationGuideParser: Implementat
     companion object : KLogging()
 
     @Bean
-    fun validator(fhirContext: FhirContext, validationSupport: IValidationSupport): FhirValidator {
+    fun validator(fhirContext: FhirContext, supportChain: ValidationSupportChain): FhirValidator {
+        val validationSupport = CachingValidationSupport(supportChain)
         val validatorModule = FhirInstanceValidator(validationSupport)
         return fhirContext.newValidator().registerValidatorModule(validatorModule)
     }
 
     @Bean
-    fun validationSupport(fhirContext: FhirContext, npmPackages: List<NpmPackage>): CachingValidationSupport {
+    fun validationSupportChain(
+            fhirContext: FhirContext,
+            terminologyValidationSupport: InMemoryTerminologyServerValidationSupport,
+            npmPackages: List<NpmPackage>
+    ): ValidationSupportChain {
         val supportChain = ValidationSupportChain(
-            DefaultProfileValidationSupport(fhirContext),
-            object : InMemoryTerminologyServerValidationSupport(fhirContext) {
-                    override fun validateCodeInValueSet(theValidationSupportContext: ValidationSupportContext?, theOptions: ConceptValidationOptions?, theCodeSystem: String?, theCode: String?, theDisplay: String?, theValueSet: IBaseResource): IValidationSupport.CodeValidationResult {
-                        val valueSetUrl = CommonCodeSystemsTerminologyService.getValueSetUrl(theValueSet)
-                        if (valueSetUrl == "http://hl7.org/fhir/ValueSet/units-of-time") {
-                            return super.validateCodeInValueSet(theValidationSupportContext, theOptions, "http://unitsofmeasure.org", theCode, theDisplay, theValueSet)
-                        }
-                        return super.validateCodeInValueSet(theValidationSupportContext, theOptions, theCodeSystem, theCode, theDisplay, theValueSet)
-                    }
-                },
-            SnapshotGeneratingValidationSupport(fhirContext)
+                DefaultProfileValidationSupport(fhirContext),
+                terminologyValidationSupport,
+                SnapshotGeneratingValidationSupport(fhirContext)
         )
         npmPackages.map(implementationGuideParser::createPrePopulatedValidationSupport).forEach(supportChain::addValidationSupport)
         generateSnapshots(supportChain)
-        return CachingValidationSupport(supportChain)
+        return supportChain
+    }
+
+    @Bean
+    fun terminologyValidationSupport(fhirContext: FhirContext): InMemoryTerminologyServerValidationSupport {
+        return object : InMemoryTerminologyServerValidationSupport(fhirContext) {
+            override fun validateCodeInValueSet(theValidationSupportContext: ValidationSupportContext?, theOptions: ConceptValidationOptions?, theCodeSystem: String?, theCode: String?, theDisplay: String?, theValueSet: IBaseResource): IValidationSupport.CodeValidationResult? {
+                val valueSetUrl = CommonCodeSystemsTerminologyService.getValueSetUrl(theValueSet)
+
+                if (valueSetUrl == "https://fhir.nhs.uk/R4/ValueSet/UKCore-MedicationCode") {
+                    return IValidationSupport.CodeValidationResult()
+                            .setSeverity(IValidationSupport.IssueSeverity.WARNING)
+                            .setMessage("Unable to validate medication codes")
+                }
+
+                if (valueSetUrl == "http://hl7.org/fhir/ValueSet/units-of-time") {
+                    return super.validateCodeInValueSet(theValidationSupportContext, theOptions, "http://unitsofmeasure.org", theCode, theDisplay, theValueSet)
+                }
+
+                return super.validateCodeInValueSet(theValidationSupportContext, theOptions, theCodeSystem, theCode, theDisplay, theValueSet)
+            }
+        }
     }
 
     fun generateSnapshots(supportChain: IValidationSupport) {
         supportChain.fetchAllStructureDefinitions<StructureDefinition>()
-            .filter { shouldGenerateSnapshot(it) }
-            .partition { it.baseDefinition.startsWith("http://hl7.org/fhir/") }
-            .toList()
-            .flatten()
-            .forEach {
-                try {
-                    supportChain.generateSnapshot(ValidationSupportContext(supportChain), it, it.url, "https://fhir.nhs.uk/R4", it.name)
-                } catch (e: IndexOutOfBoundsException) {
-                    logger.error("Failed to generate snapshot for $it", e)
+                .filter { shouldGenerateSnapshot(it) }
+                .partition { it.baseDefinition.startsWith("http://hl7.org/fhir/") }
+                .toList()
+                .flatten()
+                .forEach {
+                    try {
+                        supportChain.generateSnapshot(ValidationSupportContext(supportChain), it, it.url, "https://fhir.nhs.uk/R4", it.name)
+                    } catch (e: IndexOutOfBoundsException) {
+                        logger.error("Failed to generate snapshot for $it", e)
+                    }
                 }
-            }
     }
 
     private fun shouldGenerateSnapshot(structureDefinition: StructureDefinition): Boolean {
