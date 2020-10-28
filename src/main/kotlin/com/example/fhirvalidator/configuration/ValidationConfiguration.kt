@@ -1,16 +1,16 @@
 package com.example.fhirvalidator.configuration
 
 import ca.uhn.fhir.context.FhirContext
+import ca.uhn.fhir.context.support.ConceptValidationOptions
 import ca.uhn.fhir.context.support.DefaultProfileValidationSupport
 import ca.uhn.fhir.context.support.IValidationSupport
+import ca.uhn.fhir.context.support.ValidationSupportContext
 import ca.uhn.fhir.validation.FhirValidator
 import com.example.fhirvalidator.service.ImplementationGuideParser
 import mu.KLogging
-import org.hl7.fhir.common.hapi.validation.support.CachingValidationSupport
-import org.hl7.fhir.common.hapi.validation.support.InMemoryTerminologyServerValidationSupport
-import org.hl7.fhir.common.hapi.validation.support.SnapshotGeneratingValidationSupport
-import org.hl7.fhir.common.hapi.validation.support.ValidationSupportChain
+import org.hl7.fhir.common.hapi.validation.support.*
 import org.hl7.fhir.common.hapi.validation.validator.FhirInstanceValidator
+import org.hl7.fhir.instance.model.api.IBaseResource
 import org.hl7.fhir.r4.model.StructureDefinition
 import org.hl7.fhir.utilities.cache.NpmPackage
 import org.springframework.context.annotation.Bean
@@ -21,21 +21,47 @@ class ValidationConfiguration(private val implementationGuideParser: Implementat
     companion object : KLogging()
 
     @Bean
-    fun validator(fhirContext: FhirContext, validationSupport: IValidationSupport): FhirValidator {
+    fun validator(fhirContext: FhirContext, supportChain: ValidationSupportChain): FhirValidator {
+        val validationSupport = CachingValidationSupport(supportChain)
         val validatorModule = FhirInstanceValidator(validationSupport)
         return fhirContext.newValidator().registerValidatorModule(validatorModule)
     }
 
     @Bean
-    fun validationSupport(fhirContext: FhirContext, npmPackages: List<NpmPackage>): CachingValidationSupport {
+    fun validationSupportChain(
+            fhirContext: FhirContext,
+            terminologyValidationSupport: InMemoryTerminologyServerValidationSupport,
+            npmPackages: List<NpmPackage>
+    ): ValidationSupportChain {
         val supportChain = ValidationSupportChain(
                 DefaultProfileValidationSupport(fhirContext),
-                InMemoryTerminologyServerValidationSupport(fhirContext),
+                terminologyValidationSupport,
                 SnapshotGeneratingValidationSupport(fhirContext)
         )
         npmPackages.map(implementationGuideParser::createPrePopulatedValidationSupport).forEach(supportChain::addValidationSupport)
         generateSnapshots(supportChain)
-        return CachingValidationSupport(supportChain)
+        return supportChain
+    }
+
+    @Bean
+    fun terminologyValidationSupport(fhirContext: FhirContext): InMemoryTerminologyServerValidationSupport {
+        return object : InMemoryTerminologyServerValidationSupport(fhirContext) {
+            override fun validateCodeInValueSet(theValidationSupportContext: ValidationSupportContext?, theOptions: ConceptValidationOptions?, theCodeSystem: String?, theCode: String?, theDisplay: String?, theValueSet: IBaseResource): IValidationSupport.CodeValidationResult? {
+                val valueSetUrl = CommonCodeSystemsTerminologyService.getValueSetUrl(theValueSet)
+
+                if (valueSetUrl == "https://fhir.nhs.uk/R4/ValueSet/UKCore-MedicationCode") {
+                    return IValidationSupport.CodeValidationResult()
+                            .setSeverity(IValidationSupport.IssueSeverity.WARNING)
+                            .setMessage("Unable to validate medication codes")
+                }
+
+                if (valueSetUrl == "http://hl7.org/fhir/ValueSet/units-of-time") {
+                    return super.validateCodeInValueSet(theValidationSupportContext, theOptions, "http://unitsofmeasure.org", theCode, theDisplay, theValueSet)
+                }
+
+                return super.validateCodeInValueSet(theValidationSupportContext, theOptions, theCodeSystem, theCode, theDisplay, theValueSet)
+            }
+        }
     }
 
     fun generateSnapshots(supportChain: IValidationSupport) {
@@ -44,7 +70,13 @@ class ValidationConfiguration(private val implementationGuideParser: Implementat
                 .partition { it.baseDefinition.startsWith("http://hl7.org/fhir/") }
                 .toList()
                 .flatten()
-                .forEach { supportChain.generateSnapshot(supportChain, it, it.url, "https://fhir.nhs.uk/R4", it.name) }
+                .forEach {
+                    try {
+                        supportChain.generateSnapshot(ValidationSupportContext(supportChain), it, it.url, "https://fhir.nhs.uk/R4", it.name)
+                    } catch (e: IndexOutOfBoundsException) {
+                        logger.error("Failed to generate snapshot for $it", e)
+                    }
+                }
     }
 
     private fun shouldGenerateSnapshot(structureDefinition: StructureDefinition): Boolean {
