@@ -29,18 +29,11 @@ class ValidateController(
     private fun parseAndValidateResource(input: String): IBaseOperationOutcome {
         return try {
             val inputResource = fhirContext.newJsonParser().parseResource(input)
-            validateResource(inputResource)
+            val messageDefinitionErrors = messageDefinitionApplier.applyMessageDefinition(inputResource)
+            messageDefinitionErrors ?: validator.validateWithResult(inputResource).toOperationOutcome()
         } catch (e: DataFormatException) {
             logger.error("Caught parser error", e)
             createOperationOutcome("Invalid JSON", null)
         }
-    }
-
-    fun validateResource(resource: IBaseResource): IBaseOperationOutcome {
-        val messageDefinitionErrors = messageDefinitionApplier.applyMessageDefinition(resource)
-        if (messageDefinitionErrors != null) {
-            return messageDefinitionErrors
-        }
-        return validator.validateWithResult(resource).toOperationOutcome()
     }
 }
