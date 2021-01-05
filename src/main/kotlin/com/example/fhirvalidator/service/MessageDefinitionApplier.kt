@@ -1,12 +1,13 @@
 package com.example.fhirvalidator.service
 
+import com.example.fhirvalidator.util.applyProfile
 import com.example.fhirvalidator.util.createOperationOutcome
 import com.example.fhirvalidator.util.createOperationOutcomeIssue
+import com.example.fhirvalidator.util.getResourcesOfType
 import org.hl7.fhir.instance.model.api.IBaseResource
 import org.hl7.fhir.r4.model.*
 import org.hl7.fhir.utilities.cache.NpmPackage
 import org.springframework.stereotype.Service
-import kotlin.streams.toList
 
 @Service
 class MessageDefinitionApplier(
@@ -64,22 +65,14 @@ class MessageDefinitionApplier(
             bundle: Bundle,
             focus: MessageDefinition.MessageDefinitionFocusComponent
     ): OperationOutcome.OperationOutcomeIssueComponent? {
-        val resourceType = focus.code
-        val matchingResources = bundle.entry.stream()
-                .map { it.resource }
-                .filter { it.fhirType() == resourceType }
-                .toList()
+        val matchingResources = getResourcesOfType(bundle, focus.code)
         applyMessageDefinitionFocusProfile(focus, matchingResources)
         return applyMessageDefinitionFocusMinMax(focus, matchingResources.size)
     }
 
-    private fun applyMessageDefinitionFocusProfile(focus: MessageDefinition.MessageDefinitionFocusComponent, matchingResources: List<Resource>) {
+    private fun applyMessageDefinitionFocusProfile(focus: MessageDefinition.MessageDefinitionFocusComponent, matchingResources: List<IBaseResource>) {
         if (focus.hasProfile()) {
-            val profile = focus.profileElement
-            matchingResources.stream()
-                    .map { it.meta.profile }
-                    .filter { !it.contains(profile) }
-                    .forEach { it.add(profile) }
+            applyProfile(matchingResources, focus.profileElement)
         }
     }
 
