@@ -1,5 +1,5 @@
 [
-  {"packageName": "UK.DM.r4", "version": "0.0.56-dev"},
-  {"packageName": "UK.Spine.r4", "version": "0.0.20-dev"},
+  {"packageName": "UK.DM.r4", "version": "0.1.5-alpha"},
+  {"packageName": "UK.Spine.r4", "version": "0.0.23-dev"},
   {"packageName": "UK.Core.r4", "version": "1.3.0"}
 ]

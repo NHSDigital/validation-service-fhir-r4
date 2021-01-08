@@ -3,6 +3,7 @@ package com.example.fhirvalidator.controller
 import ca.uhn.fhir.context.FhirContext
 import ca.uhn.fhir.parser.DataFormatException
 import ca.uhn.fhir.validation.FhirValidator
+import com.example.fhirvalidator.service.CapabilityStatementApplier
 import com.example.fhirvalidator.service.MessageDefinitionApplier
 import com.example.fhirvalidator.util.createOperationOutcome
 import mu.KLogging
@@ -16,7 +17,8 @@ import org.springframework.web.bind.annotation.RestController
 class ValidateController(
         private val fhirContext: FhirContext,
         private val validator: FhirValidator,
-        private val messageDefinitionApplier: MessageDefinitionApplier
+        private val messageDefinitionApplier: MessageDefinitionApplier,
+        private val capabilityStatementApplier: CapabilityStatementApplier
 ) {
     companion object : KLogging()
 
@@ -30,6 +32,7 @@ class ValidateController(
         return try {
             val inputResource = fhirContext.newJsonParser().parseResource(input)
             val messageDefinitionErrors = messageDefinitionApplier.applyMessageDefinition(inputResource)
+            capabilityStatementApplier.applyCapabilityStatementProfiles(inputResource)
             messageDefinitionErrors ?: validator.validateWithResult(inputResource).toOperationOutcome()
         } catch (e: DataFormatException) {
             logger.error("Caught parser error", e)

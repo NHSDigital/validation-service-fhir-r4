@@ -49,7 +49,7 @@ class ValidationConfiguration(private val implementationGuideParser: Implementat
             override fun validateCodeInValueSet(theValidationSupportContext: ValidationSupportContext?, theOptions: ConceptValidationOptions?, theCodeSystem: String?, theCode: String?, theDisplay: String?, theValueSet: IBaseResource): IValidationSupport.CodeValidationResult? {
                 val valueSetUrl = CommonCodeSystemsTerminologyService.getValueSetUrl(theValueSet)
 
-                if (valueSetUrl == "https://fhir.nhs.uk/R4/ValueSet/UKCore-MedicationCode") {
+                if (valueSetUrl == "https://fhir.nhs.uk/ValueSet/DM-MedicationRequest-Code") {
                     return IValidationSupport.CodeValidationResult()
                             .setSeverity(IValidationSupport.IssueSeverity.WARNING)
                             .setMessage("Unable to validate medication codes")
