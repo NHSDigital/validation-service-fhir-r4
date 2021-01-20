@@ -11,6 +11,7 @@ import org.hl7.fhir.instance.model.api.IBaseOperationOutcome
 import org.hl7.fhir.instance.model.api.IBaseResource
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
@@ -23,8 +24,13 @@ class ValidateController(
     companion object : KLogging()
 
     @PostMapping("/\$validate", produces = ["application/json", "application/fhir+json"])
-    fun validate(@RequestBody input: String): String {
+    fun validate(
+        @RequestBody input: String,
+        @RequestHeader("x-request-id", required = false) requestId: String?
+    ): String {
+        requestId?.let { logger.info("started processing message $it") }
         val result = parseAndValidateResource(input)
+        requestId?.let { logger.info("finished processing message $it") }
         return fhirContext.newJsonParser().encodeResourceToString(result)
     }
 

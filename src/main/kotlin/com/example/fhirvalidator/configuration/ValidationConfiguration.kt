@@ -22,8 +22,7 @@ class ValidationConfiguration(private val implementationGuideParser: Implementat
 
     @Bean
     fun validator(fhirContext: FhirContext, supportChain: ValidationSupportChain): FhirValidator {
-        val validationSupport = CachingValidationSupport(supportChain)
-        val validatorModule = FhirInstanceValidator(validationSupport)
+        val validatorModule = FhirInstanceValidator(supportChain)
         return fhirContext.newValidator().registerValidatorModule(validatorModule)
     }
 
@@ -82,39 +81,4 @@ class ValidationConfiguration(private val implementationGuideParser: Implementat
     private fun shouldGenerateSnapshot(structureDefinition: StructureDefinition): Boolean {
         return !structureDefinition.hasSnapshot() && structureDefinition.derivation == StructureDefinition.TypeDerivationRule.CONSTRAINT
     }
-
-//    fun generateSnapshots(supportChain: IValidationSupport) {
-//        val structureDefinitionsToProcess = supportChain.fetchAllStructureDefinitions<StructureDefinition>()
-//                .filter { shouldGenerateSnapshot(it) }
-//                .toMutableList()
-//
-//        while (structureDefinitionsToProcess.isNotEmpty()) {
-//            val structureDefinition = structureDefinitionsToProcess.removeAt(0)
-//            val baseStructureDefinition = supportChain.fetchStructureDefinition(structureDefinition.baseDefinition) as StructureDefinition
-//            if (baseStructureDefinition.hasSnapshot()) {
-//                supportChain.generateSnapshot(supportChain, structureDefinition, structureDefinition.url, "https://fhir.nhs.uk/R4", structureDefinition.name)
-//            } else {
-//                //We haven't processed the base structure definition yet, add back to the queue
-//                //TODO - detect circular references
-//                structureDefinitionsToProcess.add(structureDefinition)
-//            }
-//        }
-//    }
-
-//    fun generateSnapshots(supportChain: IValidationSupport) {
-//        supportChain.fetchAllStructureDefinitions<StructureDefinition>()
-//                .filter { it.derivation == StructureDefinition.TypeDerivationRule.CONSTRAINT }
-//                .forEach { ensureSnapshotGenerated(supportChain, it) }
-//    }
-//
-//    private fun ensureSnapshotGenerated(supportChain: IValidationSupport, structureDefinition: StructureDefinition) {
-//        structureDefinition.baseDefinition?.let {
-//            val baseStructureDefinition = supportChain.fetchStructureDefinition(it) as StructureDefinition
-//            ensureSnapshotGenerated(supportChain, baseStructureDefinition)
-//        }
-//
-//        if (!structureDefinition.hasSnapshot()) {
-//            supportChain.generateSnapshot(supportChain, structureDefinition, structureDefinition.url, "https://fhir.nhs.uk/R4", structureDefinition.name)
-//        }
-//    }
 }
