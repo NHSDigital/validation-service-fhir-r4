@@ -6,16 +6,12 @@ import ca.uhn.fhir.validation.FhirValidator
 import com.example.fhirvalidator.service.CapabilityStatementApplier
 import com.example.fhirvalidator.service.MessageDefinitionApplier
 import com.example.fhirvalidator.util.createOperationOutcome
-import com.github.benmanes.caffeine.cache.LoadingCache
 import mu.KLogging
-import org.hl7.fhir.common.hapi.validation.validator.FhirInstanceValidator
-import org.hl7.fhir.common.hapi.validation.validator.VersionSpecificWorkerContextWrapper
 import org.hl7.fhir.instance.model.api.IBaseOperationOutcome
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RestController
-import java.util.*
 
 @RestController
 class ValidateController(
