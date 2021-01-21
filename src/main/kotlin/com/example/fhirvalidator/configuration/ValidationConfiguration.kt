@@ -21,9 +21,13 @@ class ValidationConfiguration(private val implementationGuideParser: Implementat
     companion object : KLogging()
 
     @Bean
-    fun validator(fhirContext: FhirContext, supportChain: ValidationSupportChain): FhirValidator {
-        val validatorModule = FhirInstanceValidator(supportChain)
-        return fhirContext.newValidator().registerValidatorModule(validatorModule)
+    fun validator(fhirContext: FhirContext, instanceValidator: FhirInstanceValidator): FhirValidator {
+        return fhirContext.newValidator().registerValidatorModule(instanceValidator)
+    }
+
+    @Bean
+    fun instanceValidator(supportChain: ValidationSupportChain): FhirInstanceValidator {
+        return FhirInstanceValidator(supportChain)
     }
 
     @Bean
