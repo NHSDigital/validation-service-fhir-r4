@@ -8,7 +8,6 @@ import com.example.fhirvalidator.service.MessageDefinitionApplier
 import com.example.fhirvalidator.util.createOperationOutcome
 import mu.KLogging
 import org.hl7.fhir.instance.model.api.IBaseOperationOutcome
-import org.hl7.fhir.instance.model.api.IBaseResource
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestHeader

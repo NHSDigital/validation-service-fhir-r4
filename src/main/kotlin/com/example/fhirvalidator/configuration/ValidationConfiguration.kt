@@ -8,7 +8,10 @@ import ca.uhn.fhir.context.support.ValidationSupportContext
 import ca.uhn.fhir.validation.FhirValidator
 import com.example.fhirvalidator.service.ImplementationGuideParser
 import mu.KLogging
-import org.hl7.fhir.common.hapi.validation.support.*
+import org.hl7.fhir.common.hapi.validation.support.CommonCodeSystemsTerminologyService
+import org.hl7.fhir.common.hapi.validation.support.InMemoryTerminologyServerValidationSupport
+import org.hl7.fhir.common.hapi.validation.support.SnapshotGeneratingValidationSupport
+import org.hl7.fhir.common.hapi.validation.support.ValidationSupportChain
 import org.hl7.fhir.common.hapi.validation.validator.FhirInstanceValidator
 import org.hl7.fhir.instance.model.api.IBaseResource
 import org.hl7.fhir.r4.model.StructureDefinition
@@ -21,9 +24,13 @@ class ValidationConfiguration(private val implementationGuideParser: Implementat
     companion object : KLogging()
 
     @Bean
-    fun validator(fhirContext: FhirContext, supportChain: ValidationSupportChain): FhirValidator {
-        val validatorModule = FhirInstanceValidator(supportChain)
-        return fhirContext.newValidator().registerValidatorModule(validatorModule)
+    fun validator(fhirContext: FhirContext, instanceValidator: FhirInstanceValidator): FhirValidator {
+        return fhirContext.newValidator().registerValidatorModule(instanceValidator)
+    }
+
+    @Bean
+    fun instanceValidator(supportChain: ValidationSupportChain): FhirInstanceValidator {
+        return FhirInstanceValidator(supportChain)
     }
 
     @Bean

@@ -7,4 +7,5 @@ RUN chmod -R a+x /app
 
 USER nobody
 
-CMD ["java", "-Xms2500m", "-Xmx2500m", "-jar", "fhir-validator.jar"]
+#AEA-1024: Setting TEST_SYSTEM_PROP_VALIDATION_RESOURCE_CACHES_MS to max long so our resource cache never expires.
+CMD ["java", "-Xms1500m", "-Xmx1500m", "-DTEST_SYSTEM_PROP_VALIDATION_RESOURCE_CACHES_MS=9223372036854775807", "-jar", "fhir-validator.jar"]
