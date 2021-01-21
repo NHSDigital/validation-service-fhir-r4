@@ -21,7 +21,6 @@ import java.util.*
 class ValidateController(
         private val fhirContext: FhirContext,
         private val validator: FhirValidator,
-        //private val instanceValidator: FhirInstanceValidator,
         private val messageDefinitionApplier: MessageDefinitionApplier,
         private val capabilityStatementApplier: CapabilityStatementApplier
 ) {
@@ -37,32 +36,6 @@ class ValidateController(
         requestId?.let { logger.info("finished processing message $it") }
         return fhirContext.newJsonParser().encodeResourceToString(result)
     }
-
-//    fun logCacheContents() {
-//        //Horrible reflection stuff
-//        val workerContextField = FhirInstanceValidator::class.java.getDeclaredField("myWrappedWorkerContext")
-//        workerContextField.trySetAccessible()
-//        val resourceCacheField = VersionSpecificWorkerContextWrapper::class.java.getDeclaredField("myFetchResourceCache")
-//        resourceCacheField.trySetAccessible()
-//        val resourceKeyClass = VersionSpecificWorkerContextWrapper::class.java.declaredClasses.first { it.simpleName == "ResourceKey" }
-//        val resourceNameField = resourceKeyClass.getDeclaredField("myResourceName")
-//        resourceNameField.trySetAccessible()
-//        val resourceUriField = resourceKeyClass.getDeclaredField("myUri")
-//        resourceUriField.trySetAccessible()
-//
-//        val workerContext = workerContextField.get(instanceValidator) as VersionSpecificWorkerContextWrapper?
-//        val resourceCache = workerContext?.let { resourceCacheField.get(it) as LoadingCache<*, *>? }
-//        resourceCache?.let {
-//            logger.info("Cache contents:")
-//            it.asMap().keys.forEach { logger.info { "${resourceNameField.get(it)} - ${resourceUriField.get(it)}" } }
-//        }
-//    }
-//
-//    val thing = Timer("cache contents logger").scheduleAtFixedRate(object: TimerTask() {
-//        override fun run() {
-//            logCacheContents()
-//        }
-//    }, 1000, 30000)
 
     private fun parseAndValidateResource(input: String): IBaseOperationOutcome {
         return try {
