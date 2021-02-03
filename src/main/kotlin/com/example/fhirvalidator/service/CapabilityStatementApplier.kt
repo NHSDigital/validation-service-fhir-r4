@@ -9,19 +9,22 @@ import org.springframework.stereotype.Service
 
 @Service
 class CapabilityStatementApplier(
-        implementationGuideParser: ImplementationGuideParser,
-        npmPackages: List<NpmPackage>
+    implementationGuideParser: ImplementationGuideParser,
+    npmPackages: List<NpmPackage>
 ) {
     private val restResources = npmPackages
-            .flatMap { implementationGuideParser.getResourcesOfType(it, CapabilityStatement()) }
-            .flatMap { it.rest }
-            .flatMap { it.resource }
+        .flatMap { implementationGuideParser.getResourcesOfType(it, CapabilityStatement()) }
+        .flatMap { it.rest }
+        .flatMap { it.resource }
 
     fun applyCapabilityStatementProfiles(resource: IBaseResource) {
         restResources.forEach { applyRestResource(resource, it) }
     }
 
-    private fun applyRestResource(resource: IBaseResource, restResource: CapabilityStatement.CapabilityStatementRestResourceComponent) {
+    private fun applyRestResource(
+        resource: IBaseResource,
+        restResource: CapabilityStatement.CapabilityStatementRestResourceComponent
+    ) {
         val matchingResources = getResourcesOfType(resource, restResource.type)
         if (restResource.hasProfile()) {
             applyProfile(matchingResources, restResource.profileElement)

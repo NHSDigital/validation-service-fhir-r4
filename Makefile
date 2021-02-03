@@ -1,7 +1,9 @@
-build:
-	bash scripts/download-dependencies.sh
-	mvn clean package
+clean-packages:
+	rm src/main/resources/*.tgz
 
-build-latest:
-	bash scripts/download-latest-dependencies.sh
+update-manifest:
+	python scripts/update_manifest.py
+
+build:
+	python scripts/download_dependencies.py
 	mvn clean package

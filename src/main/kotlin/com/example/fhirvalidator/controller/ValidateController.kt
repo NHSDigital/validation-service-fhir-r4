@@ -15,10 +15,10 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 class ValidateController(
-        private val fhirContext: FhirContext,
-        private val validator: FhirValidator,
-        private val messageDefinitionApplier: MessageDefinitionApplier,
-        private val capabilityStatementApplier: CapabilityStatementApplier
+    private val fhirContext: FhirContext,
+    private val validator: FhirValidator,
+    private val messageDefinitionApplier: MessageDefinitionApplier,
+    private val capabilityStatementApplier: CapabilityStatementApplier
 ) {
     companion object : KLogging()
 
