@@ -2,22 +2,18 @@
 python = "^3.8"
 
 [tool.poetry]
-name = "apim-definitions"
+name = "validation-service-fhir-r4"
 version = "0.0.1-alpha"
 description = "Validation Service FHIR R4 API Definitions"
-
 license = "MIT"
-
 authors = [
-    #TODO add authors
+    "Conner Jowitt <conner.jowitt1@nhs.net",
+    "Dan Jones <dan.jones13@nhs.net",
+    "Matt Jarvis <matt.jarvis1@nhs.net>",
+    "Richard Crawley <richard.crawley1@nhs.net>"
 ]
-
 readme = "README.md"
-
 repository = "https://github.com/NHSDigital/validation-service-fhir-r4"
-homepage = ""
-
-keywords = ["healthcare", "uk", "nhs"] #TODO add additional keywords
 
 [tool.poetry.dependencies]
 python = "^3.8"
