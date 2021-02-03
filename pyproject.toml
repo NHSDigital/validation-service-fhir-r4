@@ -1,0 +1,34 @@
+[project]
+python = "^3.8"
+
+[tool.poetry]
+name = "apim-definitions"
+version = "0.0.1-alpha"
+description = "Validation Service FHIR R4 API Definitions"
+
+license = "MIT"
+
+authors = [
+    #TODO add authors
+]
+
+readme = "README.md"
+
+repository = "https://github.com/NHSDigital/validation-service-fhir-r4"
+homepage = ""
+
+keywords = ["healthcare", "uk", "nhs"] #TODO add additional keywords
+
+[tool.poetry.dependencies]
+python = "^3.8"
+
+[tool.poetry.dev-dependencies]
+requests = "2.1.0"
+flake8 = "^3.7.9"
+pip-licenses = "^2.0.1"
+
+[tool.poetry.scripts]
+
+[build-system]
+requires = ["poetry>=0.12"]
+build-backend = "poetry.masonry.api"
