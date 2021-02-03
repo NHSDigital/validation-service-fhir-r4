@@ -12,5 +12,5 @@ with open("src/main/resources/manifest.json", "r") as manifestFile:
         print(f"{packageName}: {currentVersion} -> {latestVersion}")
         entry["version"] = latestVersion
 with open("src/main/resources/manifest.json", "w") as manifestFile:
-    manifestStr = json.dumps(manifest)
+    manifestStr = json.dumps(manifest, indent=2)
     manifestFile.write(manifestStr)

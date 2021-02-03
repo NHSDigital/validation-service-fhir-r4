@@ -1,1 +1,14 @@
-[{"packageName": "UK.DM.r4", "version": "2.0.2-alpha"}, {"packageName": "UK.Spine.r4", "version": "2.0.0"}, {"packageName": "UK.Core.r4.v2", "version": "2.0.7"}]
+[
+  {
+    "packageName": "UK.DM.r4",
+    "version": "2.0.3-alpha"
+  },
+  {
+    "packageName": "UK.Spine.r4",
+    "version": "2.0.0"
+  },
+  {
+    "packageName": "UK.Core.r4.v2",
+    "version": "2.0.7"
+  }
+]

@@ -7,3 +7,5 @@ update-manifest:
 build:
 	python scripts/download_dependencies.py
 	mvn clean package
+
+build-latest: clean-packages update-manifest build
