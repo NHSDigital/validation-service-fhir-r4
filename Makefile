@@ -19,3 +19,6 @@ build:
 	mvn clean package
 
 build-latest: clean-packages update-manifest build
+
+run:
+	mvn spring-boot:run
