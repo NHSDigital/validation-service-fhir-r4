@@ -25,16 +25,16 @@ class ImplementationGuideParser(private val fhirContext: FhirContext) {
     fun getMessageDefinitions(npmPackage: NpmPackage): List<MessageDefinition> {
         val jsonParser = fhirContext.newJsonParser()
         return npmPackage.list("examples")
-                .map { npmPackage.load("examples", it) }
-                .map(jsonParser::parseResource)
-                .filterIsInstance(MessageDefinition::class.java)
+            .map { npmPackage.load("examples", it) }
+            .map(jsonParser::parseResource)
+            .filterIsInstance(MessageDefinition::class.java)
     }
 
     fun <T : Resource> getResourcesOfType(npmPackage: NpmPackage, resourceType: T): List<T> {
         val jsonParser = fhirContext.newJsonParser()
         return npmPackage.listResources(resourceType.fhirType())
-                .map(npmPackage::loadResource)
-                .map(jsonParser::parseResource)
-                .filterIsInstance(resourceType.javaClass)
+            .map(npmPackage::loadResource)
+            .map(jsonParser::parseResource)
+            .filterIsInstance(resourceType.javaClass)
     }
 }

@@ -11,15 +11,15 @@ fun getResourcesOfType(resource: IBaseResource, resourceType: String?): List<IBa
     }
     if (resource is Bundle) {
         resource.entry.stream()
-                .map { it.resource }
-                .filter { it.fhirType() == resourceType }
-                .forEach { matchingResources.add(it) }
+            .map { it.resource }
+            .filter { it.fhirType() == resourceType }
+            .forEach { matchingResources.add(it) }
     }
     return matchingResources
 }
 
 fun applyProfile(resources: List<IBaseResource>, profile: IPrimitiveType<String>) {
     resources.stream()
-            .filter { !it.meta.profile.contains(profile) }
-            .forEach { it.meta.addProfile(profile.value) }
+        .filter { !it.meta.profile.contains(profile) }
+        .forEach { it.meta.addProfile(profile.value) }
 }
