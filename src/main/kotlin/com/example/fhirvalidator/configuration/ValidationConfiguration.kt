@@ -45,7 +45,8 @@ class ValidationConfiguration(private val implementationGuideParser: Implementat
             terminologyValidationSupport,
             SnapshotGeneratingValidationSupport(fhirContext)
         )
-        npmPackages.map(implementationGuideParser::createPrePopulatedValidationSupport).forEach(supportChain::addValidationSupport)
+        npmPackages.map(implementationGuideParser::createPrePopulatedValidationSupport)
+            .forEach(supportChain::addValidationSupport)
         generateSnapshots(supportChain)
         return supportChain
     }
@@ -63,7 +64,8 @@ class ValidationConfiguration(private val implementationGuideParser: Implementat
             ): IValidationSupport.CodeValidationResult? {
                 val valueSetUrl = CommonCodeSystemsTerminologyService.getValueSetUrl(theValueSet)
 
-                if (valueSetUrl == "https://fhir.nhs.uk/ValueSet/DM-MedicationRequest-Code") {
+                if (valueSetUrl == "https://fhir.nhs.uk/ValueSet/DM-MedicationRequest-Code"
+                    || valueSetUrl == "https://fhir.nhs.uk/ValueSet/DM-MedicationDispense-Code") {
                     return IValidationSupport.CodeValidationResult()
                         .setSeverity(IValidationSupport.IssueSeverity.WARNING)
                         .setMessage("Unable to validate medication codes")
