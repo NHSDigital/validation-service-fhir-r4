@@ -8,6 +8,10 @@
     "version": "2.1.5-discovery"
   },
   {
+    "packageName": "uk.nhsdigital.clinical.r4",
+    "version": "2.1.0-dev"
+  },
+  {
     "packageName": "UK.Core.r4.v2",
     "version": "2.0.8"
   }
