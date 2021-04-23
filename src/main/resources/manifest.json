@@ -1,11 +1,11 @@
 [
   {
-    "packageName": "UK.DM.r4",
-    "version": "2.0.16-alpha"
+    "packageName": "uk.nhsdigital.medicines.r4",
+    "version": "2.1.7-alpha"
   },
   {
-    "packageName": "UK.Spine.r4",
-    "version": "2.0.13-dev"
+    "packageName": "uk.nhsdigital.r4",
+    "version": "2.1.5-discovery"
   },
   {
     "packageName": "UK.Core.r4.v2",
