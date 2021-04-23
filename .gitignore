@@ -4,6 +4,7 @@ target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 **/src/main/resources/*.tgz
+poetry.lock
 
 ### STS ###
 .apt_generated
