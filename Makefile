@@ -9,7 +9,7 @@ check-licences:
 	scripts/check_python_licenses.sh
 
 clean-packages:
-	rm src/main/resources/*.tgz
+	rm -f src/main/resources/*.tgz
 
 update-manifest:
 	poetry run scripts/update_manifest.py
