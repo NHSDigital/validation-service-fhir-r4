@@ -80,6 +80,39 @@ class FHIRSimplifierImplementationGuideTest(@Autowired val restTemplate: TestRes
     //
 
     @Test
+    fun validateNHSDigitalMedicinesStructureDefinitionExamples() {
+        conformanceResourceFromNpm("uk.nhsdigital.medicines.r4",StructureDefinition())
+            .forEach{
+                validateResourceGeneric("uk.nhsdigital.medicines.r4",it)
+            }
+    }
+
+    @Test
+    fun validateNHSDigitalMedicinesImplementationGuideExamples() {
+        conformanceResourceFromNpm("uk.nhsdigital.medicines.r4",ImplementationGuide())
+            .forEach{
+                validateResourceGeneric("uk.nhsdigital.medicines.r4",it)
+            }
+    }
+
+    @Test
+    fun validateNHSDigitalmedicinesSearchParameterExamples() {
+        conformanceResourceFromNpm("uk.nhsdigital.medicines.r4",SearchParameter())
+            .forEach{
+                validateResourceGeneric("uk.nhsdigital.medicines.r4",it)
+            }
+    }
+
+    @Test
+    fun validateNHSDigitalmedicinesCapabilityStatementExamples() {
+        conformanceResourceFromNpm("uk.nhsdigital.medicines.r4",CapabilityStatement())
+            .forEach{
+                validateResourceGeneric("uk.nhsdigital.medicines.r4",it)
+            }
+    }
+
+
+    @Test
     fun validateNHSDigitalMedicinesCodeSystemsExamples() {
         conformanceResourceFromNpm("uk.nhsdigital.medicines.r4",CodeSystem())
             .forEach{
@@ -208,6 +241,38 @@ class FHIRSimplifierImplementationGuideTest(@Autowired val restTemplate: TestRes
     //
     //  NHS Digital Medicines - EPS Tests
     //
+
+    @Test
+    fun validateNHSDigitalStructureDefinitionExamples() {
+        conformanceResourceFromNpm("uk.nhsdigital.r4",StructureDefinition())
+            .forEach{
+                validateResourceGeneric("uk.nhsdigital.r4",it)
+            }
+    }
+
+    @Test
+    fun validateNHSDigitalImplementationGuideExamples() {
+        conformanceResourceFromNpm("uk.nhsdigital.r4",ImplementationGuide())
+            .forEach{
+                validateResourceGeneric("uk.nhsdigital.r4",it)
+            }
+    }
+
+    @Test
+    fun validateNHSDigitalSearchParameterExamples() {
+        conformanceResourceFromNpm("uk.nhsdigital.r4",SearchParameter())
+            .forEach{
+                validateResourceGeneric("uk.nhsdigital.r4",it)
+            }
+    }
+
+    @Test
+    fun validateNHSDigitalCapabilityStatementExamples() {
+        conformanceResourceFromNpm("uk.nhsdigital.r4",CapabilityStatement())
+            .forEach{
+                validateResourceGeneric("uk.nhsdigital.r4",it)
+            }
+    }
 
     @Test
     fun validateNHSDigitalCodeSystemsExamples() {
