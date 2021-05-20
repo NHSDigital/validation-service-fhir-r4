@@ -94,11 +94,11 @@ class ValidationConfiguration(private val implementationGuideParser: Implementat
 
     fun generateSnapshots(supportChain: IValidationSupport) {
         supportChain.fetchAllStructureDefinitions<StructureDefinition>()
-            .filter { shouldGenerateSnapshot(it) }
-            .partition { it.baseDefinition.startsWith("http://hl7.org/fhir/") }
-            .toList()
-            .flatten()
-            .forEach {
+            ?.filter { shouldGenerateSnapshot(it) }
+            ?.partition { it.baseDefinition.startsWith("http://hl7.org/fhir/") }
+            ?.toList()
+            ?.flatten()
+            ?.forEach {
                 try {
                     supportChain.generateSnapshot(
                         ValidationSupportContext(supportChain),
