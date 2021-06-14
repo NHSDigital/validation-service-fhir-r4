@@ -65,7 +65,8 @@ class ValidationConfiguration(private val implementationGuideParser: Implementat
                 val valueSetUrl = CommonCodeSystemsTerminologyService.getValueSetUrl(theValueSet)
 
                 if (valueSetUrl == "https://fhir.nhs.uk/ValueSet/NHSDigital-MedicationRequest-Code"
-                    || valueSetUrl == "https://fhir.nhs.uk/ValueSet/NHSDigital-MedicationDispense-Code") {
+                    || valueSetUrl == "https://fhir.nhs.uk/ValueSet/NHSDigital-MedicationDispense-Code"
+                    || valueSetUrl == "https://fhir.hl7.org.uk/ValueSet/UKCore-MedicationCode") {
                     return IValidationSupport.CodeValidationResult()
                         .setSeverity(IValidationSupport.IssueSeverity.WARNING)
                         .setMessage("Unable to validate medication codes")
