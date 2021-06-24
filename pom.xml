@@ -10,14 +10,14 @@
     </parent>
     <groupId>com.example</groupId>
     <artifactId>fhir-validator</artifactId>
-    <version>5.4.0-SNAPSHOT</version>
+    <version>5.4.1-SNAPSHOT</version>
     <name>fhir-validator</name>
     <description>Demo project for Spring Boot</description>
 
     <properties>
         <java.version>1.8</java.version>
         <kotlin.version>1.3.72</kotlin.version>
-        <hapi.version>5.4.0</hapi.version>
+        <hapi.version>5.4.1</hapi.version>
     </properties>
 
     <dependencies>
@@ -56,7 +56,7 @@
         <dependency>
             <groupId>ca.uhn.hapi.fhir</groupId>
             <artifactId>hapi-fhir-base</artifactId>
-            <version>5.4.0</version>
+            <version>${hapi.version}</version>
         </dependency>
         <dependency>
             <groupId>ca.uhn.hapi.fhir</groupId>
