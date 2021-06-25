@@ -14,11 +14,9 @@ class MessageDefinitionApplier(
     implementationGuideParser: ImplementationGuideParser,
     npmPackages: List<NpmPackage>
 ) {
-    /*
     val messageDefinitions = npmPackages.map(implementationGuideParser::getMessageDefinitions).flatten()
-*/
+
     fun applyMessageDefinition(resource: IBaseResource): OperationOutcome? {
-        /*
         if (resource !is Bundle || resource.type != Bundle.BundleType.MESSAGE) {
             return null
         }
@@ -37,11 +35,8 @@ class MessageDefinitionApplier(
             )
 
         return applyMessageDefinition(resource, messageDefinition)
-
-     */
-        return null
     }
-/*
+
     private fun findMessageHeader(bundle: Bundle): MessageHeader? {
         return bundle.entry
             ?.map { it.resource }
@@ -115,5 +110,5 @@ class MessageDefinitionApplier(
 
         return null
     }
-*/
+
 }
