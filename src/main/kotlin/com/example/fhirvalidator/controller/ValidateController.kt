@@ -8,6 +8,8 @@ import com.example.fhirvalidator.service.MessageDefinitionApplier
 import com.example.fhirvalidator.util.createOperationOutcome
 import mu.KLogging
 import org.hl7.fhir.instance.model.api.IBaseOperationOutcome
+import org.hl7.fhir.r4.model.Bundle
+import org.hl7.fhir.r4.model.OperationOutcome
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestHeader
@@ -36,9 +38,14 @@ class ValidateController(
     private fun parseAndValidateResource(input: String): IBaseOperationOutcome {
         return try {
             val inputResource = fhirContext.newJsonParser().parseResource(input)
-            val messageDefinitionErrors = messageDefinitionApplier.applyMessageDefinition(inputResource)
+            var messageDefinitionErrors : OperationOutcome? = null;
+            if (inputResource is Bundle && inputResource.type.equals(Bundle.BundleType.MESSAGE)) {
+                messageDefinitionErrors = messageDefinitionApplier.applyMessageDefinition(inputResource)
+            }
             capabilityStatementApplier.applyCapabilityStatementProfiles(inputResource)
+
             messageDefinitionErrors ?: validator.validateWithResult(inputResource).toOperationOutcome()
+
         } catch (e: DataFormatException) {
             logger.error("Caught parser error", e)
             createOperationOutcome("Invalid JSON", null)

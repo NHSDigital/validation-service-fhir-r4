@@ -86,7 +86,7 @@ class FHIRSimplifierImplementationGuideTest(@Autowired val restTemplate: TestRes
                 validateResourceGeneric("uk.nhsdigital.medicines.r4",it)
             }
     }
-
+/*
     @Test
     fun validateNHSDigitalMedicinesImplementationGuideExamples() {
         conformanceResourceFromNpm("uk.nhsdigital.medicines.r4",ImplementationGuide())
@@ -94,7 +94,7 @@ class FHIRSimplifierImplementationGuideTest(@Autowired val restTemplate: TestRes
                 validateResourceGeneric("uk.nhsdigital.medicines.r4",it)
             }
     }
-
+*/
     @Test
     fun validateNHSDigitalmedicinesSearchParameterExamples() {
         conformanceResourceFromNpm("uk.nhsdigital.medicines.r4",SearchParameter())
@@ -249,7 +249,7 @@ class FHIRSimplifierImplementationGuideTest(@Autowired val restTemplate: TestRes
                 validateResourceGeneric("uk.nhsdigital.r4",it)
             }
     }
-
+/*
     @Test
     fun validateNHSDigitalImplementationGuideExamples() {
         conformanceResourceFromNpm("uk.nhsdigital.r4",ImplementationGuide())
@@ -257,7 +257,7 @@ class FHIRSimplifierImplementationGuideTest(@Autowired val restTemplate: TestRes
                 validateResourceGeneric("uk.nhsdigital.r4",it)
             }
     }
-
+*/
     @Test
     fun validateNHSDigitalSearchParameterExamples() {
         conformanceResourceFromNpm("uk.nhsdigital.r4",SearchParameter())
