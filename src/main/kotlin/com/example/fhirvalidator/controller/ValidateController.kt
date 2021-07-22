@@ -36,7 +36,7 @@ class ValidateController(
         return fhirContext.newJsonParser().encodeResourceToString(result)
     }
 
-    private fun parseAndValidateResource(input: String): OperationOutcome {
+    fun parseAndValidateResource(input: String): OperationOutcome {
         return try {
             val inputResource = fhirContext.newJsonParser().parseResource(input)
             val resources = getResourcesToValidate(inputResource)
@@ -49,7 +49,7 @@ class ValidateController(
         }
     }
 
-    private fun validateResource(resource: IBaseResource): OperationOutcome? {
+    fun validateResource(resource: IBaseResource): OperationOutcome? {
         val messageDefinitionErrors = messageDefinitionApplier.applyMessageDefinition(resource)
         if (messageDefinitionErrors != null) {
             return messageDefinitionErrors
@@ -58,7 +58,7 @@ class ValidateController(
         return validator.validateWithResult(resource).toOperationOutcome() as? OperationOutcome
     }
 
-    private fun getResourcesToValidate(inputResource: IBaseResource?): List<IBaseResource> {
+    fun getResourcesToValidate(inputResource: IBaseResource?): List<IBaseResource> {
         return if (inputResource == null) {
             emptyList()
         } else if (inputResource is Bundle && inputResource.type == Bundle.BundleType.SEARCHSET) {
