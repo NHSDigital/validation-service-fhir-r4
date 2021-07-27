@@ -1,10 +1,8 @@
 package com.example.fhirvalidator.controller
 
+import com.example.fhirvalidator.model.SchemaOrReference
 import com.example.fhirvalidator.service.SchemaConversionService
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.RequestAttribute
-import org.springframework.web.bind.annotation.RequestParam
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.*
 
 @RestController
 class SchemaConversionController(
@@ -18,5 +16,10 @@ class SchemaConversionController(
     @GetMapping("convert")
     fun convert(@RequestParam name: String): String {
         return schemaConversionService.doSomethingCool(name)
+    }
+
+    @GetMapping("convert2")
+    fun convert2(@RequestParam name: String): SchemaOrReference? {
+        return schemaConversionService.doSomethingCooler(name)
     }
 }

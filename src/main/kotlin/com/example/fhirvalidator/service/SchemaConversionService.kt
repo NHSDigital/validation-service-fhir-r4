@@ -1,13 +1,12 @@
 package com.example.fhirvalidator.service
 
+import com.example.fhirvalidator.model.*
 import mu.KLogging
 import org.hl7.fhir.common.hapi.validation.support.ValidationSupportChain
 import org.hl7.fhir.r4.model.ElementDefinition
+import org.hl7.fhir.r4.model.StringType
 import org.hl7.fhir.r4.model.StructureDefinition
 import org.springframework.stereotype.Service
-import java.lang.IllegalArgumentException
-import java.lang.IllegalStateException
-import java.lang.StringBuilder
 import java.util.*
 import java.util.function.Predicate
 
@@ -21,20 +20,38 @@ class SchemaConversionService(
         .filterIsInstance(StructureDefinition::class.java)
 
     fun listCoolThings(): String {
-        return structureDefinitions.map { it.name }.joinToString("\n")
+        return structureDefinitions.joinToString("\n") { it.name }
     }
 
     fun doSomethingCool(name: String): String {
         val structureDefinition = structureDefinitions.find { it.name == name }
             ?: return "StructureDefinition not found"
-        return structureDefinition.snapshot?.element?.let { convertSnapshotToJsonSchema(it) }
+        return structureDefinition.snapshot?.element?.let { convertSnapshotToString(it) }
             ?: return "StructureDefinition missing snapshot"
     }
 
-    private fun convertSnapshotToJsonSchema(snapshotElements: List<ElementDefinition>): String {
+    fun doSomethingCooler(name: String): SchemaOrReference? {
+        val structureDefinition = structureDefinitions.find { it.name == name }
+            ?: return null
+        return structureDefinition.snapshot?.element?.let { convertSnapshotToOpenApiSchema(it) }
+            ?: return null
+    }
+
+    private fun convertSnapshotToString(snapshotElements: List<ElementDefinition>): String {
+        val root = convertSnapshotToTree(snapshotElements)
+        return root.toStringPretty()
+    }
+
+    private fun convertSnapshotToOpenApiSchema(snapshotElements: List<ElementDefinition>): SchemaOrReference {
+        val root = convertSnapshotToTree(snapshotElements)
+        return toOpenApiSchema(root)
+    }
+
+    private fun convertSnapshotToTree(snapshotElements: List<ElementDefinition>): FhirTreeNode {
         val treeNodes = snapshotElements.map { toTreeNode(it) }
         val root = linkNodes(treeNodes)
-        return root.toStringPretty()
+        //TODO - hacky thing here
+        return root.copy(isList = false)
     }
 
     private fun toTreeNode(elementDefinition: ElementDefinition): FhirTreeNode {
@@ -44,7 +61,7 @@ class SchemaConversionService(
         val slicingDiscriminator = if (discriminators.isNotEmpty()) {
             val discriminator = discriminators.single()
             if (discriminator.type != ElementDefinition.DiscriminatorType.VALUE) {
-                throw IllegalArgumentException("Unsupported discriminator type")
+                throw IllegalArgumentException("Unsupported discriminator type ${discriminator.type}")
             }
             discriminator.path
         } else {
@@ -63,7 +80,7 @@ class SchemaConversionService(
         val types = elementDefinition.type
         val type = if (types.isNotEmpty()) {
             if (types.size > 1) {
-                logger.warn { "More than one type for node ${elementId}" }
+                logger.warn { "More than one type for node $elementId" }
             }
             types.first()
         } else {
@@ -74,20 +91,106 @@ class SchemaConversionService(
         val profile = type?.profile?.map { it.value }
         val targetProfile = type?.targetProfile?.map { it.value }
 
+        val fixedValue = elementDefinition.fixed
+        val fixedValueString = when {
+            fixedValue == null -> null
+            fixedValue is StringType -> fixedValue.value
+            fixedValue.hasPrimitiveValue() -> fixedValue.primitiveValue()
+            else -> throw IllegalStateException("Unsupported fixed value type ${fixedValue.fhirType()}")
+        }
+
         return FhirTreeNode(
             id = elementId,
             path = elementDefinition.path,
             isSliced = elementDefinition.hasSlicing(),
             slicingDiscriminator = slicingDiscriminator,
             sliceName = elementDefinition.sliceName,
-            fixedValue = elementDefinition.fixed,
+            fixedValue = fixedValueString,
             isList = isList,
             min = elementDefinition.min,
             max = maxAsInt,
             type = typeCode,
             profile = profile,
-            targetProfile = targetProfile
+            targetProfile = targetProfile,
+            description = elementDefinition.definition
         )
+    }
+
+    private fun toOpenApiSchema(node: FhirTreeNode): SchemaOrReference {
+        var schema: SchemaOrReference? = null
+
+        if (node.children.isNotEmpty()) {
+            val propertyPairs = node.children.map { Pair(it.propertyName(), toOpenApiSchema(it)) }
+            val requiredProperties = node.children.filter { it.min != null && it.min > 0 }.map { it.propertyName() }
+            schema = ObjectSchema(
+                description = node.description,
+                properties = propertyPairs.toMap(),
+                required = requiredProperties
+            )
+        }
+
+        if (
+            node.type == "http://hl7.org/fhirpath/System.String"
+            || node.type == "string"
+            || node.type == "code"
+            || node.type == "uri"
+            || node.type == "instant"
+            || node.type == "dateTime"
+            || node.type == "date"
+            || node.type == "time"
+        ) {
+            schema = StringSchema(description = node.description)
+        }
+
+        if (
+            node.type == "decimal"
+        ) {
+            schema = NumberSchema(description = node.description)
+        }
+
+        if (
+            node.type == "positiveInt"
+            || node.type == "unsignedInt"
+        ) {
+            schema = IntegerSchema(description = node.description)
+        }
+
+        if (
+            node.type == "boolean"
+        ) {
+            schema = BooleanSchema(description = node.description)
+        }
+
+        if (schema == null && node.profile?.isNotEmpty() == true) {
+            val references = node.profile.map { Reference(it) }
+            if (references.size > 1) {
+                schema = OneOfSchema(oneOf = references)
+            } else {
+                schema = references.single()
+            }
+        }
+
+        if (schema == null && node.type != null) {
+            schema = Reference(node.type)
+        }
+
+        if (schema == null) {
+            throw IllegalStateException("No schema for node ${node.id}")
+        }
+
+        if (node.isList) {
+            if (node.isSliced && node.slices.isNotEmpty()) {
+                //TODO - hacky thing here
+                val sliceSchemas = node.slices.map { it.copy(isList = false) }.map { toOpenApiSchema(it) }
+                val sliceChoiceSchema = OneOfSchema(oneOf = sliceSchemas)
+                val commonAndSliceChoiceSchema = AllOfSchema(allOf = listOf(schema, sliceChoiceSchema))
+                schema = ArraySchema(items = commonAndSliceChoiceSchema)
+            } else {
+                schema = ArraySchema(items = schema)
+            }
+        }
+
+        return schema
     }
 
     fun linkNodes(nodes: List<FhirTreeNode>): FhirTreeNode {
@@ -126,18 +229,19 @@ class SchemaConversionService(
 data class FhirTreeNode(
     val id: String,
     val path: String,
-    val children: MutableList<FhirTreeNode> = mutableListOf<FhirTreeNode>(),
-    val slices: MutableList<FhirTreeNode> = mutableListOf<FhirTreeNode>(),
+    val children: MutableList<FhirTreeNode> = mutableListOf(),
+    val slices: MutableList<FhirTreeNode> = mutableListOf(),
     val isList: Boolean,
     val isSliced: Boolean,
     val slicingDiscriminator: String?,
     val sliceName: String?,
-    val fixedValue: Any?,
+    val fixedValue: String?,
     val min: Int?,
     val max: Int?,
     val type: String?,
     val profile: List<String>?,
-    val targetProfile: List<String>?
+    val targetProfile: List<String>?,
+    val description: String
 ) {
     private val pathParts: List<String> = path.split(".")
 
@@ -158,6 +262,10 @@ data class FhirTreeNode(
         return this.path == node.path && node.isSliced && this.sliceName != null
     }
 
+    fun propertyName(): String {
+        return this.pathParts.last()
+    }
+
     private fun toStringPretty(indent: Int): String {
         val sb = StringBuilder()
 
@@ -168,6 +276,9 @@ data class FhirTreeNode(
             sb.append(sliceName)
         } else {
             sb.append(pathParts.last())
+            if (isList) {
+                sb.append("[]")
+            }
         }
 
         type?.let {
@@ -185,7 +296,18 @@ data class FhirTreeNode(
         }
 
         if (isSliced) {
-            sb.append(" (SLICED)")
+            sb.append(" (SLICED")
+            if (slicingDiscriminator != null) {
+                sb.append(" on ")
+                sb.append(slicingDiscriminator)
+            }
+            sb.append(")")
+        }
+
+        if (fixedValue != null) {
+            sb.append(" \"")
+            sb.append(fixedValue)
+            sb.append("\"")
         }
 
         slices.forEach {
