@@ -1,0 +1,79 @@
+<MedicationRequest xmlns="http://hl7.org/fhir">
+    <id value="missingSNOMED-fail"></id>
+    <extension url="https://fhir.nhs.uk/StructureDefinition/Extension-DM-PrescriptionType">
+        <valueCoding>
+            <system value="https://fhir.nhs.uk/CodeSystem/prescription-type"></system>
+            <code value="0101"></code>
+            <display value="Primary Care Prescriber – Medical Prescriber"></display>
+        </valueCoding>
+    </extension>
+    <extension url="https://fhir.nhs.uk/StructureDefinition/Extension-DM-ResponsiblePractitioner">
+        <valueReference>
+            <reference value="urn:uuid:1557E58E-3B1E-41DD-B3B5-D4D393DC5A3D"></reference>
+        </valueReference>
+    </extension>
+    <identifier>
+        <system value="https://fhir.nhs.uk/Id/prescription-order-item-number"></system>
+        <value value="1E34EE53-397A-2E70-E97C-67B1BD95014D"></value>
+    </identifier>
+    <status value="active"></status>
+    <intent value="order"></intent>
+    <medicationCodeableConcept>
+        <coding>
+            <system value="https://fhir.hl7.org.uk/Id/multilex-drug-codes"></system>
+            <code value="ABCDE"></code>
+            <display value="Salbutamol 100micrograms inhaler (product)"></display>
+        </coding>
+    </medicationCodeableConcept>
+    <subject>
+        <reference value="urn:uuid:C6750CAA-3CA9-4F29-A282-6EE1AA5D7D4C"></reference>
+    </subject>
+    <authoredOn value="2004-09-20T10:30:00.000+00:00"></authoredOn>
+    <requester>
+        <reference value="urn:uuid:1557E58E-3B1E-41DD-B3B5-D4D393DC5A3D"></reference>
+        <display value="Dr Smith"></display>
+    </requester>
+    <groupIdentifier>
+        <extension url="https://fhir.nhs.uk/StructureDefinition/Extension-DM-PrescriptionId">
+            <valueIdentifier>
+                <system value="https://fhir.nhs.uk/Id/prescription"></system>
+                <value value="EDD2E9DD-DA0A-C266-A4E3-447C68239524"></value>
+            </valueIdentifier>
+        </extension>
+        <system value="https://fhir.nhs.uk/Id/prescription-order-number"></system>
+        <value value="83C40E-A23856-00123C"></value>
+    </groupIdentifier>
+    <courseOfTherapyType>
+        <coding>
+            <system value="https://fhir.hl7.org.uk/CodeSystem/UKCore-PrescriptionType"></system>
+            <code value="acute"></code>
+            <display value="Short course (acute) therapy"></display>
+        </coding>
+    </courseOfTherapyType>
+    <dosageInstruction>
+        <text value="2 Puffs when required"></text>
+    </dosageInstruction>
+    <dispenseRequest>
+        <extension url="https://fhir.nhs.uk/StructureDefinition/Extension-DM-PerformerSiteType">
+            <valueCoding>
+                <system value="https://fhir.nhs.uk/CodeSystem/dispensing-site-preference"></system>
+                <code value="0004"></code>
+            </valueCoding>
+        </extension>
+        <quantity>
+            <value value="200"></value>
+            <unit value="actuation(s)"></unit>
+            <system value="http://snomed.info/sct"></system>
+            <code value="732981002"></code>
+        </quantity>
+        <performer>
+            <identifier>
+                <system value="https://not.correct.uri/Id/ods-organization-code"></system>
+                <value value="Y12345"></value>
+            </identifier>
+        </performer>
+    </dispenseRequest>
+    <substitution>
+        <allowedBoolean value="false"></allowedBoolean>
+    </substitution>
+</MedicationRequest>
