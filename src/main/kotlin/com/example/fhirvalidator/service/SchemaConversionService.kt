@@ -1,5 +1,7 @@
 package com.example.fhirvalidator.service
 
+import ca.uhn.fhir.context.support.ValidationSupportContext
+import ca.uhn.fhir.context.support.ValueSetExpansionOptions
 import com.example.fhirvalidator.model.*
 import com.example.fhirvalidator.model.Reference
 import mu.KLogging
@@ -11,7 +13,7 @@ import java.util.function.Predicate
 
 @Service
 class SchemaConversionService(
-    validationSupportChain: ValidationSupportChain
+    final val validationSupportChain: ValidationSupportChain
 ) {
     companion object : KLogging()
 
@@ -83,7 +85,7 @@ class SchemaConversionService(
     }
 
     private fun explodeTypeChoicesForNode(node: FhirTreeNode): List<FhirTreeNode> {
-        return if (node.propertyName().endsWith("[x]")) {
+        return if (node.elementName.endsWith("[x]")) {
             if (node.types.isEmpty()) {
                 throw IllegalStateException("Choice node with no choices")
             }
@@ -103,9 +105,7 @@ class SchemaConversionService(
         return node.copy(
             //TODO - hacky thing here - only one choice is required - could use oneOf, but the result would be horrible
             min = null,
-            type = type.code,
-            profile = type.profile.map { it.value },
-            targetProfile = type.targetProfile.map { it.value }
+            types = listOf(type)
         )
     }
 
@@ -150,13 +150,9 @@ class SchemaConversionService(
             elementDefinition.max.toInt()
         }
 
-        val types = elementDefinition.type
-
-        //If we have a single type, process it now. Choices are processed later. TODO - can we simplify?
-        val type = types.singleOrNull()
-        val typeCode = type?.code
-        val profile = type?.profile?.map { it.value }.orEmpty()
-        val targetProfile = type?.targetProfile?.map { it.value }.orEmpty()
+        //TODO - handle other binding strengths - add to description?
+        val requiredBinding = elementDefinition.binding.takeIf { it.strength == Enumerations.BindingStrength.REQUIRED }
+        val valueSetUrl = requiredBinding?.valueSet
 
         return FhirTreeNode(
             id = elementId,
@@ -165,13 +161,11 @@ class SchemaConversionService(
             slicingDiscriminator = slicingDiscriminator,
             sliceName = elementDefinition.sliceName,
             fixedValue = elementDefinition.fixed,
+            valueSetUrl = valueSetUrl,
             isList = isList,
             min = minAsOptionalInt,
             max = maxAsOptionalInt,
-            types = types,
-            type = typeCode,
-            profile = profile,
-            targetProfile = targetProfile,
+            types = elementDefinition.type,
             contentReference = elementDefinition.contentReference,
             description = elementDefinition.definition
         )
@@ -184,8 +178,8 @@ class SchemaConversionService(
             isNumberValuedNode(node) -> toOpenApiNumberSchema(node)
             isIntegerValuedNode(node) -> toOpenApiIntegerSchema(node)
             isBooleanValuedNode(node) -> toOpenApiBooleanSchema(node)
-            node.profile.isNotEmpty() -> toOpenApiProfileReferenceSchema(node.profile)
-            node.type != null -> toOpenApiTypeReferenceSchema(node.type)
+            node.profiles.isNotEmpty() -> toOpenApiProfileReferenceSchema(node.profiles)
+            node.typeCode != null -> toOpenApiTypeReferenceSchema(node.typeCode)
             node.contentReference != null -> toOpenApiPlaceholderContentReferenceSchema(node.contentReference)
             else -> throw IllegalStateException("No schema for node ${node.id}")
         }
@@ -202,44 +196,48 @@ class SchemaConversionService(
     }
 
     private fun isStringValuedNode(node: FhirTreeNode): Boolean {
+        val typeCode = node.typeCode
         //TODO - check whether all fhirpath types are strings
-        return node.type?.startsWith("http://hl7.org/fhirpath") == true
-                || node.type == "string"
-                || node.type == "markdown"
-                || node.type == "id"
-                || node.type == "canonical"
-                || node.type == "code"
-                || node.type == "uri"
-                || node.type == "url"
-                || node.type == "uuid"
-                || node.type == "oid"
-                || node.type == "base64Binary"
-                || node.type == "instant"
-                || node.type == "dateTime"
-                || node.type == "date"
-                || node.type == "time"
+        return typeCode?.startsWith("http://hl7.org/fhirpath") == true
+                || typeCode == "string"
+                || typeCode == "markdown"
+                || typeCode == "id"
+                || typeCode == "canonical"
+                || typeCode == "code"
+                || typeCode == "uri"
+                || typeCode == "url"
+                || typeCode == "uuid"
+                || typeCode == "oid"
+                || typeCode == "base64Binary"
+                || typeCode == "instant"
+                || typeCode == "dateTime"
+                || typeCode == "date"
+                || typeCode == "time"
     }
 
     private fun isNumberValuedNode(node: FhirTreeNode): Boolean {
-        return node.type == "decimal"
+        val typeCode = node.typeCode
+        return typeCode == "decimal"
     }
 
     private fun isIntegerValuedNode(node: FhirTreeNode): Boolean {
-        return node.type == "integer"
-                || node.type == "positiveInt"
-                || node.type == "unsignedInt"
+        val typeCode = node.typeCode
+        return typeCode == "integer"
+                || typeCode == "positiveInt"
+                || typeCode == "unsignedInt"
     }
 
     private fun isBooleanValuedNode(node: FhirTreeNode): Boolean {
-        return node.type == "boolean"
+        val typeCode = node.typeCode
+        return typeCode == "boolean"
     }
 
     private fun toOpenApiObjectSchema(node: FhirTreeNode): ObjectSchema {
         if (node.fixedValue != null) {
             logger.warn { "Ignoring fixed value of type ${node.fixedValue.fhirType()} at path ${node.path}" }
         }
-        val propertyPairs = node.children.map { Pair(it.propertyName(), toOpenApiSchema(it)) }
-        val requiredProperties = node.children.filter { it.min != null && it.min > 0 }.map { it.propertyName() }
+        val propertyPairs = node.children.map { Pair(it.elementName, toOpenApiSchema(it)) }
+        val requiredProperties = node.children.filter { it.min != null && it.min > 0 }.map { it.elementName }
         return ObjectSchema(
             description = node.description,
             properties = propertyPairs.toMap(),
@@ -248,17 +246,67 @@ class SchemaConversionService(
     }
 
     private fun toOpenApiStringSchema(node: FhirTreeNode): StringSchema {
-        //TODO - implement string formats
         val enum = when {
-            node.fixedValue == null -> null
-            node.fixedValue is StringType -> listOf(node.fixedValue.value)
-            node.fixedValue.hasPrimitiveValue() -> listOf(node.fixedValue.primitiveValue())
-            else -> throw IllegalStateException("Unsupported fixed value type ${node.fixedValue.fhirType()}")
+            node.fixedValue != null -> getFixedValueAsString(node.fixedValue)
+            node.valueSetUrl != null -> getValueSetCodes(node.valueSetUrl)
+            else -> null
         }
         return StringSchema(
             description = node.description,
-            enum = enum
+            enum = enum,
+            format = getStringFormatForType(node.typeCode)
         )
+    }
+
+    private fun getFixedValueAsString(fixedValue: Type): List<String> {
+        return when {
+            fixedValue is StringType -> listOf(fixedValue.value)
+            fixedValue.hasPrimitiveValue() -> listOf(fixedValue.primitiveValue())
+            else -> throw IllegalStateException("Unsupported fixed value type ${fixedValue.fhirType()}")
+        }
+    }
+
+    private fun getValueSetCodes(valueSetUrl: String): List<String>? {
+        val valueSet = validationSupportChain.fetchValueSet(valueSetUrl) as? ValueSet
+        if (valueSet == null) {
+            logger.warn { "No value set for URL $valueSetUrl" }
+            return null
+        }
+
+        val expansionResult = validationSupportChain.expandValueSet(
+            ValidationSupportContext(validationSupportChain),
+            ValueSetExpansionOptions(),
+            valueSet
+        )
+        val expandedValueSet = expansionResult?.valueSet as? ValueSet
+        if (expandedValueSet == null || !expandedValueSet.hasExpansion()) {
+            logger.warn { "Failed to expand value set $valueSetUrl" }
+            return null
+        }
+
+        val valueSetContents = expandedValueSet.expansion
+        if (valueSetContents.total > 50) {
+            logger.warn("Too many codes for value set $valueSetUrl")
+            return null
+        }
+
+        return valueSetContents.contains?.map { it.code }
+    }
+
+    private fun getStringFormatForType(typeCode: String?): String? {
+        return when (typeCode) {
+            "uri" -> "uri"
+            "url" -> "uri"
+            "canonical" -> "uri"
+            "uuid" -> "uuid"
+            "oid" -> "oid"
+            "base64Binary" -> "byte"
+            "instant" -> "date-time"
+            "dateTime" -> "date-time"
+            "date" -> "date"
+            "time" -> "time"
+            else -> null
+        }
     }
 
     private fun toOpenApiNumberSchema(node: FhirTreeNode): NumberSchema {
@@ -281,8 +329,17 @@ class SchemaConversionService(
         }
         return IntegerSchema(
             description = node.description,
-            enum = enum
+            enum = enum,
+            minimum = getMinimumValueForType(node.typeCode)
         )
+    }
+
+    private fun getMinimumValueForType(typeCode: String?): Int? {
+        return when (typeCode) {
+            "unsignedInt" -> 0
+            "positiveInt" -> 1
+            else -> null
+        }
     }
 
     private fun toOpenApiBooleanSchema(node: FhirTreeNode): BooleanSchema {
@@ -305,9 +362,18 @@ class SchemaConversionService(
         return oneOf(references)
     }
 
+    fun getSchemaName(url: String): String {
+        return structureDefinitions.find { it.url == url }?.name
+            ?: throw IllegalArgumentException("No StructureDefinition for URL $url")
+    }
+
     private fun toOpenApiTypeReferenceSchema(type: String): Reference {
         val typeName = getAllowedModelName(type)
         return Reference("#/components/schemas/$typeName")
+    }
+
+    fun getAllowedModelName(name: String): String {
+        return name.replace(Regex("[^a-zA-Z0-9.-_]"), "-")
     }
 
     private fun toOpenApiPlaceholderContentReferenceSchema(contentReference: String): SchemaOrReference {
@@ -349,15 +415,6 @@ class SchemaConversionService(
                 maxItems = node.max
             )
         }
-    }
-
-    fun getSchemaName(url: String): String {
-        return structureDefinitions.find { it.url == url }?.name
-            ?: throw IllegalStateException("No StructureDefinition for URL $url")
-    }
-
-    fun getAllowedModelName(name: String): String {
-        return name.replace(Regex("[^a-zA-Z0-9.-_]"), "-")
     }
 
     fun oneOf(schemas: List<SchemaOrReference>): SchemaOrReference {
@@ -427,36 +484,25 @@ data class FhirTreeNode(
     val slicingDiscriminator: String?,
     val sliceName: String?,
     val fixedValue: Type?,
+    val valueSetUrl: String?,
     val min: Int?,
     val max: Int?,
     val types: List<ElementDefinition.TypeRefComponent>,
-    val type: String?,
-    val profile: List<String>,
-    val targetProfile: List<String>,
     val contentReference: String?,
     val description: String
 ) {
     private val pathParts: List<String> = path.split(".")
+    val elementName = pathParts.last()
 
-    fun findChildren(nodes: List<FhirTreeNode>): List<FhirTreeNode> {
-        return nodes.filter { it.isChildOf(this) }
-    }
-
-    fun isChildOf(node: FhirTreeNode): Boolean {
-        return this.pathParts.size == node.pathParts.size + 1
-                && this.pathParts.subList(0, node.pathParts.size) == node.pathParts
-    }
+    private val type: ElementDefinition.TypeRefComponent? = types.singleOrNull()
+    val typeCode = type?.code
+    val profiles = type?.profile?.map { it.value }.orEmpty()
+    //TODO - add these to description?
+    val targetProfiles = type?.targetProfile?.map { it.value }.orEmpty()
 
     fun isParentOf(node: FhirTreeNode): Boolean {
-        return node.isChildOf(this)
-    }
-
-    fun isSliceOf(node: FhirTreeNode): Boolean {
-        return this.path == node.path && node.isSliced && this.sliceName != null
-    }
-
-    fun propertyName(): String {
-        return this.pathParts.last()
+        return node.pathParts.size == pathParts.size + 1
+                && node.pathParts.subList(0, pathParts.size) == pathParts
     }
 
     private fun toStringPretty(indent: Int): String {
