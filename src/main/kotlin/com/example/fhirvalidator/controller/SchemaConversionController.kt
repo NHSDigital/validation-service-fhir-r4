@@ -10,21 +10,21 @@ class SchemaConversionController(
 ) {
     @GetMapping("list")
     fun list(): String {
-        return schemaConversionService.listCoolThings()
+        return schemaConversionService.listStructureDefinitions()
     }
 
     @GetMapping("convert")
     fun convert(@RequestParam name: String): String {
-        return schemaConversionService.doSomethingCool(name)
+        return schemaConversionService.prettyPrintStructureDefinition(name)
     }
 
     @GetMapping("convert2")
     fun convert2(@RequestParam name: String): SchemaOrReference? {
-        return schemaConversionService.doSomethingCooler(name)
+        return schemaConversionService.convertStructureDefinitionToOpenApiSchema(name)
     }
 
     @GetMapping("convert3")
     fun convert3(): Map<String, SchemaOrReference> {
-        return schemaConversionService.doSomethingCoolest()
+        return schemaConversionService.convertAllStructureDefinitionsToOpenApiSchema()
     }
 }

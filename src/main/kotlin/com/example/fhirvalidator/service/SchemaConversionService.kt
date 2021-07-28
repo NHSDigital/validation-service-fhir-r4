@@ -1,12 +1,10 @@
 package com.example.fhirvalidator.service
 
 import com.example.fhirvalidator.model.*
+import com.example.fhirvalidator.model.Reference
 import mu.KLogging
 import org.hl7.fhir.common.hapi.validation.support.ValidationSupportChain
-import org.hl7.fhir.r4.model.ElementDefinition
-import org.hl7.fhir.r4.model.StringType
-import org.hl7.fhir.r4.model.StructureDefinition
-import org.hl7.fhir.r4.model.Type
+import org.hl7.fhir.r4.model.*
 import org.springframework.stereotype.Service
 import java.util.*
 import java.util.function.Predicate
@@ -20,25 +18,25 @@ class SchemaConversionService(
     private val structureDefinitions = validationSupportChain.fetchAllStructureDefinitions()
         .filterIsInstance(StructureDefinition::class.java)
 
-    fun listCoolThings(): String {
+    fun listStructureDefinitions(): String {
         return structureDefinitions.joinToString("\n") { it.name }
     }
 
-    fun doSomethingCool(name: String): String {
+    fun prettyPrintStructureDefinition(name: String): String {
         val structureDefinition = structureDefinitions.find { it.name == name }
             ?: return "StructureDefinition not found"
         return structureDefinition.snapshot?.element?.let { convertSnapshotToString(it) }
             ?: return "StructureDefinition missing snapshot"
     }
 
-    fun doSomethingCooler(name: String): SchemaOrReference? {
+    fun convertStructureDefinitionToOpenApiSchema(name: String): SchemaOrReference? {
         val structureDefinition = structureDefinitions.find { it.name == name }
             ?: return null
         return structureDefinition.snapshot?.element?.let { convertSnapshotToOpenApiSchema(it) }
             ?: return null
     }
 
-    fun doSomethingCoolest(): Map<String, SchemaOrReference> {
+    fun convertAllStructureDefinitionsToOpenApiSchema(): Map<String, SchemaOrReference> {
         return structureDefinitions
             .filter { it.snapshot?.element != null }
             .associate {
@@ -86,13 +84,12 @@ class SchemaConversionService(
 
     private fun explodeTypeChoicesForNode(node: FhirTreeNode): List<FhirTreeNode> {
         return if (node.propertyName().endsWith("[x]")) {
-            if (node.types?.isNotEmpty() == true) {
-                node.types.map {
-                    val nodeWithType = copyNodeWithTypeForChoice(node, it)
-                    copySubtreeWithPathForChoice(nodeWithType, it)
-                }
-            } else {
+            if (node.types.isEmpty()) {
                 throw IllegalStateException("Choice node with no choices")
+            }
+            node.types.map {
+                val nodeWithType = copyNodeWithTypeForChoice(node, it)
+                copySubtreeWithPathForChoice(nodeWithType, it)
             }
         } else {
             listOf(node)
@@ -119,6 +116,7 @@ class SchemaConversionService(
         val typeChoice = type.code.replaceFirstChar { it.uppercase() }
         val index = node.path.lastIndexOf("[x]")
         val newPath = node.path.substring(0, index) + typeChoice + node.path.substring(index + "[x]".length)
+        //Slices are intentionally not modified here as the paths seem to be correct.
         return node.copy(
             path = newPath,
             children = node.children.map { copySubtreeWithPathForChoice(it, type) }.toMutableList()
@@ -128,6 +126,7 @@ class SchemaConversionService(
     private fun toTreeNode(elementDefinition: ElementDefinition): FhirTreeNode {
         val elementId = elementDefinition.id
 
+        //TODO - discriminators are going to be difficult, do we need them?
         val discriminators = elementDefinition.slicing.discriminator
         val singleDiscriminator = discriminators.singleOrNull()
         val slicingDiscriminator = if (singleDiscriminator?.type == ElementDefinition.DiscriminatorType.VALUE) {
@@ -152,19 +151,12 @@ class SchemaConversionService(
         }
 
         val types = elementDefinition.type
+
+        //If we have a single type, process it now. Choices are processed later. TODO - can we simplify?
         val type = types.singleOrNull()
         val typeCode = type?.code
-        val profile = type?.profile?.map { it.value }
-        val targetProfile = type?.targetProfile?.map { it.value }
-
-        val fixedValue = elementDefinition.fixed
-        val fixedValueString = when {
-            fixedValue == null -> null
-            fixedValue is StringType -> fixedValue.value
-            fixedValue.hasPrimitiveValue() -> fixedValue.primitiveValue()
-            //else -> throw IllegalStateException("Unsupported fixed value type ${fixedValue.fhirType()}")
-            else -> null
-        }
+        val profile = type?.profile?.map { it.value }.orEmpty()
+        val targetProfile = type?.targetProfile?.map { it.value }.orEmpty()
 
         return FhirTreeNode(
             id = elementId,
@@ -172,8 +164,7 @@ class SchemaConversionService(
             isSliced = elementDefinition.hasSlicing(),
             slicingDiscriminator = slicingDiscriminator,
             sliceName = elementDefinition.sliceName,
-            fixedValue = fixedValue,
-            fixedValueString = fixedValueString,
+            fixedValue = elementDefinition.fixed,
             isList = isList,
             min = minAsOptionalInt,
             max = maxAsOptionalInt,
@@ -181,106 +172,188 @@ class SchemaConversionService(
             type = typeCode,
             profile = profile,
             targetProfile = targetProfile,
+            contentReference = elementDefinition.contentReference,
             description = elementDefinition.definition
         )
     }
 
     private fun toOpenApiSchema(node: FhirTreeNode): SchemaOrReference {
-        var schema: SchemaOrReference? = null
-
-        if (node.children.isNotEmpty()) {
-            val propertyPairs = node.children.map { Pair(it.propertyName(), toOpenApiSchema(it)) }
-            val requiredProperties = node.children.filter { it.min != null && it.min > 0 }.map { it.propertyName() }
-            schema = ObjectSchema(
-                description = node.description,
-                properties = propertyPairs.toMap(),
-                required = requiredProperties
-            )
+        val schema = when {
+            isObjectValuedNode(node) -> toOpenApiObjectSchema(node)
+            isStringValuedNode(node) -> toOpenApiStringSchema(node)
+            isNumberValuedNode(node) -> toOpenApiNumberSchema(node)
+            isIntegerValuedNode(node) -> toOpenApiIntegerSchema(node)
+            isBooleanValuedNode(node) -> toOpenApiBooleanSchema(node)
+            node.profile.isNotEmpty() -> toOpenApiProfileReferenceSchema(node.profile)
+            node.type != null -> toOpenApiTypeReferenceSchema(node.type)
+            node.contentReference != null -> toOpenApiPlaceholderContentReferenceSchema(node.contentReference)
+            else -> throw IllegalStateException("No schema for node ${node.id}")
         }
 
-        if (
-            //node.type == "http://hl7.org/fhirpath/System.String"
-            node.type?.startsWith("http://hl7.org/fhirpath") == true
-            || node.type == "string"
-            || node.type == "markdown"
-            || node.type == "id"
-            || node.type == "canonical"
-            || node.type == "code"
-            || node.type == "uri"
-            || node.type == "url"
-            || node.type == "uuid"
-            || node.type == "oid"
-            || node.type == "base64Binary"
-            || node.type == "instant"
-            || node.type == "dateTime"
-            || node.type == "date"
-            || node.type == "time"
-        ) {
-            schema = StringSchema(description = node.description)
+        return if (node.isList) {
+            toOpenApiArraySchema(node, schema)
+        } else {
+            schema
         }
-
-        if (
-            node.type == "decimal"
-        ) {
-            schema = NumberSchema(description = node.description)
-        }
-
-        if (
-            node.type == "integer"
-            || node.type == "positiveInt"
-            || node.type == "unsignedInt"
-        ) {
-            schema = IntegerSchema(description = node.description)
-        }
-
-        if (
-            node.type == "boolean"
-        ) {
-            schema = BooleanSchema(description = node.description)
-        }
-
-        if (schema == null && node.profile?.isNotEmpty() == true) {
-            val references = node.profile
-                .map { getSchemaName(it, node.type ?: "ERROR DURING SCHEMA GENERATION") }
-                .map { getAllowedModelName(it) }
-                .map { Reference("#/components/schemas/$it")}
-            schema = oneOf(references)
-        }
-
-        if (schema == null && node.type != null) {
-            val typeName = getAllowedModelName(node.type)
-            schema = Reference("#/components/schemas/${typeName}")
-        }
-
-        if (schema == null) {
-            //throw IllegalStateException("No schema for node ${node.id}")
-            schema = StringSchema(description = "ERROR DURING SCHEMA GENERATION: No schema for node ${node.id}")
-        }
-
-        if (node.isList) {
-            if (node.isSliced && node.slices.isNotEmpty()) {
-                //TODO - hacky thing here - items of sliced lists should not be lists
-                val sliceSchemas = node.slices.map { it.copy(isList = false) }.map { toOpenApiSchema(it) }
-                val sliceChoiceSchema = oneOf(sliceSchemas)
-                val commonAndSliceChoiceSchema = allOf(listOf(schema, sliceChoiceSchema))
-                schema = ArraySchema(
-                    items = commonAndSliceChoiceSchema,
-                    minItems = node.min,
-                    maxItems = node.max
-                )
-            } else {
-                schema = ArraySchema(items = schema,
-                    minItems = node.min,
-                    maxItems = node.max
-                )
-            }
-        }
-
-        return schema
     }
 
-    fun getSchemaName(url: String, valueIfNotFound: String): String {
-        return structureDefinitions.find { it.url == url }?.name ?: valueIfNotFound
+    private fun isObjectValuedNode(node: FhirTreeNode): Boolean {
+        return node.children.isNotEmpty()
+    }
+
+    private fun isStringValuedNode(node: FhirTreeNode): Boolean {
+        //TODO - check whether all fhirpath types are strings
+        return node.type?.startsWith("http://hl7.org/fhirpath") == true
+                || node.type == "string"
+                || node.type == "markdown"
+                || node.type == "id"
+                || node.type == "canonical"
+                || node.type == "code"
+                || node.type == "uri"
+                || node.type == "url"
+                || node.type == "uuid"
+                || node.type == "oid"
+                || node.type == "base64Binary"
+                || node.type == "instant"
+                || node.type == "dateTime"
+                || node.type == "date"
+                || node.type == "time"
+    }
+
+    private fun isNumberValuedNode(node: FhirTreeNode): Boolean {
+        return node.type == "decimal"
+    }
+
+    private fun isIntegerValuedNode(node: FhirTreeNode): Boolean {
+        return node.type == "integer"
+                || node.type == "positiveInt"
+                || node.type == "unsignedInt"
+    }
+
+    private fun isBooleanValuedNode(node: FhirTreeNode): Boolean {
+        return node.type == "boolean"
+    }
+
+    private fun toOpenApiObjectSchema(node: FhirTreeNode): ObjectSchema {
+        if (node.fixedValue != null) {
+            logger.warn { "Ignoring fixed value of type ${node.fixedValue.fhirType()} at path ${node.path}" }
+        }
+        val propertyPairs = node.children.map { Pair(it.propertyName(), toOpenApiSchema(it)) }
+        val requiredProperties = node.children.filter { it.min != null && it.min > 0 }.map { it.propertyName() }
+        return ObjectSchema(
+            description = node.description,
+            properties = propertyPairs.toMap(),
+            required = requiredProperties
+        )
+    }
+
+    private fun toOpenApiStringSchema(node: FhirTreeNode): StringSchema {
+        //TODO - implement string formats
+        val enum = when {
+            node.fixedValue == null -> null
+            node.fixedValue is StringType -> listOf(node.fixedValue.value)
+            node.fixedValue.hasPrimitiveValue() -> listOf(node.fixedValue.primitiveValue())
+            else -> throw IllegalStateException("Unsupported fixed value type ${node.fixedValue.fhirType()}")
+        }
+        return StringSchema(
+            description = node.description,
+            enum = enum
+        )
+    }
+
+    private fun toOpenApiNumberSchema(node: FhirTreeNode): NumberSchema {
+        val enum = when {
+            node.fixedValue == null -> null
+            node.fixedValue is DecimalType -> listOf(node.fixedValue.value)
+            else -> throw IllegalStateException("Unsupported fixed value type ${node.fixedValue.fhirType()}")
+        }
+        return NumberSchema(
+            description = node.description,
+            enum = enum
+        )
+    }
+
+    private fun toOpenApiIntegerSchema(node: FhirTreeNode): IntegerSchema {
+        val enum = when {
+            node.fixedValue == null -> null
+            node.fixedValue is IntegerType -> listOf(node.fixedValue.value)
+            else -> throw IllegalStateException("Unsupported fixed value type ${node.fixedValue.fhirType()}")
+        }
+        return IntegerSchema(
+            description = node.description,
+            enum = enum
+        )
+    }
+
+    private fun toOpenApiBooleanSchema(node: FhirTreeNode): BooleanSchema {
+        val enum = when (node.fixedValue) {
+            null -> null
+            is BooleanType -> listOf(node.fixedValue.booleanValue())
+            else -> throw IllegalStateException("Unsupported fixed value type ${node.fixedValue.fhirType()}")
+        }
+        return BooleanSchema(
+            description = node.description,
+            enum = enum
+        )
+    }
+
+    private fun toOpenApiProfileReferenceSchema(profiles: List<String>): SchemaOrReference {
+        val references = profiles
+            .map { getSchemaName(it) }
+            .map { getAllowedModelName(it) }
+            .map { Reference("#/components/schemas/$it") }
+        return oneOf(references)
+    }
+
+    private fun toOpenApiTypeReferenceSchema(type: String): Reference {
+        val typeName = getAllowedModelName(type)
+        return Reference("#/components/schemas/$typeName")
+    }
+
+    private fun toOpenApiPlaceholderContentReferenceSchema(contentReference: String): SchemaOrReference {
+        //TODO - pull out any subtree which is the target of a content reference into its own model, update references
+        return ObjectSchema(
+            description = "PLACEHOLDER - For the schema of this element, see $contentReference.",
+            properties = emptyMap()
+        )
+        //This doesn't work (can't reference part of a model)
+//        val firstDotIndex = contentReference.indexOf(".")
+//        if (!contentReference.startsWith("#") || firstDotIndex == -1) {
+//            throw IllegalArgumentException("Unhandled format for content reference $contentReference")
+//        }
+//        val modelName = getAllowedModelName(contentReference.substring(1, firstDotIndex))
+//        val pathToElement = contentReference.substring(firstDotIndex + 1).replace(".", "/")
+//        return Reference("#/components/schemas/$modelName/$pathToElement")
+    }
+
+    private fun toOpenApiArraySchema(
+        node: FhirTreeNode,
+        itemSchema: SchemaOrReference
+    ): ArraySchema {
+        if (node.isSliced && node.slices.isNotEmpty()) {
+            val sliceSchemas = node.slices
+                //TODO - hacky thing here - items of sliced lists should not be lists
+                .map { it.copy(isList = false) }
+                .map { toOpenApiSchema(it) }
+            val sliceChoiceSchema = oneOf(sliceSchemas)
+            val commonAndSliceChoiceSchema = allOf(listOf(itemSchema, sliceChoiceSchema))
+            return ArraySchema(
+                items = commonAndSliceChoiceSchema,
+                minItems = node.min,
+                maxItems = node.max
+            )
+        } else {
+            return ArraySchema(
+                items = itemSchema,
+                minItems = node.min,
+                maxItems = node.max
+            )
+        }
+    }
+
+    fun getSchemaName(url: String): String {
+        return structureDefinitions.find { it.url == url }?.name
+            ?: throw IllegalStateException("No StructureDefinition for URL $url")
     }
 
     fun getAllowedModelName(name: String): String {
@@ -354,13 +427,13 @@ data class FhirTreeNode(
     val slicingDiscriminator: String?,
     val sliceName: String?,
     val fixedValue: Type?,
-    val fixedValueString: String?,
     val min: Int?,
     val max: Int?,
-    val types: List<ElementDefinition.TypeRefComponent>?,
+    val types: List<ElementDefinition.TypeRefComponent>,
     val type: String?,
-    val profile: List<String>?,
-    val targetProfile: List<String>?,
+    val profile: List<String>,
+    val targetProfile: List<String>,
+    val contentReference: String?,
     val description: String
 ) {
     private val pathParts: List<String> = path.split(".")
@@ -450,4 +523,3 @@ data class FhirTreeNode(
 fun getParentNodePath(nodePath: String): String {
     return nodePath.substringBeforeLast(".", "")
 }
-
