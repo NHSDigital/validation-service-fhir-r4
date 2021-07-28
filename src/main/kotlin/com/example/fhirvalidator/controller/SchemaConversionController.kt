@@ -22,4 +22,9 @@ class SchemaConversionController(
     fun convert2(@RequestParam name: String): SchemaOrReference? {
         return schemaConversionService.doSomethingCooler(name)
     }
+
+    @GetMapping("convert3")
+    fun convert3(): Map<String, SchemaOrReference> {
+        return schemaConversionService.doSomethingCoolest()
+    }
 }

@@ -6,6 +6,7 @@ import org.hl7.fhir.common.hapi.validation.support.ValidationSupportChain
 import org.hl7.fhir.r4.model.ElementDefinition
 import org.hl7.fhir.r4.model.StringType
 import org.hl7.fhir.r4.model.StructureDefinition
+import org.hl7.fhir.r4.model.Type
 import org.springframework.stereotype.Service
 import java.util.*
 import java.util.function.Predicate
@@ -37,6 +38,21 @@ class SchemaConversionService(
             ?: return null
     }
 
+    fun doSomethingCoolest(): Map<String, SchemaOrReference> {
+        return structureDefinitions
+            .filter { it.snapshot?.element != null }
+            .associate {
+                Pair(
+                    getAllowedModelName(it.name),
+                    try {
+                        convertSnapshotToOpenApiSchema(it.snapshot.element)
+                    } catch (e: java.lang.IllegalStateException) {
+                        StringSchema("ERROR DURING SCHEMA GENERATION: ${e.message}")
+                    }
+                )
+            }
+    }
+
     private fun convertSnapshotToString(snapshotElements: List<ElementDefinition>): String {
         val root = convertSnapshotToTree(snapshotElements)
         return root.toStringPretty()
@@ -50,20 +66,72 @@ class SchemaConversionService(
     private fun convertSnapshotToTree(snapshotElements: List<ElementDefinition>): FhirTreeNode {
         val treeNodes = snapshotElements.map { toTreeNode(it) }
         val root = linkNodes(treeNodes)
-        //TODO - hacky thing here
-        return root.copy(isList = false)
+        val rootWithExplodedChoices = explodeTypeChoicesForDescendants(root)
+        //TODO - hacky thing here - root node should not be a list
+        return rootWithExplodedChoices.copy(isList = false)
+    }
+
+    private fun explodeTypeChoicesForDescendants(treeNode: FhirTreeNode): FhirTreeNode {
+        return treeNode.copy(
+            children = treeNode.children
+                .map { explodeTypeChoicesForDescendants(it) }
+                .flatMap { explodeTypeChoicesForNode(it) }
+                .toMutableList(),
+            slices = treeNode.slices
+                .map { explodeTypeChoicesForDescendants(it) }
+                .flatMap { explodeTypeChoicesForNode(it) }
+                .toMutableList()
+        )
+    }
+
+    private fun explodeTypeChoicesForNode(node: FhirTreeNode): List<FhirTreeNode> {
+        return if (node.propertyName().endsWith("[x]")) {
+            if (node.types?.isNotEmpty() == true) {
+                node.types.map {
+                    val nodeWithType = copyNodeWithTypeForChoice(node, it)
+                    copySubtreeWithPathForChoice(nodeWithType, it)
+                }
+            } else {
+                throw IllegalStateException("Choice node with no choices")
+            }
+        } else {
+            listOf(node)
+        }
+    }
+
+    private fun copyNodeWithTypeForChoice(
+        node: FhirTreeNode,
+        type: ElementDefinition.TypeRefComponent
+    ): FhirTreeNode {
+        return node.copy(
+            //TODO - hacky thing here - only one choice is required - could use oneOf, but the result would be horrible
+            min = null,
+            type = type.code,
+            profile = type.profile.map { it.value },
+            targetProfile = type.targetProfile.map { it.value }
+        )
+    }
+
+    private fun copySubtreeWithPathForChoice(
+        node: FhirTreeNode,
+        type: ElementDefinition.TypeRefComponent
+    ): FhirTreeNode {
+        val typeChoice = type.code.replaceFirstChar { it.uppercase() }
+        val index = node.path.lastIndexOf("[x]")
+        val newPath = node.path.substring(0, index) + typeChoice + node.path.substring(index + "[x]".length)
+        return node.copy(
+            path = newPath,
+            children = node.children.map { copySubtreeWithPathForChoice(it, type) }.toMutableList()
+        )
     }
 
     private fun toTreeNode(elementDefinition: ElementDefinition): FhirTreeNode {
         val elementId = elementDefinition.id
 
         val discriminators = elementDefinition.slicing.discriminator
-        val slicingDiscriminator = if (discriminators.isNotEmpty()) {
-            val discriminator = discriminators.single()
-            if (discriminator.type != ElementDefinition.DiscriminatorType.VALUE) {
-                throw IllegalArgumentException("Unsupported discriminator type ${discriminator.type}")
-            }
-            discriminator.path
+        val singleDiscriminator = discriminators.singleOrNull()
+        val slicingDiscriminator = if (singleDiscriminator?.type == ElementDefinition.DiscriminatorType.VALUE) {
+            singleDiscriminator.path
         } else {
             null
         }
@@ -71,22 +139,20 @@ class SchemaConversionService(
         val baseMax = elementDefinition.base.max
         val isList = baseMax == "*" || baseMax.toInt() > 1
 
-        val maxAsInt = if (elementDefinition.max == "*") {
+        val minAsOptionalInt = if (elementDefinition.min == 0) {
+            null
+        } else {
+            elementDefinition.min
+        }
+
+        val maxAsOptionalInt = if (elementDefinition.max == "*") {
             null
         } else {
             elementDefinition.max.toInt()
         }
 
         val types = elementDefinition.type
-        val type = if (types.isNotEmpty()) {
-            if (types.size > 1) {
-                logger.warn { "More than one type for node $elementId" }
-            }
-            types.first()
-        } else {
-            null
-        }
-
+        val type = types.singleOrNull()
         val typeCode = type?.code
         val profile = type?.profile?.map { it.value }
         val targetProfile = type?.targetProfile?.map { it.value }
@@ -96,7 +162,8 @@ class SchemaConversionService(
             fixedValue == null -> null
             fixedValue is StringType -> fixedValue.value
             fixedValue.hasPrimitiveValue() -> fixedValue.primitiveValue()
-            else -> throw IllegalStateException("Unsupported fixed value type ${fixedValue.fhirType()}")
+            //else -> throw IllegalStateException("Unsupported fixed value type ${fixedValue.fhirType()}")
+            else -> null
         }
 
         return FhirTreeNode(
@@ -105,10 +172,12 @@ class SchemaConversionService(
             isSliced = elementDefinition.hasSlicing(),
             slicingDiscriminator = slicingDiscriminator,
             sliceName = elementDefinition.sliceName,
-            fixedValue = fixedValueString,
+            fixedValue = fixedValue,
+            fixedValueString = fixedValueString,
             isList = isList,
-            min = elementDefinition.min,
-            max = maxAsInt,
+            min = minAsOptionalInt,
+            max = maxAsOptionalInt,
+            types = types,
             type = typeCode,
             profile = profile,
             targetProfile = targetProfile,
@@ -130,10 +199,18 @@ class SchemaConversionService(
         }
 
         if (
-            node.type == "http://hl7.org/fhirpath/System.String"
+            //node.type == "http://hl7.org/fhirpath/System.String"
+            node.type?.startsWith("http://hl7.org/fhirpath") == true
             || node.type == "string"
+            || node.type == "markdown"
+            || node.type == "id"
+            || node.type == "canonical"
             || node.type == "code"
             || node.type == "uri"
+            || node.type == "url"
+            || node.type == "uuid"
+            || node.type == "oid"
+            || node.type == "base64Binary"
             || node.type == "instant"
             || node.type == "dateTime"
             || node.type == "date"
@@ -149,7 +226,8 @@ class SchemaConversionService(
         }
 
         if (
-            node.type == "positiveInt"
+            node.type == "integer"
+            || node.type == "positiveInt"
             || node.type == "unsignedInt"
         ) {
             schema = IntegerSchema(description = node.description)
@@ -162,35 +240,75 @@ class SchemaConversionService(
         }
 
         if (schema == null && node.profile?.isNotEmpty() == true) {
-            val references = node.profile.map { Reference(it) }
-            if (references.size > 1) {
-                schema = OneOfSchema(oneOf = references)
-            } else {
-                schema = references.single()
-            }
+            val references = node.profile
+                .map { getSchemaName(it, node.type ?: "ERROR DURING SCHEMA GENERATION") }
+                .map { getAllowedModelName(it) }
+                .map { Reference("#/components/schemas/$it")}
+            schema = oneOf(references)
         }
 
         if (schema == null && node.type != null) {
-            schema = Reference(node.type)
+            val typeName = getAllowedModelName(node.type)
+            schema = Reference("#/components/schemas/${typeName}")
         }
 
         if (schema == null) {
-            throw IllegalStateException("No schema for node ${node.id}")
+            //throw IllegalStateException("No schema for node ${node.id}")
+            schema = StringSchema(description = "ERROR DURING SCHEMA GENERATION: No schema for node ${node.id}")
         }
 
         if (node.isList) {
             if (node.isSliced && node.slices.isNotEmpty()) {
-                //TODO - hacky thing here
+                //TODO - hacky thing here - items of sliced lists should not be lists
                 val sliceSchemas = node.slices.map { it.copy(isList = false) }.map { toOpenApiSchema(it) }
-                val sliceChoiceSchema = OneOfSchema(oneOf = sliceSchemas)
-                val commonAndSliceChoiceSchema = AllOfSchema(allOf = listOf(schema, sliceChoiceSchema))
-                schema = ArraySchema(items = commonAndSliceChoiceSchema)
+                val sliceChoiceSchema = oneOf(sliceSchemas)
+                val commonAndSliceChoiceSchema = allOf(listOf(schema, sliceChoiceSchema))
+                schema = ArraySchema(
+                    items = commonAndSliceChoiceSchema,
+                    minItems = node.min,
+                    maxItems = node.max
+                )
             } else {
-                schema = ArraySchema(items = schema)
+                schema = ArraySchema(items = schema,
+                    minItems = node.min,
+                    maxItems = node.max
+                )
             }
         }
 
         return schema
+    }
+
+    fun getSchemaName(url: String, valueIfNotFound: String): String {
+        return structureDefinitions.find { it.url == url }?.name ?: valueIfNotFound
+    }
+
+    fun getAllowedModelName(name: String): String {
+        return name.replace(Regex("[^a-zA-Z0-9.-_]"), "-")
+    }
+
+    fun oneOf(schemas: List<SchemaOrReference>): SchemaOrReference {
+        return if (schemas.size > 1) {
+            OneOfSchema(oneOf = schemas)
+        } else {
+            schemas.single()
+        }
+    }
+
+    fun anyOf(schemas: List<SchemaOrReference>): SchemaOrReference {
+        return if (schemas.size > 1) {
+            AnyOfSchema(anyOf = schemas)
+        } else {
+            schemas.single()
+        }
+    }
+
+    fun allOf(schemas: List<SchemaOrReference>): SchemaOrReference {
+        return if (schemas.size > 1) {
+            AllOfSchema(allOf = schemas)
+        } else {
+            schemas.single()
+        }
     }
 
     fun linkNodes(nodes: List<FhirTreeNode>): FhirTreeNode {
@@ -199,11 +317,11 @@ class SchemaConversionService(
         for (node in nodes) {
             //Add the node to the appropriate slice group or parent
             if (node.sliceName != null) {
-                val sliceGroupNode = popUntilFound(stack, Predicate { it.isSliced && it.path == node.path })
+                val sliceGroupNode = popUntilFound(stack) { it.isSliced && it.path == node.path }
                     ?: throw IllegalStateException("No slice group node found for node ${node.path}")
                 sliceGroupNode.slices.add(node)
             } else if (node != root) {
-                val parentNode = popUntilFound(stack, Predicate { it.isParentOf(node) })
+                val parentNode = popUntilFound(stack) { it.isParentOf(node) }
                     ?: throw IllegalStateException("No parent node found for node ${node.path}")
                 parentNode.children.add(node)
             }
@@ -235,9 +353,11 @@ data class FhirTreeNode(
     val isSliced: Boolean,
     val slicingDiscriminator: String?,
     val sliceName: String?,
-    val fixedValue: String?,
+    val fixedValue: Type?,
+    val fixedValueString: String?,
     val min: Int?,
     val max: Int?,
+    val types: List<ElementDefinition.TypeRefComponent>?,
     val type: String?,
     val profile: List<String>?,
     val targetProfile: List<String>?,
