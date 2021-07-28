@@ -3,10 +3,11 @@ package com.example.fhirvalidator.model
 open class SchemaOrReference()
 
 class Reference(
-    val `$ref`: String
+    val `$ref`: String,
+    val description: String? = null
 ): SchemaOrReference()
 
-abstract class AbstractSchema<ExampleType>(
+open class Schema<ExampleType>(
     val type: String? = null,
     val description: String? = null,
     val nullable: Boolean? = null,
@@ -24,7 +25,7 @@ class OneOfSchema(
     description: String? = null,
     val oneOf: List<SchemaOrReference>,
     val discriminator: Discriminator? = null
-): AbstractSchema<Any>(
+): Schema<Any>(
     description = description
 )
 
@@ -32,21 +33,21 @@ class AnyOfSchema(
     description: String? = null,
     val anyOf: List<SchemaOrReference>,
     val discriminator: Discriminator? = null
-): AbstractSchema<Any>(
+): Schema<Any>(
     description = description
 )
 
 class AllOfSchema(
     description: String? = null,
     val allOf: List<SchemaOrReference>
-): AbstractSchema<Any>(
+): Schema<Any>(
     description = description
 )
 
 class NegatedSchema(
     description: String? = null,
     val not: SchemaOrReference
-): AbstractSchema<Any>(
+): Schema<Any>(
     description = description
 )
 
@@ -61,7 +62,7 @@ class NumberSchema(
     val exclusiveMinimum: Boolean? = null,
     val exclusiveMaximum: Boolean? = null,
     val multipleOf: Number? = null
-): AbstractSchema<Number>(
+): Schema<Number>(
     "number",
     description,
     nullable,
@@ -81,7 +82,7 @@ class IntegerSchema(
     val exclusiveMinimum: Boolean? = null,
     val exclusiveMaximum: Boolean? = null,
     val multipleOf: Number? = null
-): AbstractSchema<Int>(
+): Schema<Int>(
     "integer",
     description,
     nullable,
@@ -100,7 +101,7 @@ class StringSchema(
     val maxLength: Int? = null,
     val format: String? = null,
     val pattern: String? = null
-): AbstractSchema<String>(
+): Schema<String>(
     "string",
     description,
     nullable,
@@ -115,7 +116,7 @@ class BooleanSchema(
     default: Boolean? = null,
     enum: List<Boolean>? = null,
     example: Boolean? = null
-): AbstractSchema<Boolean>(
+): Schema<Boolean>(
     "boolean",
     description,
     nullable,
@@ -134,7 +135,7 @@ class ArraySchema(
     val minItems: Int? = null,
     val maxItems: Int? = null,
     val uniqueItems: Boolean? = null
-): AbstractSchema<List<Any>>(
+): Schema<List<Any>>(
     "array",
     description,
     nullable,
@@ -151,7 +152,7 @@ class ObjectSchema(
     example: Map<String, Any>? = null,
     val properties: Map<String, SchemaOrReference>,
     val required: List<String>? = null
-): AbstractSchema<Map<String, Any>>(
+): Schema<Map<String, Any>>(
     "object",
     description,
     nullable,

@@ -13,7 +13,7 @@ import java.util.function.Predicate
 
 @Service
 class SchemaConversionService(
-    final val validationSupportChain: ValidationSupportChain
+    private val validationSupportChain: ValidationSupportChain
 ) {
     companion object : KLogging()
 
@@ -178,8 +178,8 @@ class SchemaConversionService(
             isNumberValuedNode(node) -> toOpenApiNumberSchema(node)
             isIntegerValuedNode(node) -> toOpenApiIntegerSchema(node)
             isBooleanValuedNode(node) -> toOpenApiBooleanSchema(node)
-            node.profiles.isNotEmpty() -> toOpenApiProfileReferenceSchema(node.profiles)
-            node.typeCode != null -> toOpenApiTypeReferenceSchema(node.typeCode)
+            node.profiles.isNotEmpty() -> toOpenApiProfileReferenceSchema(node)
+            node.typeCode != null -> toOpenApiTypeReferenceSchema(node)
             node.contentReference != null -> toOpenApiPlaceholderContentReferenceSchema(node.contentReference)
             else -> throw IllegalStateException("No schema for node ${node.id}")
         }
@@ -354,11 +354,16 @@ class SchemaConversionService(
         )
     }
 
-    private fun toOpenApiProfileReferenceSchema(profiles: List<String>): SchemaOrReference {
-        val references = profiles
+    private fun toOpenApiProfileReferenceSchema(node: FhirTreeNode): SchemaOrReference {
+        val references = node.profiles
             .map { getSchemaName(it) }
             .map { getAllowedModelName(it) }
-            .map { Reference("#/components/schemas/$it") }
+            .map {
+                referenceWithDescription(
+                    "#/components/schemas/$it",
+                    description = node.description
+                )
+            }
         return oneOf(references)
     }
 
@@ -367,13 +372,29 @@ class SchemaConversionService(
             ?: throw IllegalArgumentException("No StructureDefinition for URL $url")
     }
 
-    private fun toOpenApiTypeReferenceSchema(type: String): Reference {
-        val typeName = getAllowedModelName(type)
-        return Reference("#/components/schemas/$typeName")
+    private fun toOpenApiTypeReferenceSchema(node: FhirTreeNode): SchemaOrReference {
+        if (node.typeCode == null) {
+            throw IllegalArgumentException("No type for node")
+        }
+        val typeName = getAllowedModelName(node.typeCode)
+        return referenceWithDescription(
+            "#/components/schemas/$typeName",
+            description = node.description
+        )
     }
 
     fun getAllowedModelName(name: String): String {
         return name.replace(Regex("[^a-zA-Z0-9.-_]"), "-")
+    }
+
+    fun referenceWithDescription(reference: String, description: String): SchemaOrReference {
+        //TODO - hacky workaround - when OpenAPI 3.1.0 is supported, switch to the following:
+        //return Reference(reference, description = description)
+        val schemas = listOf(
+            Reference(reference),
+            Schema<Nothing>(description = description)
+        )
+        return allOf(schemas)
     }
 
     private fun toOpenApiPlaceholderContentReferenceSchema(contentReference: String): SchemaOrReference {
