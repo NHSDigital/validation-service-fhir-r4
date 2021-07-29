@@ -1,17 +1,14 @@
 [
   {
     "packageName": "uk.nhsdigital.medicines.r4",
-    "version": "2.1.14-alpha",
-    "download": true
+    "version": "2.1.37-alpha"
   },
   {
     "packageName": "uk.nhsdigital.r4",
-    "version": "2.1.16-discovery",
-    "download": true
+    "version": "2.1.33-discovery"
   },
   {
     "packageName": "UK.Core.r4.v2",
-    "version": "2.0.8",
-    "download": true
+    "version": "2.0.8"
   }
 ]

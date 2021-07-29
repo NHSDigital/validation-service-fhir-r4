@@ -20,20 +20,20 @@ class PackageConfiguration(val objectMapper: ObjectMapper) {
     companion object : KLogging()
 
     @Bean
-    fun getPackages(): List<NpmPackage> {
+    fun getPackages(applicationProperties: IgProperties): List<NpmPackage> {
         val inputStream = ClassPathResource("manifest.json").inputStream
         val packages = objectMapper.readValue(inputStream, Array<SimplifierPackage>::class.java)
         var packageList : MutableList<NpmPackage> = ArrayList<NpmPackage>();
         packageList.addAll(Arrays.stream(packages)
-            .filter{it.download == false}
+            .filter{applicationProperties.packageDownload == false}
             .map { "${it.packageName}-${it.version}.tgz" }
             .map { ClassPathResource(it).inputStream }
             .map { NpmPackage.fromPackage(it) }
             .toList())
         val pcm = FilesystemPackageCacheManager(true, ToolsVersion.TOOLS_VERSION);
         packageList.addAll(Arrays.stream(packages)
-            .filter{it.download == true}
-            .map { getGetPackage(pcm, it.packageName,  it.version, it.download) }
+            .filter{applicationProperties.packageDownload == true}
+            .map { getGetPackage(pcm, it.packageName,  it.version, applicationProperties.packageDownload) }
             .toList())
 
         return packageList

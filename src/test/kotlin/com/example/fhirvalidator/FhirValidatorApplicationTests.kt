@@ -62,7 +62,12 @@ class FhirValidatorApplicationTests(@Autowired val restTemplate: TestRestTemplat
 
     private fun hasErrors(operationOutcome: OperationOutcome) : Boolean {
         operationOutcome.issue.forEach{
-            if (it.severity == OperationOutcome.IssueSeverity.ERROR) return true
+            if (it.severity == OperationOutcome.IssueSeverity.ERROR) {
+                logger.error("Severity {} Diagnostics {}", it.severity, it.diagnostics)
+                return true
+            } else {
+                logger.info("Severity {} Diagnostics {}", it.severity, it.diagnostics)
+            }
         }
         return false
     }
@@ -79,7 +84,7 @@ class FhirValidatorApplicationTests(@Autowired val restTemplate: TestRestTemplat
 
         val resource = getFileResourceXML("MedicationRequest-missingSNOMEDMedcation.xml")
         val out: ResponseEntity<*>? =
-            validateResource(ctx.newJsonParser().encodeResourceToString(resource), MediaType.APPLICATION_XML)
+            validateResource(ctx.newXmlParser().encodeResourceToString(resource), MediaType.APPLICATION_XML)
 
         Assertions.assertThat(out).isNotNull
         val responseResource = getResource(out)
@@ -104,6 +109,40 @@ class FhirValidatorApplicationTests(@Autowired val restTemplate: TestRestTemplat
         if (responseResource is OperationOutcome) {
 
             Assertions.assertThat(hasErrors(responseResource)).isEqualTo(true)
+        }
+    }
+
+    @Test
+    @Throws(Exception::class)
+    fun validateHomecareContinuousExample() {
+
+        val resource = getFileResourceJSON("homecare-continuous-example.json")
+        val out: ResponseEntity<*>? =
+            validateResource(ctx.newJsonParser().encodeResourceToString(resource), MediaType.APPLICATION_JSON)
+
+        Assertions.assertThat(out).isNotNull
+        val responseResource = getResource(out)
+        Assertions.assertThat(responseResource).isInstanceOf(OperationOutcome::class.java)
+        if (responseResource is OperationOutcome) {
+
+            Assertions.assertThat(hasErrors(responseResource)).isEqualTo(false)
+        }
+    }
+
+    @Test
+    @Throws(Exception::class)
+    fun validateDispense1stEventEithDispenser() {
+
+        val resource = getFileResourceJSON("dispense-1st-event-with-dispenser.json")
+        val out: ResponseEntity<*>? =
+            validateResource(ctx.newJsonParser().encodeResourceToString(resource), MediaType.APPLICATION_JSON)
+
+        Assertions.assertThat(out).isNotNull
+        val responseResource = getResource(out)
+        Assertions.assertThat(responseResource).isInstanceOf(OperationOutcome::class.java)
+        if (responseResource is OperationOutcome) {
+
+            Assertions.assertThat(hasErrors(responseResource)).isEqualTo(false)
         }
     }
 
