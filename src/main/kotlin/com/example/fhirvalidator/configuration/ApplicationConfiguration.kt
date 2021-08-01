@@ -3,6 +3,7 @@ package com.example.fhirvalidator.configuration
 import ca.uhn.fhir.context.FhirContext
 import ca.uhn.fhir.parser.StrictErrorHandler
 import com.example.fhirvalidator.server.FHIRRestfulServer
+import org.hl7.fhir.utilities.cache.NpmPackage
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.web.servlet.ServletRegistrationBean
 import org.springframework.context.annotation.Bean
@@ -26,8 +27,8 @@ class ApplicationConfiguration {
     }
 
     @Bean
-    fun fhirServerR4Registration(ctx: FhirContext ): ServletRegistrationBean<*> {
-        val registration: ServletRegistrationBean<*> = ServletRegistrationBean<Servlet>(FHIRRestfulServer(ctx, applicationContext), "/R4/*")
+    fun fhirServerR4Registration(fhirContext: FhirContext, npmPackages: List<NpmPackage>): ServletRegistrationBean<*> {
+        val registration: ServletRegistrationBean<*> = ServletRegistrationBean<Servlet>(FHIRRestfulServer(fhirContext, applicationContext, npmPackages), "/R4/*")
         val params: MutableMap<String, String> = HashMap()
         params["FhirVersion"] = "R4"
         params["ImplementationDescription"] = "FHIR Validation Server"
