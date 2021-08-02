@@ -13,18 +13,23 @@ class SchemaConversionController(
         return schemaConversionService.listStructureDefinitions()
     }
 
-    @GetMapping("convert")
-    fun convert(@RequestParam name: String): String {
+    @GetMapping("print")
+    fun print(@RequestParam name: String): String {
         return schemaConversionService.prettyPrintStructureDefinition(name)
     }
 
-    @GetMapping("convert2")
-    fun convert2(@RequestParam name: String): SchemaOrReference? {
-        return schemaConversionService.convertStructureDefinitionToOpenApiSchema(name)
+//    @GetMapping("convert2")
+//    fun convert2(@RequestParam name: String): SchemaOrReference? {
+//        return schemaConversionService.convertStructureDefinitionToOpenApiSchema(name)
+//    }
+
+    @GetMapping("convert")
+    fun convert(@RequestParam name: String): Map<String, SchemaOrReference> {
+        return schemaConversionService.convertStructureDefinitionAndDependenciesToOpenApiSchema(name)
     }
 
-    @GetMapping("convert3")
-    fun convert3(): Map<String, SchemaOrReference> {
+    @GetMapping("convertAll")
+    fun convertAll(): Map<String, SchemaOrReference> {
         return schemaConversionService.convertAllStructureDefinitionsToOpenApiSchema()
     }
 }

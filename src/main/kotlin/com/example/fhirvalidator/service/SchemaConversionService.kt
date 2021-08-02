@@ -11,6 +11,16 @@ import org.springframework.stereotype.Service
 import java.util.*
 import java.util.function.Predicate
 
+val STRING_TYPES = setOf(
+    "http://hl7.org/fhirpath/System.String", "http://hl7.org/fhirpath/System.DateTime",
+    "http://hl7.org/fhirpath/System.Date", "http://hl7.org/fhirpath/System.Time",
+    "string", "markdown", "xhtml", "id", "canonical", "code", "uri", "url", "uuid",
+    "oid", "base64Binary", "instant", "dateTime", "date", "time"
+)
+val INTEGER_TYPES = setOf("http://hl7.org/fhirpath/System.Integer", "integer", "positiveInt", "unsignedInt")
+val NUMBER_TYPES = setOf("http://hl7.org/fhirpath/System.Decimal", "decimal")
+val BOOLEAN_TYPES = setOf("http://hl7.org/fhirpath/System.Boolean", "boolean")
+
 @Service
 class SchemaConversionService(
     private val validationSupportChain: ValidationSupportChain
@@ -32,11 +42,57 @@ class SchemaConversionService(
     }
 
     fun convertStructureDefinitionToOpenApiSchema(name: String): SchemaOrReference? {
-        val structureDefinition = structureDefinitions.find { it.name == name }
-            ?: return null
-        return structureDefinition.snapshot?.element?.let { convertSnapshotToOpenApiSchema(it) }
-            ?: return null
+        val structureDefinition = structureDefinitions.find { it.name == name } ?: return null
+        val element = structureDefinition.snapshot.element
+        return convertSnapshotToOpenApiSchema(element)
     }
+
+    fun convertStructureDefinitionAndDependenciesToOpenApiSchema(firstStructureDefinitionName: String): Map<String, SchemaOrReference> {
+        val structureDefinitionNamesToProcess = mutableListOf(firstStructureDefinitionName)
+        val structureDefinitionNamesProcessed = mutableSetOf<String>()
+        val output = mutableListOf<Pair<String, SchemaOrReference>>()
+        while (structureDefinitionNamesToProcess.isNotEmpty()) {
+            val structureDefinitionName = structureDefinitionNamesToProcess.removeFirst()
+            if (!structureDefinitionNamesProcessed.contains(structureDefinitionName)) {
+                val structureDefinition = structureDefinitions.find { it.name == structureDefinitionName }
+                if (structureDefinition != null) {
+                    val snapshotElements = structureDefinition.snapshot.element
+                    val fhirTree = convertSnapshotToTree(snapshotElements)
+                    val referencedTypes = findReferencedTypes(fhirTree)
+                    structureDefinitionNamesToProcess.addAll(referencedTypes)
+                    val openApiSchema = toOpenApiSchema(fhirTree)
+                    val openApiModelName = getAllowedModelName(structureDefinitionName)
+                    output.add(Pair(openApiModelName, openApiSchema))
+                    structureDefinitionNamesProcessed.add(structureDefinitionName)
+                } else {
+                    logger.warn { "Structure definition not found: $structureDefinitionName" }
+                }
+            }
+        }
+        return output.toMap()
+    }
+
+    private fun findReferencedTypes(root: FhirTreeNode): Collection<String> {
+        val types = mutableSetOf<String>()
+        root.typeCode?.let { types.add(it) }
+        types.addAll(root.profiles.map { getSchemaName(it) })
+        root.children.map { types.addAll(findReferencedTypes(it)) }
+        root.slices.map { types.addAll(findReferencedTypes(it)) }
+        return types.filterNot { isPrimitiveType(it) }
+    }
+
+//    private fun findReferenceTargets(schemaOrReference: SchemaOrReference): Collection<String> {
+//        return when (schemaOrReference) {
+//            is Reference -> setOf(schemaOrReference.`$ref`)
+//            is ObjectSchema -> schemaOrReference.properties.values.map { findReferenceTargets(it) }.flatten()
+//            is ArraySchema -> findReferenceTargets(schemaOrReference.items)
+//            is OneOfSchema -> schemaOrReference.oneOf.map { findReferenceTargets(it) }.flatten()
+//            is AllOfSchema -> schemaOrReference.allOf.map { findReferenceTargets(it) }.flatten()
+//            is AnyOfSchema -> schemaOrReference.anyOf.map { findReferenceTargets(it) }.flatten()
+//            is NegatedSchema -> findReferenceTargets(schemaOrReference.not)
+//            else -> emptySet()
+//        }
+//    }
 
     fun convertAllStructureDefinitionsToOpenApiSchema(): Map<String, SchemaOrReference> {
         return structureDefinitions
@@ -174,10 +230,10 @@ class SchemaConversionService(
     private fun toOpenApiSchema(node: FhirTreeNode): SchemaOrReference {
         val schema = when {
             isObjectValuedNode(node) -> toOpenApiObjectSchema(node)
-            isStringValuedNode(node) -> toOpenApiStringSchema(node)
-            isNumberValuedNode(node) -> toOpenApiNumberSchema(node)
-            isIntegerValuedNode(node) -> toOpenApiIntegerSchema(node)
-            isBooleanValuedNode(node) -> toOpenApiBooleanSchema(node)
+            isStringType(node.typeCode) -> toOpenApiStringSchema(node)
+            isNumberType(node.typeCode) -> toOpenApiNumberSchema(node)
+            isIntegerType(node.typeCode) -> toOpenApiIntegerSchema(node)
+            isBooleanType(node.typeCode) -> toOpenApiBooleanSchema(node)
             node.profiles.isNotEmpty() -> toOpenApiProfileReferenceSchema(node)
             node.typeCode != null -> toOpenApiTypeReferenceSchema(node)
             node.contentReference != null -> toOpenApiPlaceholderContentReferenceSchema(node.contentReference)
@@ -195,41 +251,24 @@ class SchemaConversionService(
         return node.children.isNotEmpty()
     }
 
-    private fun isStringValuedNode(node: FhirTreeNode): Boolean {
-        val typeCode = node.typeCode
-        //TODO - check whether all fhirpath types are strings
-        return typeCode?.startsWith("http://hl7.org/fhirpath") == true
-                || typeCode == "string"
-                || typeCode == "markdown"
-                || typeCode == "id"
-                || typeCode == "canonical"
-                || typeCode == "code"
-                || typeCode == "uri"
-                || typeCode == "url"
-                || typeCode == "uuid"
-                || typeCode == "oid"
-                || typeCode == "base64Binary"
-                || typeCode == "instant"
-                || typeCode == "dateTime"
-                || typeCode == "date"
-                || typeCode == "time"
+    private fun isPrimitiveType(typeCode: String?): Boolean {
+        return isStringType(typeCode) || isIntegerType(typeCode) || isNumberType(typeCode) || isBooleanType(typeCode)
     }
 
-    private fun isNumberValuedNode(node: FhirTreeNode): Boolean {
-        val typeCode = node.typeCode
-        return typeCode == "decimal"
+    private fun isStringType(typeCode: String?): Boolean {
+        return STRING_TYPES.contains(typeCode)
     }
 
-    private fun isIntegerValuedNode(node: FhirTreeNode): Boolean {
-        val typeCode = node.typeCode
-        return typeCode == "integer"
-                || typeCode == "positiveInt"
-                || typeCode == "unsignedInt"
+    private fun isNumberType(typeCode: String?): Boolean {
+        return NUMBER_TYPES.contains(typeCode)
     }
 
-    private fun isBooleanValuedNode(node: FhirTreeNode): Boolean {
-        val typeCode = node.typeCode
-        return typeCode == "boolean"
+    private fun isIntegerType(typeCode: String?): Boolean {
+        return INTEGER_TYPES.contains(typeCode)
+    }
+
+    private fun isBooleanType(typeCode: String?): Boolean {
+        return BOOLEAN_TYPES.contains(typeCode)
     }
 
     private fun toOpenApiObjectSchema(node: FhirTreeNode): ObjectSchema {
@@ -399,11 +438,12 @@ class SchemaConversionService(
 
     private fun toOpenApiPlaceholderContentReferenceSchema(contentReference: String): SchemaOrReference {
         //TODO - pull out any subtree which is the target of a content reference into its own model, update references
+        //TODO - alternatively, fix the logic below
         return ObjectSchema(
             description = "PLACEHOLDER - For the schema of this element, see $contentReference.",
             properties = emptyMap()
         )
-        //This doesn't work (can't reference part of a model)
+        //This doesn't work (need to specify the correct JSON pointer to the node within the OpenAPI schema)
 //        val firstDotIndex = contentReference.indexOf(".")
 //        if (!contentReference.startsWith("#") || firstDotIndex == -1) {
 //            throw IllegalArgumentException("Unhandled format for content reference $contentReference")
