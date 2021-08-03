@@ -9,7 +9,7 @@ import org.hl7.fhir.instance.model.api.IBaseResource
 import org.hl7.fhir.r4.model.Bundle
 import org.hl7.fhir.r4.model.OperationOutcome
 import org.hl7.fhir.r4.model.Patient
-import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.BDDMockito.given
@@ -18,22 +18,25 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 
 @ExtendWith(MockitoExtension::class)
-internal class ValidateControllerTest {
+internal class ValidateProviderTest {
     @Mock
     lateinit var mockFhirContext: FhirContext
+
     @Mock
     lateinit var mockValidator: FhirValidator
+
     @Mock
     lateinit var mockMessageDefinitionApplier: MessageDefinitionApplier
+
     @Mock
     lateinit var mockCapabilityStatementApplier: CapabilityStatementApplier
 
     @InjectMocks
-    lateinit var testValidateController: ValidateProvider
+    lateinit var testValidateProvider: ValidateProvider
 
     @Test
     fun getResourcesToValidate_returns_emptyList_when_passed_null() {
-        assertEquals(emptyList<IBaseResource>(), testValidateController.getResourcesToValidate(null))
+        assertEquals(emptyList<IBaseResource>(), testValidateProvider.getResourcesToValidate(null))
     }
 
     @Test
@@ -43,7 +46,7 @@ internal class ValidateControllerTest {
         bundle.type = Bundle.BundleType.SEARCHSET
         val bundleEntry = bundle.addEntry()
         bundleEntry.resource = patient
-        assertEquals(listOf(patient), testValidateController.getResourcesToValidate(bundle))
+        assertEquals(listOf(patient), testValidateProvider.getResourcesToValidate(bundle))
     }
 
     @Test
@@ -53,13 +56,13 @@ internal class ValidateControllerTest {
         bundle.type = Bundle.BundleType.COLLECTION
         val bundleEntry = bundle.addEntry()
         bundleEntry.resource = patient
-        assertEquals(listOf(bundle), testValidateController.getResourcesToValidate(bundle))
+        assertEquals(listOf(bundle), testValidateProvider.getResourcesToValidate(bundle))
     }
 
     @Test
     fun getResourcesToValidate_returns_a_patient_in_a_list_when_passed_a_patient() {
         val patient = Patient()
-        assertEquals(listOf(patient), testValidateController.getResourcesToValidate(patient))
+        assertEquals(listOf(patient), testValidateProvider.getResourcesToValidate(patient))
     }
 
     @Test
@@ -68,7 +71,7 @@ internal class ValidateControllerTest {
         val operationOutcome = OperationOutcome()
         given(mockMessageDefinitionApplier.applyMessageDefinition(patient)).willReturn(operationOutcome)
 
-        assertEquals(operationOutcome, testValidateController.validateResource(patient, null, null))
+        assertEquals(operationOutcome, testValidateProvider.validateResource(patient, null))
     }
 }
 
