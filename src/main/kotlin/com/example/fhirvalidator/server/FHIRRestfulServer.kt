@@ -11,11 +11,13 @@ import java.util.*
 @Component
 class FHIRRestfulServer(
     fhirContext: FhirContext,
-    validateProvider: ValidateProvider,
-    capabilityStatementProvider: CapabilityStatementProvider
+    private val validateProvider: ValidateProvider,
+    private val capabilityStatementProvider: CapabilityStatementProvider
 ) : RestfulServer(fhirContext) {
 
-    init {
+    override fun initialize() {
+        super.initialize()
+
         TimeZone.setDefault(TimeZone.getTimeZone("UTC"))
 
         registerProvider(validateProvider)
