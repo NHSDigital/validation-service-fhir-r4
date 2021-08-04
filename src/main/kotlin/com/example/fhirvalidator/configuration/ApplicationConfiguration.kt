@@ -32,10 +32,6 @@ class ApplicationConfiguration {
         val registration: ServletRegistrationBean<Servlet> = ServletRegistrationBean(
             fhirRestfulServer, "/R4/*"
         )
-        val params: MutableMap<String, String> = HashMap()
-        params["FhirVersion"] = "R4"
-        params["ImplementationDescription"] = "FHIR Validation Server"
-        registration.initParameters = params
         registration.setName("fhirR4Servlet")
         registration.setLoadOnStartup(1)
         return registration
