@@ -5,10 +5,10 @@ import ca.uhn.fhir.rest.api.EncodingEnum
 import ca.uhn.fhir.rest.server.RestfulServer
 import com.example.fhirvalidator.provider.CapabilityStatementProvider
 import com.example.fhirvalidator.provider.ValidateProvider
-import org.springframework.stereotype.Component
 import java.util.*
+import javax.servlet.annotation.WebServlet
 
-@Component
+@WebServlet("/R4/*")
 class FHIRRestfulServer(
     fhirContext: FhirContext,
     private val validateProvider: ValidateProvider,
