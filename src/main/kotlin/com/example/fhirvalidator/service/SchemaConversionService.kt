@@ -123,8 +123,16 @@ class SchemaConversionService(
         val treeNodes = snapshotElements.map { toTreeNode(it) }
         val root = linkNodes(treeNodes)
         val rootWithExplodedChoices = explodeTypeChoicesForDescendants(root)
+        //TODO - hacky thing here - TESTING PLEASE REMOVE
+        removeNodesForUnslicedExtensions(rootWithExplodedChoices)
         //TODO - hacky thing here - root node should not be a list
         return rootWithExplodedChoices.copy(isList = false)
+    }
+
+    private fun removeNodesForUnslicedExtensions(node: FhirTreeNode) {
+        node.children.removeIf { (it.elementName == "extension" || it.elementName == "modifierExtension") && it.slices.isEmpty() }
+        node.children.forEach { removeNodesForUnslicedExtensions(it) }
+        node.slices.forEach { removeNodesForUnslicedExtensions(it) }
     }
 
     private fun explodeTypeChoicesForDescendants(treeNode: FhirTreeNode): FhirTreeNode {
@@ -349,9 +357,9 @@ class SchemaConversionService(
     }
 
     private fun toOpenApiNumberSchema(node: FhirTreeNode): NumberSchema {
-        val enum = when {
-            node.fixedValue == null -> null
-            node.fixedValue is DecimalType -> listOf(node.fixedValue.value)
+        val enum = when (node.fixedValue) {
+            null -> null
+            is DecimalType -> listOf(node.fixedValue.value)
             else -> throw IllegalStateException("Unsupported fixed value type ${node.fixedValue.fhirType()}")
         }
         return NumberSchema(
@@ -361,9 +369,9 @@ class SchemaConversionService(
     }
 
     private fun toOpenApiIntegerSchema(node: FhirTreeNode): IntegerSchema {
-        val enum = when {
-            node.fixedValue == null -> null
-            node.fixedValue is IntegerType -> listOf(node.fixedValue.value)
+        val enum = when (node.fixedValue) {
+            null -> null
+            is IntegerType -> listOf(node.fixedValue.value)
             else -> throw IllegalStateException("Unsupported fixed value type ${node.fixedValue.fhirType()}")
         }
         return IntegerSchema(
