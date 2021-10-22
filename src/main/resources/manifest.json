@@ -1,11 +1,11 @@
 [
   {
     "packageName": "uk.nhsdigital.medicines.r4.test",
-    "version": "2.2.1-prerelease"
+    "version": "2.2.3-prerelease"
   },
   {
     "packageName": "uk.nhsdigital.r4.test",
-    "version": "2.2.3-prerelease"
+    "version": "2.2.4-prerelease"
   },
   {
     "packageName": "UKCore.Release1.test",
