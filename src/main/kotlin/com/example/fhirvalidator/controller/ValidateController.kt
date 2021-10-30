@@ -50,11 +50,12 @@ class ValidateController(
     }
 
     fun validateResource(resource: IBaseResource): OperationOutcome? {
+        // KGM changed order so message defintion will override profiles added by capability statement
+        capabilityStatementApplier.applyCapabilityStatementProfiles(resource)
         val messageDefinitionErrors = messageDefinitionApplier.applyMessageDefinition(resource)
         if (messageDefinitionErrors != null) {
             return messageDefinitionErrors
         }
-        capabilityStatementApplier.applyCapabilityStatementProfiles(resource)
         return validator.validateWithResult(resource).toOperationOutcome() as? OperationOutcome
     }
 
