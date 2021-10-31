@@ -1,4 +1,4 @@
-package com.example.fhirvalidator.service;
+package com.example.fhirvalidator.hapifhir;
 
 import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.context.support.IValidationSupport;
