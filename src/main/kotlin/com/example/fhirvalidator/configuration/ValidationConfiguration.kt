@@ -6,12 +6,10 @@ import ca.uhn.fhir.context.support.DefaultProfileValidationSupport
 import ca.uhn.fhir.context.support.IValidationSupport
 import ca.uhn.fhir.context.support.ValidationSupportContext
 import ca.uhn.fhir.validation.FhirValidator
+import com.example.fhirvalidator.model.ValidationConfig
 import com.example.fhirvalidator.service.ImplementationGuideParser
 import mu.KLogging
-import org.hl7.fhir.common.hapi.validation.support.CommonCodeSystemsTerminologyService
-import org.hl7.fhir.common.hapi.validation.support.InMemoryTerminologyServerValidationSupport
-import org.hl7.fhir.common.hapi.validation.support.SnapshotGeneratingValidationSupport
-import org.hl7.fhir.common.hapi.validation.support.ValidationSupportChain
+import org.hl7.fhir.common.hapi.validation.support.*
 import org.hl7.fhir.common.hapi.validation.validator.FhirInstanceValidator
 import org.hl7.fhir.instance.model.api.IBaseResource
 import org.hl7.fhir.r4.model.StructureDefinition
@@ -19,9 +17,11 @@ import org.hl7.fhir.utilities.npm.NpmPackage
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
+
 @Configuration
 class ValidationConfiguration(private val implementationGuideParser: ImplementationGuideParser) {
     companion object : KLogging()
+
 
     @Bean
     fun validator(fhirContext: FhirContext, instanceValidator: FhirInstanceValidator): FhirValidator {
@@ -30,25 +30,36 @@ class ValidationConfiguration(private val implementationGuideParser: Implementat
 
     @Bean
     fun instanceValidator(supportChain: ValidationSupportChain): FhirInstanceValidator {
-        return FhirInstanceValidator(supportChain)
+        return FhirInstanceValidator(CachingValidationSupport(supportChain))
     }
 
     @Bean
     fun validationSupportChain(
         fhirContext: FhirContext,
         terminologyValidationSupport: InMemoryTerminologyServerValidationSupport,
-        npmPackages: List<NpmPackage>
+        npmPackages: List<NpmPackage>,
+        validationConfig : ValidationConfig
     ): ValidationSupportChain {
         val supportChain = ValidationSupportChain(
             DefaultProfileValidationSupport(fhirContext),
-            CommonCodeSystemsTerminologyService(fhirContext),
-            terminologyValidationSupport,
-            SnapshotGeneratingValidationSupport(fhirContext)
-        )
+            CommonCodeSystemsTerminologyService(fhirContext))
+
+        if (validationConfig.useRemoteTerminology && !validationConfig.terminologyServer.isEmpty()) {
+            // May need to review this. Hopefully this captures the common use cases.
+            supportChain.addValidationSupport(InMemoryTerminologyServerValidationSupport(fhirContext))
+            val remoteTerminologyServer = RemoteTerminologyServiceValidationSupport(fhirContext)
+            remoteTerminologyServer.setBaseUrl(validationConfig.terminologyServer)
+            supportChain.addValidationSupport(remoteTerminologyServer)
+        } else {
+            supportChain.addValidationSupport(terminologyValidationSupport)
+        }
+        supportChain.addValidationSupport(SnapshotGeneratingValidationSupport(fhirContext))
         npmPackages.map(implementationGuideParser::createPrePopulatedValidationSupport)
             .forEach(supportChain::addValidationSupport)
         generateSnapshots(supportChain)
+
         return supportChain
+
     }
 
     @Bean
