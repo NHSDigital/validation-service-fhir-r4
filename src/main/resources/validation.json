@@ -1,4 +1,5 @@
 {
   "terminologyServer": "https://r4.ontoserver.csiro.au/fhir/",
-  "useRemoteTerminology" : true
+  "useRemoteTerminology" : true,
+  "accessToken" : "REPLACE_ME"
 }
