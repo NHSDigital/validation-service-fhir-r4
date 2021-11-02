@@ -6,7 +6,7 @@ import com.example.fhirvalidator.util.createOperationOutcomeIssue
 import com.example.fhirvalidator.util.getResourcesOfType
 import org.hl7.fhir.instance.model.api.IBaseResource
 import org.hl7.fhir.r4.model.*
-import org.hl7.fhir.utilities.cache.NpmPackage
+import org.hl7.fhir.utilities.npm.NpmPackage
 import org.springframework.stereotype.Service
 
 @Service
