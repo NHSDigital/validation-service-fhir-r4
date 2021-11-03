@@ -1,4 +1,4 @@
-package com.example.fhirvalidator.hapifhir
+package com.example.fhirvalidator.shared
 
 import ca.uhn.fhir.context.FhirContext
 import ca.uhn.fhir.context.support.IValidationSupport

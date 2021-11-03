@@ -9,6 +9,7 @@ import ca.uhn.fhir.rest.client.interceptor.BearerTokenAuthInterceptor
 import ca.uhn.fhir.validation.FhirValidator
 import com.example.fhirvalidator.model.ValidationConfig
 import com.example.fhirvalidator.service.ImplementationGuideParser
+import com.example.fhirvalidator.shared.AuthorisationClient
 import mu.KLogging
 import org.hl7.fhir.common.hapi.validation.support.*
 import org.hl7.fhir.common.hapi.validation.validator.FhirInstanceValidator
@@ -50,7 +51,7 @@ class ValidationConfiguration(private val implementationGuideParser: Implementat
             supportChain.addValidationSupport(InMemoryTerminologyServerValidationSupport(fhirContext))
             val remoteTerminologyServer = RemoteTerminologyServiceValidationSupport(fhirContext)
             remoteTerminologyServer.setBaseUrl(validationConfig.terminologyServer)
-            remoteTerminologyServer.addClientInterceptor(BearerTokenAuthInterceptor(validationConfig.accessToken));
+            remoteTerminologyServer.addClientInterceptor(AuthorisationClient(validationConfig.clientId,validationConfig.clientSecret));
             supportChain.addValidationSupport(remoteTerminologyServer)
         } else {
             supportChain.addValidationSupport(terminologyValidationSupport)
