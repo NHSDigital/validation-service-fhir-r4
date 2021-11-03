@@ -1,5 +1,6 @@
 {
-  "terminologyServer": "https://r4.ontoserver.csiro.au/fhir/",
-  "useRemoteTerminology" : true,
-  "accessToken" : "REPLACE_ME"
-}
+   "terminologyServer": "https://ontology.nhs.uk/authoring/fhir",
+   "useRemoteTerminology" : true,
+    "clientId" : "",
+    "clientSecret": ""
+ }

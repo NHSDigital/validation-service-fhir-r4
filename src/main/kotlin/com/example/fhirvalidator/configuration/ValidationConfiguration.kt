@@ -43,17 +43,18 @@ class ValidationConfiguration(private val implementationGuideParser: Implementat
         validationConfig : ValidationConfig
     ): ValidationSupportChain {
         val supportChain = ValidationSupportChain(
-            DefaultProfileValidationSupport(fhirContext),
-            CommonCodeSystemsTerminologyService(fhirContext))
-
+            DefaultProfileValidationSupport(fhirContext)
+        )
+        supportChain.addValidationSupport(CommonCodeSystemsTerminologyService(fhirContext))
         if (validationConfig.useRemoteTerminology && !validationConfig.terminologyServer.isEmpty()) {
-            // May need to review this. Hopefully this captures the common use cases.
-            supportChain.addValidationSupport(InMemoryTerminologyServerValidationSupport(fhirContext))
+            // InMemoryTerminologyServer is require as the NHS Onto server doesn't contain FHIR ValueSets and CodeSystems
+            //supportChain.addValidationSupport(InMemoryTerminologyServerValidationSupport(fhirContext))
             val remoteTerminologyServer = RemoteTerminologyServiceValidationSupport(fhirContext)
             remoteTerminologyServer.setBaseUrl(validationConfig.terminologyServer)
             remoteTerminologyServer.addClientInterceptor(AuthorisationClient(validationConfig.clientId,validationConfig.clientSecret));
             supportChain.addValidationSupport(remoteTerminologyServer)
         } else {
+
             supportChain.addValidationSupport(terminologyValidationSupport)
         }
         supportChain.addValidationSupport(SnapshotGeneratingValidationSupport(fhirContext))
