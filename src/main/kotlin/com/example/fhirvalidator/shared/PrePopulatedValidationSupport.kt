@@ -11,6 +11,7 @@ import org.hl7.fhir.instance.model.api.IPrimitiveType
 import java.util.*
 import javax.annotation.Nonnull
 
+/* Leave as java in case solutions assurance or external users wish to reuse */
 
 open class PrePopulatedValidationSupport(
     theFhirContext: FhirContext,

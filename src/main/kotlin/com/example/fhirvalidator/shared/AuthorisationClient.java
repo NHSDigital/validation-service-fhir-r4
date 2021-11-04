@@ -21,6 +21,7 @@ import java.time.Instant;
 import java.util.Base64;
 import java.util.Date;
 
+/* Leave as java in case solutions assurance or external users wish to reuse */
 
 public class AuthorisationClient implements IClientInterceptor {
 

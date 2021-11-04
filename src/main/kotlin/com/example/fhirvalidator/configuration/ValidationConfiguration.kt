@@ -5,11 +5,11 @@ import ca.uhn.fhir.context.support.ConceptValidationOptions
 import ca.uhn.fhir.context.support.DefaultProfileValidationSupport
 import ca.uhn.fhir.context.support.IValidationSupport
 import ca.uhn.fhir.context.support.ValidationSupportContext
-import ca.uhn.fhir.rest.client.interceptor.BearerTokenAuthInterceptor
 import ca.uhn.fhir.validation.FhirValidator
 import com.example.fhirvalidator.model.ValidationConfig
 import com.example.fhirvalidator.service.ImplementationGuideParser
 import com.example.fhirvalidator.shared.AuthorisationClient
+import com.example.fhirvalidator.shared.TerminologyValidationSupport
 import mu.KLogging
 import org.hl7.fhir.common.hapi.validation.support.*
 import org.hl7.fhir.common.hapi.validation.validator.FhirInstanceValidator
@@ -47,8 +47,7 @@ class ValidationConfiguration(private val implementationGuideParser: Implementat
         )
         supportChain.addValidationSupport(CommonCodeSystemsTerminologyService(fhirContext))
         if (validationConfig.useRemoteTerminology && !validationConfig.terminologyServer.isEmpty()) {
-            supportChain.addValidationSupport(InMemoryTerminologyServerValidationSupport(fhirContext))
-            val remoteTerminologyServer = RemoteTerminologyServiceValidationSupport(fhirContext)
+            val remoteTerminologyServer = TerminologyValidationSupport(fhirContext)
             remoteTerminologyServer.setBaseUrl(validationConfig.terminologyServer)
             if (!validationConfig.clientId.isEmpty() && !validationConfig.clientSecret.isEmpty()) {
                 remoteTerminologyServer.addClientInterceptor(
@@ -58,10 +57,9 @@ class ValidationConfiguration(private val implementationGuideParser: Implementat
                     )
                 );
             }
+            supportChain.addValidationSupport(remoteTerminologyServer);
         } else {
-
             supportChain.addValidationSupport(terminologyValidationSupport)
-
         }
         supportChain.addValidationSupport(SnapshotGeneratingValidationSupport(fhirContext))
 
