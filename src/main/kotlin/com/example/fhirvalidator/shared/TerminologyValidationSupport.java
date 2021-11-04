@@ -48,11 +48,13 @@ public class TerminologyValidationSupport extends InMemoryTerminologyServerValid
 
     public void addClientInterceptor(@Nonnull Object theClientInterceptor) {
         Validate.notNull(theClientInterceptor, "theClientInterceptor must not be null", new Object[0]);
+        log.info("Authentication Interceptor added to NHS Digital Terminology Validation Support");
         this.myClientInterceptors.add(theClientInterceptor);
     }
 
     public TerminologyValidationSupport(FhirContext theCtx) {
         super(theCtx);
+        log.info("NHS Digital Terminology Validation Support active");
         Validate.notNull(theCtx, "theCtx must not be null", new Object[0]);
         this.myCtx = theCtx;
     }
@@ -151,13 +153,6 @@ public class TerminologyValidationSupport extends InMemoryTerminologyServerValid
         public ValueSetExpansionOutcome expandValueSet(ValidationSupportContext theValidationSupportContext, ValueSetExpansionOptions theExpansionOptions, @NotNull IBaseResource theValueSetToExpand) {
             if (theValueSetToExpand instanceof ValueSet) {
                 ValueSet valueSet = (ValueSet) theValueSetToExpand;
-                if (valueSet.hasCompose()) {
-                    for (ValueSet.ConceptSetComponent includes : valueSet.getCompose().getInclude()) {
-                        if (includes.hasSystem()) log.info("Expand - {}", includes.getSystem());
-                    }
-                } else {
-                    log.info("something else");
-                }
             }
             ValueSetExpansionOutcome valueSetExpansionOutcome = super.expandValueSet(theValidationSupportContext, theExpansionOptions, theValueSetToExpand);
 
@@ -173,12 +168,7 @@ public class TerminologyValidationSupport extends InMemoryTerminologyServerValid
                 theDisplay,
                 theValidationSupportContext.getRootValidationSupport().fetchValueSet(theValueSetUrl));
 
-        if (theValueSetUrl != null) {
-            log.info("validateCode {} {} {}",theCodeSystem, theCode, theValueSetUrl);
-        }
-        else {
-            log.info("validateCode {} {}",theCodeSystem, theCode);
-        }
+
         if (theValueSetUrl != null && theValueSetUrl.equals("http://hl7.org/fhir/ValueSet/units-of-time")) {
             return validateCodeInValueSet(theValidationSupportContext,theOptions,"http://unitsofmeasure.org",theCode,theDisplay,theValidationSupportContext.getRootValidationSupport().fetchValueSet("http://hl7.org/fhir/ValueSet/units-of-time"));
         }

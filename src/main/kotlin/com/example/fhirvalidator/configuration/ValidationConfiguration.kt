@@ -59,6 +59,7 @@ class ValidationConfiguration(private val implementationGuideParser: Implementat
             }
             supportChain.addValidationSupport(remoteTerminologyServer);
         } else {
+            logger.info("Using InMemoryTerminologyServerValidationSupport")
             supportChain.addValidationSupport(terminologyValidationSupport)
         }
         supportChain.addValidationSupport(SnapshotGeneratingValidationSupport(fhirContext))
