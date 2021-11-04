@@ -1,6 +1,0 @@
-{
-   "terminologyServer": "https://ontology.nhs.uk/authoring/fhir",
-   "useRemoteTerminology" : true,
-    "clientId" : "",
-    "clientSecret": ""
- }
