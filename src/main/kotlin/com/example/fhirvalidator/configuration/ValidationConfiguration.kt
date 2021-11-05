@@ -15,7 +15,7 @@ import org.hl7.fhir.common.hapi.validation.support.ValidationSupportChain
 import org.hl7.fhir.common.hapi.validation.validator.FhirInstanceValidator
 import org.hl7.fhir.instance.model.api.IBaseResource
 import org.hl7.fhir.r4.model.StructureDefinition
-import org.hl7.fhir.utilities.cache.NpmPackage
+import org.hl7.fhir.utilities.npm.NpmPackage
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
@@ -86,11 +86,11 @@ class ValidationConfiguration(private val implementationGuideParser: Implementat
 
     fun generateSnapshots(supportChain: IValidationSupport) {
         supportChain.fetchAllStructureDefinitions<StructureDefinition>()
-            .filter { shouldGenerateSnapshot(it) }
-            .partition { it.baseDefinition.startsWith("http://hl7.org/fhir/") }
-            .toList()
-            .flatten()
-            .forEach {
+            ?.filter { shouldGenerateSnapshot(it) }
+            ?.partition { it.baseDefinition.startsWith("http://hl7.org/fhir/") }
+            ?.toList()
+            ?.flatten()
+            ?.forEach {
                 try {
                     supportChain.generateSnapshot(
                         ValidationSupportContext(supportChain),
