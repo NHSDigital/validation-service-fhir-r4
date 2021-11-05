@@ -140,24 +140,15 @@ public class TerminologyValidationSupport extends InMemoryTerminologyServerValid
         }
     }
 
-
-/*
-        @Override
-        public boolean isCodeSystemSupported(ValidationSupportContext theValidationSupportContext, String theSystem) {
-            boolean result = super.isCodeSystemSupported(theValidationSupportContext, theSystem);
-            log.info("isCodeSystemSupported {} {}",result,theSystem);
-            return result;
+    @Override
+    public ValueSetExpansionOutcome expandValueSet(ValidationSupportContext theValidationSupportContext, ValueSetExpansionOptions theExpansionOptions, @NotNull IBaseResource theValueSetToExpand) {
+        if (theValueSetToExpand instanceof ValueSet) {
+            ValueSet valueSet = (ValueSet) theValueSetToExpand;
         }
-*/
-        @Override
-        public ValueSetExpansionOutcome expandValueSet(ValidationSupportContext theValidationSupportContext, ValueSetExpansionOptions theExpansionOptions, @NotNull IBaseResource theValueSetToExpand) {
-            if (theValueSetToExpand instanceof ValueSet) {
-                ValueSet valueSet = (ValueSet) theValueSetToExpand;
-            }
-            ValueSetExpansionOutcome valueSetExpansionOutcome = super.expandValueSet(theValidationSupportContext, theExpansionOptions, theValueSetToExpand);
+        ValueSetExpansionOutcome valueSetExpansionOutcome = super.expandValueSet(theValidationSupportContext, theExpansionOptions, theValueSetToExpand);
 
-            return valueSetExpansionOutcome;
-        }
+        return valueSetExpansionOutcome;
+    }
 
     @Override
     public CodeValidationResult validateCode(ValidationSupportContext theValidationSupportContext, ConceptValidationOptions theOptions, String theCodeSystem, String theCode, String theDisplay, String theValueSetUrl) {
@@ -175,24 +166,15 @@ public class TerminologyValidationSupport extends InMemoryTerminologyServerValid
         CodeValidationResult codeValidationResult = super.validateCode(theValidationSupportContext, theOptions, theCodeSystem, theCode, theDisplay, theValueSetUrl);
         return codeValidationResult;
     }
-/*
-    @Override
-    public boolean isValueSetSupported(ValidationSupportContext theValidationSupportContext, String theValueSetUrl) {
-        boolean result = super.isValueSetSupported(theValidationSupportContext, theValueSetUrl);
-        log.info("isValueSetSupported {} {}",result,theValueSetUrl);
-        return result;
-    }
 
-    @Override
-    public FhirContext getFhirContext() {
-        return super.getFhirContext();
-    }
+
 
     @Override
     public LookupCodeResult lookupCode(ValidationSupportContext theValidationSupportContext, String theSystem, String theCode) {
+       // Consider extending to cover SNOMED from Onto Server
         return super.lookupCode(theValidationSupportContext, theSystem, theCode);
     }
-*/
+
     @Override
     public CodeValidationResult validateCodeInValueSet(ValidationSupportContext theValidationSupportContext, ConceptValidationOptions theOptions, String theCodeSystemUrlAndVersion, String theCode, String theDisplay, @NotNull IBaseResource theValueSet) {
 
@@ -202,8 +184,8 @@ public class TerminologyValidationSupport extends InMemoryTerminologyServerValid
         if (theValueSet instanceof ValueSet) {
             ValueSet valueSet = (ValueSet) theValueSet;
             if (valueSet.hasUrl())  {
-                if (codeValidationResult != null) log.info("validateCode {} {} {}",theCodeSystemUrlAndVersion, theCode, valueSet.getUrl(),codeValidationResult.getMessage());
-                else log.info("validateCode {} {} {}",theCodeSystemUrlAndVersion, theCode, valueSet.getUrl());
+                if (codeValidationResult != null) log.debug("validateCode {} {} {}",theCodeSystemUrlAndVersion, theCode, valueSet.getUrl(),codeValidationResult.getMessage());
+                else log.debug("validateCode {} {} {}",theCodeSystemUrlAndVersion, theCode, valueSet.getUrl());
             }
         }
         return codeValidationResult;
