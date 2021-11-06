@@ -1,7 +1,7 @@
 package com.example.fhirvalidator.service
 
 import ca.uhn.fhir.context.FhirContext
-import com.example.fhirvalidator.hapifhir.PrePopulatedValidationSupport
+import com.example.fhirvalidator.shared.PrePopulatedValidationSupport
 import org.hl7.fhir.r4.model.*
 import org.hl7.fhir.utilities.npm.NpmPackage
 import org.springframework.stereotype.Service
