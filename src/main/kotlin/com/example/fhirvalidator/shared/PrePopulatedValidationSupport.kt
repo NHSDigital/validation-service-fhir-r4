@@ -1,4 +1,4 @@
-package com.example.fhirvalidator.hapifhir
+package com.example.fhirvalidator.shared
 
 import ca.uhn.fhir.context.FhirContext
 import ca.uhn.fhir.context.support.IValidationSupport
@@ -11,6 +11,7 @@ import org.hl7.fhir.instance.model.api.IPrimitiveType
 import java.util.*
 import javax.annotation.Nonnull
 
+/* Leave as java in case solutions assurance or external users wish to reuse */
 
 open class PrePopulatedValidationSupport(
     theFhirContext: FhirContext,

@@ -1,12 +1,15 @@
 package com.example.fhirvalidator.configuration
 
 import com.example.fhirvalidator.model.SimplifierPackage
+import com.example.fhirvalidator.model.ValidationConfig
 import com.fasterxml.jackson.databind.ObjectMapper
 import mu.KLogging
 import org.hl7.fhir.utilities.npm.NpmPackage
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.io.ClassPathResource
+import java.io.FileNotFoundException
+import java.io.InputStream
 import java.util.*
 import kotlin.streams.toList
 
@@ -23,5 +26,17 @@ class PackageConfiguration(val objectMapper: ObjectMapper) {
             .map { ClassPathResource(it).inputStream }
             .map { NpmPackage.fromPackage(it) }
             .toList()
+    }
+
+    @Bean
+    fun getConfiguration(): ValidationConfig {
+        val inputStream : InputStream
+        try {
+            inputStream = ClassPathResource("validation.json").inputStream
+        } catch (ex : FileNotFoundException) {
+            return ValidationConfig("",false,"","")
+        }
+        val validationConfiguration = objectMapper.readValue(inputStream, ValidationConfig::class.java)
+        return validationConfiguration
     }
 }

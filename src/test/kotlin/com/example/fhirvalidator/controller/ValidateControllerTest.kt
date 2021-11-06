@@ -40,12 +40,23 @@ internal class ValidateControllerTest {
 
     @Test
     fun getResourcesToValidate_returns_list_of_entries_when_passed_searchset() {
+        val childBundle = Bundle()
+        val bundle = Bundle()
+        bundle.type = Bundle.BundleType.SEARCHSET
+        val bundleEntry = bundle.addEntry()
+        bundleEntry.resource = childBundle
+        assertEquals(listOf(childBundle), testValidateController.getResourcesToValidate(bundle))
+    }
+
+    // Split from above test. Only Bundles of Bundles should return a list
+    @Test
+    fun getResourcesToValidate_does_return_list_of_entries_when_passed_searchset() {
         val patient = Patient()
         val bundle = Bundle()
         bundle.type = Bundle.BundleType.SEARCHSET
         val bundleEntry = bundle.addEntry()
         bundleEntry.resource = patient
-        assertEquals(listOf(patient), testValidateController.getResourcesToValidate(bundle))
+        assertEquals(listOf(bundle), testValidateController.getResourcesToValidate(bundle))
     }
 
     @Test
