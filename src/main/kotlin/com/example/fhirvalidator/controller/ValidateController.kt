@@ -10,6 +10,7 @@ import mu.KLogging
 import org.hl7.fhir.instance.model.api.IBaseResource
 import org.hl7.fhir.r4.model.Bundle
 import org.hl7.fhir.r4.model.OperationOutcome
+import org.hl7.fhir.r4.model.ResourceType
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestHeader
@@ -43,8 +44,11 @@ class ValidateController(
             val operationOutcomeIssues = operationOutcomeList.filterNotNull().flatMap { it.issue }
             return createOperationOutcome(operationOutcomeIssues)
         } catch (e: DataFormatException) {
-            logger.error("Caught parser error", e)
-            createOperationOutcome("Invalid JSON", null)
+           if (e.message != null)  createOperationOutcome(e.message!!, null)
+           else {
+               logger.error("Caught parser error", e)
+               createOperationOutcome("Invalid JSON", null)
+           }
         }
     }
 
@@ -62,7 +66,14 @@ class ValidateController(
         return if (inputResource == null) {
             emptyList()
         } else if (inputResource is Bundle && inputResource.type == Bundle.BundleType.SEARCHSET) {
-            inputResource.entry.map { it.resource }
+
+            val resourceList = inputResource.entry.filter { it.resource.resourceType == ResourceType.Bundle}.map { it.resource }
+            if (resourceList.isEmpty()) {
+                // TODO need to check searchSet bundle rules have been applied. This conversion to list disables the checks
+                listOf(inputResource)
+                } else {
+                return resourceList
+            }
         } else {
             listOf(inputResource)
         }
