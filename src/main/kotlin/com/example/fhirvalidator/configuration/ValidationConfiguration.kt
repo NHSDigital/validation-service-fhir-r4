@@ -9,12 +9,12 @@ import ca.uhn.fhir.validation.FhirValidator
 import com.example.fhirvalidator.model.ValidationConfig
 import com.example.fhirvalidator.service.ImplementationGuideParser
 import com.example.fhirvalidator.shared.AuthorisationClient
-import com.example.fhirvalidator.shared.TerminologyValidationSupport
+import com.example.fhirvalidator.shared.HybridTerminologyValidationSupport
 import mu.KLogging
 import org.hl7.fhir.common.hapi.validation.support.*
 import org.hl7.fhir.common.hapi.validation.validator.FhirInstanceValidator
 import org.hl7.fhir.instance.model.api.IBaseResource
-import org.hl7.fhir.r4.model.StructureDefinition
+import org.hl7.fhir.r4.model.*
 import org.hl7.fhir.utilities.npm.NpmPackage
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -27,7 +27,10 @@ class ValidationConfiguration(private val implementationGuideParser: Implementat
 
     @Bean
     fun validator(fhirContext: FhirContext, instanceValidator: FhirInstanceValidator): FhirValidator {
-        return fhirContext.newValidator().registerValidatorModule(instanceValidator)
+        val validator = fhirContext.newValidator().registerValidatorModule(instanceValidator)
+        logger.info("Initialising Validator")
+        validator.validateWithResult(getInitialisationExampleResource())
+        return validator
     }
 
     @Bean
@@ -47,7 +50,8 @@ class ValidationConfiguration(private val implementationGuideParser: Implementat
         )
         supportChain.addValidationSupport(CommonCodeSystemsTerminologyService(fhirContext))
         if (validationConfig.useRemoteTerminology && !validationConfig.terminologyServer.isEmpty()) {
-            val remoteTerminologyServer = TerminologyValidationSupport(fhirContext)
+            val remoteTerminologyServer =
+                HybridTerminologyValidationSupport(fhirContext)
             remoteTerminologyServer.setBaseUrl(validationConfig.terminologyServer)
             if (!validationConfig.clientId.isEmpty() && !validationConfig.clientSecret.isEmpty()) {
                 remoteTerminologyServer.addClientInterceptor(
@@ -129,5 +133,14 @@ class ValidationConfiguration(private val implementationGuideParser: Implementat
 
     private fun shouldGenerateSnapshot(structureDefinition: StructureDefinition): Boolean {
         return !structureDefinition.hasSnapshot() && structureDefinition.derivation == StructureDefinition.TypeDerivationRule.CONSTRAINT
+    }
+
+    private fun getInitialisationExampleResource() : MedicationRequest {
+        // Basic resource to force validator to initialise (and not the first calls)
+        var medicationRequest = MedicationRequest();
+        medicationRequest.setStatus(MedicationRequest.MedicationRequestStatus.ACTIVE)
+        medicationRequest.setMedication(CodeableConcept().addCoding(Coding().setSystem("http://snomed.info/sct").setCode("15517911000001104")))
+        medicationRequest.setCourseOfTherapyType(CodeableConcept().addCoding(Coding().setSystem("https://fhir.nhs.uk/CodeSystem/medicationrequest-course-of-therapy").setCode("continuous-repeat-dispensing")))
+        return medicationRequest
     }
 }

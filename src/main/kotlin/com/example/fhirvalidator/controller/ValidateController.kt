@@ -62,11 +62,11 @@ class ValidateController(
         val results = validator.validateWithResult(resource).toOperationOutcome() as? OperationOutcome
         if (resource is Bundle && resource.type == Bundle.BundleType.MESSAGE)
             if (results != null && results.hasIssue())  {
-                results.issue.forEach( {
+                results.issue.forEach {
                     if (it.severity == OperationOutcome.IssueSeverity.WARNING
-                        && it.diagnostics.contains("URN reference is not locally contained within the bundle"))
-                        it.severity = OperationOutcome.IssueSeverity.ERROR
-                })
+                        && it.diagnostics.contains("URN reference is not locally contained within the bundle")
+                    ) it.severity = OperationOutcome.IssueSeverity.ERROR
+                }
             }
         return results
     }
