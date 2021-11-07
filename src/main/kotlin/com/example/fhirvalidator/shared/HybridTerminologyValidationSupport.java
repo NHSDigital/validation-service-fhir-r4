@@ -23,11 +23,11 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-public class TerminologyValidationSupport extends InMemoryTerminologyServerValidationSupport {
+public class HybridTerminologyValidationSupport extends InMemoryTerminologyServerValidationSupport {
     private final FhirContext myCtx;
     private String myBaseUrl;
     private List<Object> myClientInterceptors = new ArrayList();
-    private static final Logger log = LoggerFactory.getLogger(TerminologyValidationSupport.class);
+    private static final Logger log = LoggerFactory.getLogger(HybridTerminologyValidationSupport.class);
 
     private IGenericClient provideClient() {
         IGenericClient retVal = this.myCtx.newRestfulGenericClient(this.myBaseUrl);
@@ -52,7 +52,7 @@ public class TerminologyValidationSupport extends InMemoryTerminologyServerValid
         this.myClientInterceptors.add(theClientInterceptor);
     }
 
-    public TerminologyValidationSupport(FhirContext theCtx) {
+    public HybridTerminologyValidationSupport(FhirContext theCtx) {
         super(theCtx);
         log.info("NHS Digital Terminology Validation Support active");
         Validate.notNull(theCtx, "theCtx must not be null", new Object[0]);
