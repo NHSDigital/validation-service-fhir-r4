@@ -24,7 +24,7 @@ class SchemaConversionController(
 //    }
 
     @GetMapping("convert")
-    fun convert(@RequestParam name: String): Map<String, SchemaOrReference> {
+    fun convert(@RequestParam name: List<String>): Map<String, SchemaOrReference> {
         return schemaConversionService.convertStructureDefinitionAndDependenciesToOpenApiSchema(name)
     }
 

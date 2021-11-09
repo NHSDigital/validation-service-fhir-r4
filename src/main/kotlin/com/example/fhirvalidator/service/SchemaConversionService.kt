@@ -47,8 +47,10 @@ class SchemaConversionService(
         return convertSnapshotToOpenApiSchema(element)
     }
 
-    fun convertStructureDefinitionAndDependenciesToOpenApiSchema(firstStructureDefinitionName: String): Map<String, SchemaOrReference> {
-        val structureDefinitionNamesToProcess = mutableListOf(firstStructureDefinitionName)
+    fun convertStructureDefinitionAndDependenciesToOpenApiSchema(
+        initialStructureDefinitionNames: List<String>
+    ): Map<String, SchemaOrReference> {
+        val structureDefinitionNamesToProcess = initialStructureDefinitionNames.toMutableList()
         val structureDefinitionNamesProcessed = mutableSetOf<String>()
         val output = mutableListOf<Pair<String, SchemaOrReference>>()
         while (structureDefinitionNamesToProcess.isNotEmpty()) {
