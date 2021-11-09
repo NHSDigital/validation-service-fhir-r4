@@ -75,7 +75,7 @@ public class HybridTerminologyValidationSupport extends InMemoryTerminologyServe
                 valueSetUrl = null;
             }
 
-            return this.invokeRemoteValidateCode(theCodeSystem, theCode, theDisplay, valueSetUrl, valueSet);
+            return this.invokeRemoteValidateCode(theCodeSystem, theCode, theDisplay, valueSetUrl, theValueSet);
         }
     }
 
@@ -94,7 +94,7 @@ public class HybridTerminologyValidationSupport extends InMemoryTerminologyServe
                     ParametersUtil.addParameterToParametersString(this.getFhirContext(), input, "display", theDisplay);
                 }
             } else {
-                if (StringUtils.isNotBlank(theValueSetUrl)) {
+                if (StringUtils.isNotBlank(theValueSetUrl) && theValueSet == null) {
                     ParametersUtil.addParameterToParametersUri(this.getFhirContext(), input, "url", theValueSetUrl);
                 }
 
