@@ -1,10 +1,7 @@
 package com.example.fhirvalidator.shared;
 
 import ca.uhn.fhir.context.FhirContext;
-import ca.uhn.fhir.context.support.ConceptValidationOptions;
-import ca.uhn.fhir.context.support.DefaultProfileValidationSupport;
-import ca.uhn.fhir.context.support.ValidationSupportContext;
-import ca.uhn.fhir.context.support.ValueSetExpansionOptions;
+import ca.uhn.fhir.context.support.*;
 import ca.uhn.fhir.rest.client.api.IGenericClient;
 import ca.uhn.fhir.rest.gclient.IOperationUnnamed;
 import ca.uhn.fhir.util.ParametersUtil;
@@ -27,6 +24,7 @@ public class HybridTerminologyValidationSupport extends InMemoryTerminologyServe
     private final FhirContext myCtx;
     private String myBaseUrl;
     private List<Object> myClientInterceptors = new ArrayList();
+    private List<String> myRemoteCodeSystems = new ArrayList();
     private static final Logger log = LoggerFactory.getLogger(HybridTerminologyValidationSupport.class);
 
     private IGenericClient provideClient() {
@@ -39,6 +37,14 @@ public class HybridTerminologyValidationSupport extends InMemoryTerminologyServe
         }
 
         return retVal;
+    }
+
+    private boolean isTerminologyServerEnabled() {
+        return (myBaseUrl != null && !myBaseUrl.isEmpty());
+    }
+
+    public void addRemoteCodeSystem(String codeSystem) {
+        myRemoteCodeSystems.add(codeSystem);
     }
 
     public void setBaseUrl(String theBaseUrl) {
@@ -80,6 +86,16 @@ public class HybridTerminologyValidationSupport extends InMemoryTerminologyServe
     }
 
     protected CodeValidationResult invokeRemoteValidateCode(String theCodeSystem, String theCode, String theDisplay, String theValueSetUrl, IBaseResource theValueSet) {
+
+        if (!isTerminologyServerEnabled()) {
+            if (theCodeSystem!=null && !theCodeSystem.isEmpty()) return new CodeValidationResult()
+                    .setSeverity(IValidationSupport.IssueSeverity.WARNING)
+                    .setMessage(String.format("Unable to validate terminology codes for CodeSystem %s",theCodeSystem));
+            return new CodeValidationResult()
+                    .setSeverity(IValidationSupport.IssueSeverity.WARNING)
+                    .setMessage("Unable to validate terminology codes");
+        }
+
         if (StringUtils.isBlank(theCode)) {
             return null;
         } else {
@@ -111,8 +127,7 @@ public class HybridTerminologyValidationSupport extends InMemoryTerminologyServe
                     ParametersUtil.addParameterToParameters(this.getFhirContext(), input, "valueSet", theValueSet);
                 }
             }
-
-            IBaseParameters output = (IBaseParameters)((IOperationUnnamed)client.operation().onType(resourceType)).named("validate-code").withParameters(input).execute();
+            IBaseParameters output = (IBaseParameters) ((IOperationUnnamed) client.operation().onType(resourceType)).named("validate-code").withParameters(input).execute();
             List<String> resultValues = ParametersUtil.getNamedParameterValuesAsString(this.getFhirContext(), output, "result");
             if (resultValues.size() >= 1 && !StringUtils.isBlank((CharSequence)resultValues.get(0))) {
                 Validate.isTrue(resultValues.size() == 1, "Response contained %d 'result' values", (long)resultValues.size());
@@ -153,16 +168,12 @@ public class HybridTerminologyValidationSupport extends InMemoryTerminologyServe
     @Override
     public CodeValidationResult validateCode(ValidationSupportContext theValidationSupportContext, ConceptValidationOptions theOptions, String theCodeSystem, String theCode, String theDisplay, String theValueSetUrl) {
 
-        if (theCodeSystem.equals("http://snomed.info/sct")) return this.validateCodeInValueSetRemote(theValidationSupportContext,
+        if (theCodeSystem != null && myRemoteCodeSystems.contains(theCodeSystem)) return this.validateCodeInValueSetRemote(theValidationSupportContext,
                 theOptions,theCodeSystem,
                 theCode,
                 theDisplay,
                 theValidationSupportContext.getRootValidationSupport().fetchValueSet(theValueSetUrl));
 
-
-        if (theValueSetUrl != null && theValueSetUrl.equals("http://hl7.org/fhir/ValueSet/units-of-time")) {
-            return validateCodeInValueSet(theValidationSupportContext,theOptions,"http://unitsofmeasure.org",theCode,theDisplay,theValidationSupportContext.getRootValidationSupport().fetchValueSet("http://hl7.org/fhir/ValueSet/units-of-time"));
-        }
         CodeValidationResult codeValidationResult = super.validateCode(theValidationSupportContext, theOptions, theCodeSystem, theCode, theDisplay, theValueSetUrl);
         return codeValidationResult;
     }
@@ -178,7 +189,7 @@ public class HybridTerminologyValidationSupport extends InMemoryTerminologyServe
     @Override
     public CodeValidationResult validateCodeInValueSet(ValidationSupportContext theValidationSupportContext, ConceptValidationOptions theOptions, String theCodeSystemUrlAndVersion, String theCode, String theDisplay, @NotNull IBaseResource theValueSet) {
 
-        if (theCodeSystemUrlAndVersion != null && theCodeSystemUrlAndVersion.equals("http://snomed.info/sct")) return validateCodeInValueSetRemote(theValidationSupportContext,theOptions,theCodeSystemUrlAndVersion, theCode, theDisplay, theValueSet);
+        if (theCodeSystemUrlAndVersion != null && myRemoteCodeSystems.contains(theCodeSystemUrlAndVersion)) return validateCodeInValueSetRemote(theValidationSupportContext,theOptions,theCodeSystemUrlAndVersion, theCode, theDisplay, theValueSet);
 
         CodeValidationResult codeValidationResult = super.validateCodeInValueSet(theValidationSupportContext, theOptions, theCodeSystemUrlAndVersion, theCode, theDisplay, theValueSet);
         if (theValueSet instanceof ValueSet) {

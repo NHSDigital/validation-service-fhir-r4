@@ -1,7 +1,6 @@
 package com.example.fhirvalidator.configuration
 
 import ca.uhn.fhir.context.FhirContext
-import ca.uhn.fhir.context.support.ConceptValidationOptions
 import ca.uhn.fhir.context.support.DefaultProfileValidationSupport
 import ca.uhn.fhir.context.support.IValidationSupport
 import ca.uhn.fhir.context.support.ValidationSupportContext
@@ -13,7 +12,6 @@ import com.example.fhirvalidator.shared.HybridTerminologyValidationSupport
 import mu.KLogging
 import org.hl7.fhir.common.hapi.validation.support.*
 import org.hl7.fhir.common.hapi.validation.validator.FhirInstanceValidator
-import org.hl7.fhir.instance.model.api.IBaseResource
 import org.hl7.fhir.r4.model.*
 import org.hl7.fhir.utilities.npm.NpmPackage
 import org.springframework.context.annotation.Bean
@@ -41,33 +39,16 @@ class ValidationConfiguration(private val implementationGuideParser: Implementat
     @Bean
     fun validationSupportChain(
         fhirContext: FhirContext,
-        terminologyValidationSupport: InMemoryTerminologyServerValidationSupport,
-        npmPackages: List<NpmPackage>,
-        validationConfig : ValidationConfig
+        hybridTerminologyValidationSupport: HybridTerminologyValidationSupport,
+        npmPackages: List<NpmPackage>
     ): ValidationSupportChain {
         val supportChain = ValidationSupportChain(
-            DefaultProfileValidationSupport(fhirContext)
-        )
-        supportChain.addValidationSupport(CommonCodeSystemsTerminologyService(fhirContext))
-        if (validationConfig.useRemoteTerminology && !validationConfig.terminologyServer.isEmpty()) {
-            val remoteTerminologyServer =
-                HybridTerminologyValidationSupport(fhirContext)
-            remoteTerminologyServer.setBaseUrl(validationConfig.terminologyServer)
-            if (!validationConfig.clientId.isEmpty() && !validationConfig.clientSecret.isEmpty()) {
-                remoteTerminologyServer.addClientInterceptor(
-                    AuthorisationClient(
-                        validationConfig.clientId,
-                        validationConfig.clientSecret
-                    )
-                );
-            }
-            supportChain.addValidationSupport(remoteTerminologyServer);
-        } else {
-            logger.info("Using InMemoryTerminologyServerValidationSupport")
-            supportChain.addValidationSupport(terminologyValidationSupport)
-        }
-        supportChain.addValidationSupport(SnapshotGeneratingValidationSupport(fhirContext))
+            DefaultProfileValidationSupport(fhirContext),
+            CommonCodeSystemsTerminologyService(fhirContext),
+            hybridTerminologyValidationSupport,
+            SnapshotGeneratingValidationSupport(fhirContext)
 
+        )
         npmPackages.map(implementationGuideParser::createPrePopulatedValidationSupport)
             .forEach(supportChain::addValidationSupport)
 
@@ -78,36 +59,26 @@ class ValidationConfiguration(private val implementationGuideParser: Implementat
     }
 
     @Bean
-    fun terminologyValidationSupport(fhirContext: FhirContext): InMemoryTerminologyServerValidationSupport {
-        return object : InMemoryTerminologyServerValidationSupport(fhirContext) {
-            override fun validateCodeInValueSet(
-                theValidationSupportContext: ValidationSupportContext?,
-                theOptions: ConceptValidationOptions?,
-                theCodeSystem: String?,
-                theCode: String?,
-                theDisplay: String?,
-                theValueSet: IBaseResource
-            ): IValidationSupport.CodeValidationResult? {
-                val valueSetUrl = CommonCodeSystemsTerminologyService.getValueSetUrl(theValueSet)
+    fun terminologyValidationSupport(fhirContext: FhirContext, validationConfig: ValidationConfig): HybridTerminologyValidationSupport {
 
-                if (valueSetUrl == "https://fhir.nhs.uk/ValueSet/NHSDigital-MedicationRequest-Code"
-                    || valueSetUrl == "https://fhir.nhs.uk/ValueSet/NHSDigital-MedicationDispense-Code"
-                    || valueSetUrl == "https://fhir.hl7.org.uk/ValueSet/UKCore-MedicationCode") {
-                    return IValidationSupport.CodeValidationResult()
-                        .setSeverity(IValidationSupport.IssueSeverity.WARNING)
-                        .setMessage("Unable to validate medication codes")
-                }
+        val hybridTerminologyValidationSupport =
+            HybridTerminologyValidationSupport(fhirContext)
+        hybridTerminologyValidationSupport.addRemoteCodeSystem("http://snomed.info/sct")
+        hybridTerminologyValidationSupport.addRemoteCodeSystem("https://dmd.nhs.uk")
+        hybridTerminologyValidationSupport.addRemoteCodeSystem("https://dmd.nhs.uk/") // This is an error, trailing slash should be removed
 
-                return super.validateCodeInValueSet(
-                    theValidationSupportContext,
-                    theOptions,
-                    theCodeSystem,
-                    theCode,
-                    theDisplay,
-                    theValueSet
-                )
+        if (validationConfig.useRemoteTerminology && !validationConfig.terminologyServer.isEmpty()) {
+            hybridTerminologyValidationSupport.setBaseUrl(validationConfig.terminologyServer)
+            if (!validationConfig.clientId.isEmpty() && !validationConfig.clientSecret.isEmpty()) {
+                hybridTerminologyValidationSupport.addClientInterceptor(
+                    AuthorisationClient(
+                        validationConfig.clientId,
+                        validationConfig.clientSecret
+                    )
+                );
             }
         }
+        return hybridTerminologyValidationSupport;
     }
 
     fun generateSnapshots(supportChain: IValidationSupport) {
