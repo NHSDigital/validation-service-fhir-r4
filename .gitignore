@@ -35,5 +35,3 @@ build/
 
 ### VS Code ###
 .vscode/
-/src/main/resources/nhs-validation.json
-/src/main/resources/validation.json
