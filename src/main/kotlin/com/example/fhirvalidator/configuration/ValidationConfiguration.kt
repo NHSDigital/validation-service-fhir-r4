@@ -5,15 +5,22 @@ import ca.uhn.fhir.context.support.DefaultProfileValidationSupport
 import ca.uhn.fhir.context.support.IValidationSupport
 import ca.uhn.fhir.context.support.ValidationSupportContext
 import ca.uhn.fhir.validation.FhirValidator
-import com.example.fhirvalidator.model.ValidationConfig
+import com.example.fhirvalidator.AppProperties
 import com.example.fhirvalidator.service.ImplementationGuideParser
 import com.example.fhirvalidator.shared.AuthorisationClient
 import com.example.fhirvalidator.shared.HybridTerminologyValidationSupport
 import mu.KLogging
-import org.hl7.fhir.common.hapi.validation.support.*
+import org.hl7.fhir.common.hapi.validation.support.CachingValidationSupport
+import org.hl7.fhir.common.hapi.validation.support.CommonCodeSystemsTerminologyService
+import org.hl7.fhir.common.hapi.validation.support.SnapshotGeneratingValidationSupport
+import org.hl7.fhir.common.hapi.validation.support.ValidationSupportChain
 import org.hl7.fhir.common.hapi.validation.validator.FhirInstanceValidator
-import org.hl7.fhir.r4.model.*
+import org.hl7.fhir.r4.model.CodeableConcept
+import org.hl7.fhir.r4.model.Coding
+import org.hl7.fhir.r4.model.MedicationRequest
+import org.hl7.fhir.r4.model.StructureDefinition
 import org.hl7.fhir.utilities.npm.NpmPackage
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
@@ -21,6 +28,9 @@ import org.springframework.context.annotation.Configuration
 @Configuration
 class ValidationConfiguration(private val implementationGuideParser: ImplementationGuideParser) {
     companion object : KLogging()
+
+    @Autowired
+    var appProperties: AppProperties? = null
 
 
     @Bean
@@ -47,7 +57,6 @@ class ValidationConfiguration(private val implementationGuideParser: Implementat
             CommonCodeSystemsTerminologyService(fhirContext),
             hybridTerminologyValidationSupport,
             SnapshotGeneratingValidationSupport(fhirContext)
-
         )
         npmPackages.map(implementationGuideParser::createPrePopulatedValidationSupport)
             .forEach(supportChain::addValidationSupport)
@@ -59,21 +68,22 @@ class ValidationConfiguration(private val implementationGuideParser: Implementat
     }
 
     @Bean
-    fun terminologyValidationSupport(fhirContext: FhirContext, validationConfig: ValidationConfig): HybridTerminologyValidationSupport {
+    fun terminologyValidationSupport(fhirContext: FhirContext): HybridTerminologyValidationSupport {
 
         val hybridTerminologyValidationSupport =
             HybridTerminologyValidationSupport(fhirContext)
-        hybridTerminologyValidationSupport.addRemoteCodeSystem("http://snomed.info/sct")
-        hybridTerminologyValidationSupport.addRemoteCodeSystem("https://dmd.nhs.uk")
-        hybridTerminologyValidationSupport.addRemoteCodeSystem("https://dmd.nhs.uk/") // This is an error, trailing slash should be removed
 
-        if (validationConfig.useRemoteTerminology && !validationConfig.terminologyServer.isEmpty()) {
-            hybridTerminologyValidationSupport.setBaseUrl(validationConfig.terminologyServer)
-            if (!validationConfig.clientId.isEmpty() && !validationConfig.clientSecret.isEmpty()) {
+        appProperties?.terminology?.codesystems?.forEach{
+            hybridTerminologyValidationSupport.addRemoteCodeSystem(it.value)
+        }
+
+        if (appProperties?.terminology?.use_remote == true && !appProperties?.terminology?.server?.isEmpty()!!) {
+            hybridTerminologyValidationSupport.setBaseUrl(appProperties?.terminology?.server)
+            if (!appProperties?.terminology?.client_id?.isEmpty()!! && !appProperties?.terminology!!.client_secret?.isEmpty()!!) {
                 hybridTerminologyValidationSupport.addClientInterceptor(
                     AuthorisationClient(
-                        validationConfig.clientId,
-                        validationConfig.clientSecret
+                        appProperties?.terminology?.client_id,
+                        appProperties?.terminology?.client_secret
                     )
                 );
             }

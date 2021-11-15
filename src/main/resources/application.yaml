@@ -1,0 +1,21 @@
+server:
+  port: 9001
+  tomcat:
+    threads:
+      max: 10
+
+management:
+  endpoints:
+    web.exposure:
+      include: "*"
+
+hapi:
+  fhir:
+    terminology:
+      server: https://ontology.nhs.uk/authoring/fhir/
+      use_remote: false
+      client_id:
+      client_secret:
+      codesystems:
+         snomed: http://snomed.info/sct
+         dmd: https://dmd.nhs.uk/
