@@ -18,4 +18,4 @@ hapi:
       client_secret:
       codesystems:
          snomed: http://snomed.info/sct
-         dmd: https://dmd.nhs.uk/
+         dmd: https://dmd.nhs.uk
