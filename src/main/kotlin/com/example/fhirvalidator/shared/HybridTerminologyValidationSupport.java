@@ -48,6 +48,7 @@ public class HybridTerminologyValidationSupport extends InMemoryTerminologyServe
     }
 
     public void setBaseUrl(String theBaseUrl) {
+        log.info("NHS Digital Terminology Validation Support: server={}",theBaseUrl);
         Validate.notBlank(theBaseUrl, "theBaseUrl must be provided", new Object[0]);
         this.myBaseUrl = theBaseUrl;
     }
