@@ -24,5 +24,4 @@ Commit and push changes to a branch. Get merged into master and reference new co
 
 The validator can use the NHS Digital Ontology Server. 
 This requires a 'system to system account', to request this see https://digital.nhs.uk/services/terminology-servers#how-to-get-access
-Once you have your client id and secret, these are placed in the `validation.json` in the main/resources folder. 
-An example configuration can be found in `example-validation.json`
+Once you have your client id and secret, these are placed in the `application.yaml` in the main/resources folder. The Onto server to use can also be configured here.
