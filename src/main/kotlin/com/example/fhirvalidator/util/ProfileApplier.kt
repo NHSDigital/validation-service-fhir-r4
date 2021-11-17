@@ -19,10 +19,8 @@ fun getResourcesOfType(resource: IBaseResource, resourceType: String?): List<IBa
 }
 
 fun applyProfile(resources: List<IBaseResource>, profile: IPrimitiveType<String>) {
-    resources.stream()
-        .filter { !it.meta.profile.contains(profile) }
-        .forEach {
-            // Only one profile to be used for validation. This is set by capabilityStatement and MessageDefinitions
-            it.meta.profile.clear();
-            it.meta.addProfile(profile.value) }
+    resources.stream().forEach {
+        it.meta.profile.clear()
+        it.meta.addProfile(profile.value)
+    }
 }

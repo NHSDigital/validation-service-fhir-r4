@@ -9,13 +9,16 @@ management:
     web.exposure:
       include: "*"
 
-hapi:
-  fhir:
-    terminology:
-      server: https://ontology.nhs.uk/authoring/fhir/
-      use_remote: false
-      client_id:
-      client_secret:
-      codesystems:
-         snomed: http://snomed.info/sct
-         dmd: https://dmd.nhs.uk
+###Remote terminology validation:
+
+##Example without auth:
+#terminology:
+#  url: https://r4.ontoserver.csiro.au/fhir
+
+##Example with auth:
+#terminology:
+#  url: https://ontology.nhs.uk/authoring/fhir/
+#  authorization:
+#    tokenUrl: https://ontology.nhs.uk/authorisation/auth/realms/nhs-digital-terminology/protocol/openid-connect/token
+#    clientId: test
+#    clientSecret: test
