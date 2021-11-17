@@ -197,7 +197,7 @@ public class PrePopulatedValidationSupport extends BaseStaticResourceValidationS
                 break;
             case "Questionnaire":
             case "MessageDefinition":
-            case "ObservationDefinition":
+            //case "ObservationDefinition": //TODO - ObservationDefinition doesn't have a "url" field so this breaks
                 addOtherConformanceResource(theResource);
                 break;
         }

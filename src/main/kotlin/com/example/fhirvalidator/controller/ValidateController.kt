@@ -44,39 +44,32 @@ class ValidateController(
             val operationOutcomeIssues = operationOutcomeList.filterNotNull().flatMap { it.issue }
             return createOperationOutcome(operationOutcomeIssues)
         } catch (e: DataFormatException) {
-           if (e.message != null)  createOperationOutcome(e.message!!, null)
-           else {
-               logger.error("Caught parser error", e)
-               createOperationOutcome("Invalid JSON", null)
-           }
+            logger.error("Caught parser error", e)
+            createOperationOutcome(e.message ?: "Invalid JSON", null)
         }
     }
 
     fun validateResource(resource: IBaseResource): OperationOutcome? {
-        // KGM changed order so message defintion will override profiles added by capability statement
         capabilityStatementApplier.applyCapabilityStatementProfiles(resource)
         val messageDefinitionErrors = messageDefinitionApplier.applyMessageDefinition(resource)
         if (messageDefinitionErrors != null) {
             return messageDefinitionErrors
         }
-        val results = validator.validateWithResult(resource).toOperationOutcome() as? OperationOutcome
-        return results
+        return validator.validateWithResult(resource).toOperationOutcome() as? OperationOutcome
     }
 
     fun getResourcesToValidate(inputResource: IBaseResource?): List<IBaseResource> {
-        return if (inputResource == null) {
-            emptyList()
-        } else if (inputResource is Bundle && inputResource.type == Bundle.BundleType.SEARCHSET) {
-
-            val resourceList = inputResource.entry.filter { it.resource.resourceType == ResourceType.Bundle}.map { it.resource }
-            if (resourceList.isEmpty()) {
-                // TODO need to check searchSet bundle rules have been applied. This conversion to list disables the checks
-                listOf(inputResource)
-                } else {
-                return resourceList
-            }
-        } else {
-            listOf(inputResource)
+        if (inputResource == null) {
+            return emptyList()
         }
+
+        if (inputResource is Bundle && inputResource.type == Bundle.BundleType.SEARCHSET) {
+            val bundleResources = inputResource.entry.map { it.resource }
+            if (bundleResources.all { it.resourceType == ResourceType.Bundle }) {
+                return bundleResources
+            }
+        }
+
+        return listOf(inputResource)
     }
 }
