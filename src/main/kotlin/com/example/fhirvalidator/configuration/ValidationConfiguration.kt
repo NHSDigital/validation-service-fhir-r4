@@ -1,19 +1,15 @@
 package com.example.fhirvalidator.configuration
 
 import ca.uhn.fhir.context.FhirContext
-import ca.uhn.fhir.context.support.ConceptValidationOptions
 import ca.uhn.fhir.context.support.DefaultProfileValidationSupport
 import ca.uhn.fhir.context.support.IValidationSupport
 import ca.uhn.fhir.context.support.ValidationSupportContext
-import ca.uhn.fhir.rest.client.api.IClientInterceptor
-import ca.uhn.fhir.rest.client.api.IHttpRequest
-import ca.uhn.fhir.rest.client.api.IHttpResponse
 import ca.uhn.fhir.validation.FhirValidator
 import com.example.fhirvalidator.service.ImplementationGuideParser
+import com.example.fhirvalidator.util.AccessTokenInterceptor
 import mu.KLogging
 import org.hl7.fhir.common.hapi.validation.support.*
 import org.hl7.fhir.common.hapi.validation.validator.FhirInstanceValidator
-import org.hl7.fhir.instance.model.api.IBaseResource
 import org.hl7.fhir.r4.model.CodeableConcept
 import org.hl7.fhir.r4.model.Coding
 import org.hl7.fhir.r4.model.MedicationRequest
@@ -22,7 +18,7 @@ import org.hl7.fhir.utilities.npm.NpmPackage
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.security.oauth2.client.OAuth2AuthorizedClient
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager
 import java.util.*
 
 
@@ -77,23 +73,16 @@ class ValidationConfiguration(
     @ConditionalOnProperty("terminology.url")
     fun remoteTerminologyServiceValidationSupport(
         fhirContext: FhirContext,
-        optionalAuthorizedClient: Optional<OAuth2AuthorizedClient>
+        optionalAuthorizedClientManager: Optional<OAuth2AuthorizedClientManager>
     ): RemoteTerminologyServiceValidationSupport {
         logger.info("Using remote terminology server at ${terminologyValidationProperties.url}")
         val validationSupport = RemoteTerminologyServiceValidationSupport(fhirContext)
         validationSupport.setBaseUrl(terminologyValidationProperties.url)
 
-        if (optionalAuthorizedClient.isPresent) {
-            val authorizedClient = optionalAuthorizedClient.get()
-            validationSupport.addClientInterceptor(
-                object : IClientInterceptor {
-                    override fun interceptRequest(request: IHttpRequest?) {
-                        val accessToken = authorizedClient.accessToken.tokenValue
-                        request?.addHeader("Authorization", "Bearer $accessToken")
-                    }
-                    override fun interceptResponse(theResponse: IHttpResponse?) {}
-                }
-            )
+        if (optionalAuthorizedClientManager.isPresent) {
+            val authorizedClientManager = optionalAuthorizedClientManager.get()
+            val accessTokenInterceptor = AccessTokenInterceptor(authorizedClientManager)
+            validationSupport.addClientInterceptor(accessTokenInterceptor)
         }
 
         return validationSupport
