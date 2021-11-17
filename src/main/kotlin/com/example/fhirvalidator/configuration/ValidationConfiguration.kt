@@ -64,14 +64,13 @@ class ValidationConfiguration(
 
         if (optionalRemoteTerminologySupport.isPresent) {
             val remoteTerminologySupport = optionalRemoteTerminologySupport.get()
-            //val cachingRemoteTerminologySupport = CachingValidationSupport(remoteTerminologySupport)
-            supportChain.addValidationSupport(remoteTerminologySupport)
+            val cachingRemoteTerminologySupport = CachingValidationSupport(remoteTerminologySupport)
+            supportChain.addValidationSupport(cachingRemoteTerminologySupport)
         }
 
         generateSnapshots(supportChain)
 
         return supportChain
-
     }
 
     @Bean
@@ -89,7 +88,6 @@ class ValidationConfiguration(
             validationSupport.addClientInterceptor(
                 object : IClientInterceptor {
                     override fun interceptRequest(request: IHttpRequest?) {
-                        logger.info { "Intercepted request to ${request?.uri}" }
                         val accessToken = authorizedClient.accessToken.tokenValue
                         request?.addHeader("Authorization", "Bearer $accessToken")
                     }
