@@ -1,6 +1,6 @@
 package com.example.fhirvalidator.configuration
 
-import UnsupportedCodeSystemWarningValidationSupport
+import com.example.fhirvalidator.validationSupport.UnsupportedCodeSystemWarningValidationSupport
 import ca.uhn.fhir.context.FhirContext
 import ca.uhn.fhir.context.support.DefaultProfileValidationSupport
 import ca.uhn.fhir.context.support.IValidationSupport
@@ -8,13 +8,10 @@ import ca.uhn.fhir.context.support.ValidationSupportContext
 import ca.uhn.fhir.validation.FhirValidator
 import com.example.fhirvalidator.service.ImplementationGuideParser
 import com.example.fhirvalidator.util.AccessTokenInterceptor
-import com.example.fhirvalidator.util.SwitchedTerminologyServiceValidationSupport
+import com.example.fhirvalidator.validationSupport.SwitchedTerminologyServiceValidationSupport
 import mu.KLogging
 import org.hl7.fhir.common.hapi.validation.support.*
 import org.hl7.fhir.common.hapi.validation.validator.FhirInstanceValidator
-import org.hl7.fhir.r4.model.CodeableConcept
-import org.hl7.fhir.r4.model.Coding
-import org.hl7.fhir.r4.model.MedicationRequest
 import org.hl7.fhir.r4.model.StructureDefinition
 import org.hl7.fhir.utilities.npm.NpmPackage
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
@@ -34,10 +31,7 @@ class ValidationConfiguration(
 
     @Bean
     fun validator(fhirContext: FhirContext, instanceValidator: FhirInstanceValidator): FhirValidator {
-        val validator = fhirContext.newValidator().registerValidatorModule(instanceValidator)
-        logger.info("Initialising Validator")
-        validator.validateWithResult(getInitialisationExampleResource())
-        return validator
+        return fhirContext.newValidator().registerValidatorModule(instanceValidator)
     }
 
     @Bean
@@ -61,7 +55,9 @@ class ValidationConfiguration(
         npmPackages.map(implementationGuideParser::createPrePopulatedValidationSupport)
             .forEach(supportChain::addValidationSupport)
 
+        //Initialise now instead of when the first message arrives
         generateSnapshots(supportChain)
+        supportChain.fetchCodeSystem("http://snomed.info/sct")
 
         return supportChain
     }
@@ -120,19 +116,5 @@ class ValidationConfiguration(
 
     private fun shouldGenerateSnapshot(structureDefinition: StructureDefinition): Boolean {
         return !structureDefinition.hasSnapshot() && structureDefinition.derivation == StructureDefinition.TypeDerivationRule.CONSTRAINT
-    }
-
-    private fun getInitialisationExampleResource(): MedicationRequest {
-        // Basic resource to force validator to initialise (and not the first calls)
-        val medicationRequest = MedicationRequest()
-        medicationRequest.status = MedicationRequest.MedicationRequestStatus.ACTIVE
-        medicationRequest.medication = CodeableConcept().addCoding(
-            Coding().setSystem("http://snomed.info/sct").setCode("15517911000001104")
-        )
-        medicationRequest.courseOfTherapyType = CodeableConcept().addCoding(
-            Coding().setSystem("https://fhir.nhs.uk/CodeSystem/medicationrequest-course-of-therapy")
-                .setCode("continuous-repeat-dispensing")
-        )
-        return medicationRequest
     }
 }

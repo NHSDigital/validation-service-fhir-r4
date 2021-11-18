@@ -1,4 +1,4 @@
-package com.example.fhirvalidator.util
+package com.example.fhirvalidator.validationSupport
 
 import ca.uhn.fhir.context.FhirContext
 import ca.uhn.fhir.context.support.*
