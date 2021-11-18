@@ -1,20 +1,22 @@
 package com.example.fhirvalidator.configuration
 
 import ca.uhn.fhir.context.FhirContext
+import ca.uhn.fhir.context.support.ConceptValidationOptions
 import ca.uhn.fhir.context.support.DefaultProfileValidationSupport
 import ca.uhn.fhir.context.support.IValidationSupport
+import ca.uhn.fhir.context.support.IValidationSupport.CodeValidationResult
 import ca.uhn.fhir.context.support.ValidationSupportContext
 import ca.uhn.fhir.validation.FhirValidator
 import com.example.fhirvalidator.service.ImplementationGuideParser
+import com.example.fhirvalidator.shared.RemoteTerminoloyValidationSupport
 import com.example.fhirvalidator.util.AccessTokenInterceptor
 import mu.KLogging
 import org.hl7.fhir.common.hapi.validation.support.*
 import org.hl7.fhir.common.hapi.validation.validator.FhirInstanceValidator
-import org.hl7.fhir.r4.model.CodeableConcept
-import org.hl7.fhir.r4.model.Coding
-import org.hl7.fhir.r4.model.MedicationRequest
-import org.hl7.fhir.r4.model.StructureDefinition
+import org.hl7.fhir.instance.model.api.IBaseResource
+import org.hl7.fhir.r4.model.*
 import org.hl7.fhir.utilities.npm.NpmPackage
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -28,6 +30,9 @@ class ValidationConfiguration(
     private val terminologyValidationProperties: TerminologyValidationProperties
 ) {
     companion object : KLogging()
+
+    @Value("terminology.url")
+    private val terminologyUrl: String? = null
 
     @Bean
     fun validator(fhirContext: FhirContext, instanceValidator: FhirInstanceValidator): FhirValidator {
@@ -45,23 +50,22 @@ class ValidationConfiguration(
     @Bean
     fun validationSupportChain(
         fhirContext: FhirContext,
-        optionalRemoteTerminologySupport: Optional<RemoteTerminologyServiceValidationSupport>,
+        optionalRemoteTerminologySupport: Optional<RemoteTerminoloyValidationSupport>,
+        inMemoryTerminologyValidationSupport: InMemoryTerminologyServerValidationSupport,
         npmPackages: List<NpmPackage>
     ): ValidationSupportChain {
         val supportChain = ValidationSupportChain(
             DefaultProfileValidationSupport(fhirContext),
             SnapshotGeneratingValidationSupport(fhirContext),
             CommonCodeSystemsTerminologyService(fhirContext),
-            InMemoryTerminologyServerValidationSupport(fhirContext)
+            inMemoryTerminologyValidationSupport
         )
 
         npmPackages.map(implementationGuideParser::createPrePopulatedValidationSupport)
             .forEach(supportChain::addValidationSupport)
 
         if (optionalRemoteTerminologySupport.isPresent) {
-            val remoteTerminologySupport = optionalRemoteTerminologySupport.get()
-            val cachingRemoteTerminologySupport = CachingValidationSupport(remoteTerminologySupport)
-            supportChain.addValidationSupport(cachingRemoteTerminologySupport)
+            supportChain.addValidationSupport(optionalRemoteTerminologySupport.get())
         }
 
         generateSnapshots(supportChain)
@@ -74,9 +78,9 @@ class ValidationConfiguration(
     fun remoteTerminologyServiceValidationSupport(
         fhirContext: FhirContext,
         optionalAuthorizedClientManager: Optional<OAuth2AuthorizedClientManager>
-    ): RemoteTerminologyServiceValidationSupport {
+    ): RemoteTerminoloyValidationSupport {
         logger.info("Using remote terminology server at ${terminologyValidationProperties.url}")
-        val validationSupport = RemoteTerminologyServiceValidationSupport(fhirContext)
+        val validationSupport = RemoteTerminoloyValidationSupport(fhirContext)
         validationSupport.setBaseUrl(terminologyValidationProperties.url)
 
         if (optionalAuthorizedClientManager.isPresent) {
@@ -86,6 +90,73 @@ class ValidationConfiguration(
         }
 
         return validationSupport
+    }
+
+    @Bean
+    fun inMemoryTerminologyValidationSupport(fhirContext: FhirContext,optionalRemoteTerminologySupport: Optional<RemoteTerminologyServiceValidationSupport> ): InMemoryTerminologyServerValidationSupport {
+        if (optionalRemoteTerminologySupport.isPresent) {
+
+            return object : InMemoryTerminologyServerValidationSupport(fhirContext) {
+
+                override fun validateCodeInValueSet(
+                    theValidationSupportContext: ValidationSupportContext?,
+                    theOptions: ConceptValidationOptions?,
+                    theCodeSystem: String?,
+                    theCode: String?,
+                    theDisplay: String?,
+                    theValueSet: IBaseResource
+                ): CodeValidationResult? {
+                    if (theCodeSystem != null) {
+                        if (theCodeSystem != null &&
+                            (theCodeSystem.contains("http://snomed.info/sct")) || theCodeSystem.contains("https://dmd.nhs.uk")
+                        ) {
+                            return null
+                        }
+                    }
+
+                    return super.validateCodeInValueSet(
+                        theValidationSupportContext,
+                        theOptions,
+                        theCodeSystem,
+                        theCode,
+                        theDisplay,
+                        theValueSet
+                    )
+                }
+            }
+        }
+        else {
+            return object : InMemoryTerminologyServerValidationSupport(fhirContext) {
+                override fun validateCodeInValueSet(
+                    theValidationSupportContext: ValidationSupportContext?,
+                    theOptions: ConceptValidationOptions?,
+                    theCodeSystem: String?,
+                    theCode: String?,
+                    theDisplay: String?,
+                    theValueSet: IBaseResource
+                ): CodeValidationResult? {
+
+                    if (theCodeSystem != null) {
+                        if (theCodeSystem != null &&
+                            (theCodeSystem.contains("http://snomed.info/sct")) || theCodeSystem.contains("https://dmd.nhs.uk")
+                        ) {
+                            return CodeValidationResult()
+                                .setSeverity(IValidationSupport.IssueSeverity.WARNING)
+                                .setMessage("Unable to validate medication codes")
+                        }
+                    }
+
+                    return super.validateCodeInValueSet(
+                        theValidationSupportContext,
+                        theOptions,
+                        theCodeSystem,
+                        theCode,
+                        theDisplay,
+                        theValueSet
+                    )
+                }
+            }
+        }
     }
 
     fun generateSnapshots(supportChain: IValidationSupport) {
