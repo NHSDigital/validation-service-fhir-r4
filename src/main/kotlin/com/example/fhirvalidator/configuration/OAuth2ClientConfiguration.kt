@@ -42,15 +42,4 @@ class OAuth2ClientConfiguration(private val terminologyValidationProperties: Ter
             authorizedClientService
         )
     }
-
-    @Bean
-    fun authorizedClient(
-        authorizedClientManager: OAuth2AuthorizedClientManager
-    ): OAuth2AuthorizedClient {
-        val authorizeRequest = OAuth2AuthorizeRequest
-            .withClientRegistrationId(REGISTRATION_ID)
-            .principal("test")
-            .build()
-        return authorizedClientManager.authorize(authorizeRequest) ?: throw Error("Failed to authorize")
-    }
 }

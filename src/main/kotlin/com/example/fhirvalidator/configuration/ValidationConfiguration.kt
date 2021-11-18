@@ -1,5 +1,6 @@
 package com.example.fhirvalidator.configuration
 
+import UnsupportedCodeSystemWarningValidationSupport
 import ca.uhn.fhir.context.FhirContext
 import ca.uhn.fhir.context.support.DefaultProfileValidationSupport
 import ca.uhn.fhir.context.support.IValidationSupport
@@ -7,6 +8,7 @@ import ca.uhn.fhir.context.support.ValidationSupportContext
 import ca.uhn.fhir.validation.FhirValidator
 import com.example.fhirvalidator.service.ImplementationGuideParser
 import com.example.fhirvalidator.util.AccessTokenInterceptor
+import com.example.fhirvalidator.util.SwitchedTerminologyServiceValidationSupport
 import mu.KLogging
 import org.hl7.fhir.common.hapi.validation.support.*
 import org.hl7.fhir.common.hapi.validation.validator.FhirInstanceValidator
@@ -20,6 +22,7 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager
 import java.util.*
+import java.util.function.Predicate
 
 
 @Configuration
@@ -45,28 +48,41 @@ class ValidationConfiguration(
     @Bean
     fun validationSupportChain(
         fhirContext: FhirContext,
-        optionalRemoteTerminologySupport: Optional<RemoteTerminologyServiceValidationSupport>,
+        switchedTerminologyServiceValidationSupport: SwitchedTerminologyServiceValidationSupport,
         npmPackages: List<NpmPackage>
     ): ValidationSupportChain {
         val supportChain = ValidationSupportChain(
             DefaultProfileValidationSupport(fhirContext),
             SnapshotGeneratingValidationSupport(fhirContext),
             CommonCodeSystemsTerminologyService(fhirContext),
-            InMemoryTerminologyServerValidationSupport(fhirContext)
+            switchedTerminologyServiceValidationSupport
         )
 
         npmPackages.map(implementationGuideParser::createPrePopulatedValidationSupport)
             .forEach(supportChain::addValidationSupport)
 
-        if (optionalRemoteTerminologySupport.isPresent) {
-            val remoteTerminologySupport = optionalRemoteTerminologySupport.get()
-            val cachingRemoteTerminologySupport = CachingValidationSupport(remoteTerminologySupport)
-            supportChain.addValidationSupport(cachingRemoteTerminologySupport)
-        }
-
         generateSnapshots(supportChain)
 
         return supportChain
+    }
+
+    @Bean
+    fun switchedTerminologyServiceValidationSupport(
+        fhirContext: FhirContext,
+        optionalRemoteTerminologySupport: Optional<RemoteTerminologyServiceValidationSupport>
+    ): SwitchedTerminologyServiceValidationSupport {
+        val snomedValidationSupport = if (optionalRemoteTerminologySupport.isPresent) {
+            CachingValidationSupport(optionalRemoteTerminologySupport.get())
+        } else {
+            UnsupportedCodeSystemWarningValidationSupport(fhirContext)
+        }
+
+        return SwitchedTerminologyServiceValidationSupport(
+            fhirContext,
+            InMemoryTerminologyServerValidationSupport(fhirContext),
+            snomedValidationSupport,
+            Predicate { it.startsWith("http://snomed.info/sct") }
+        )
     }
 
     @Bean

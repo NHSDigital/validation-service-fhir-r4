@@ -6,7 +6,7 @@ import org.springframework.boot.context.properties.ConstructorBinding
 @ConstructorBinding
 @ConfigurationProperties(prefix = "terminology")
 data class TerminologyValidationProperties(
-    var url: String?,
+    var url: String,
     var authorization: Authorization?
 ) {
     data class Authorization(
