@@ -7,6 +7,7 @@ import ca.uhn.fhir.context.support.IValidationSupport
 import ca.uhn.fhir.context.support.ValidationSupportContext
 import ca.uhn.fhir.validation.FhirValidator
 import com.example.fhirvalidator.service.ImplementationGuideParser
+import com.example.fhirvalidator.shared.RemoteTerminologyServiceValidationSupport
 import com.example.fhirvalidator.util.AccessTokenInterceptor
 import com.example.fhirvalidator.validationSupport.SwitchedTerminologyServiceValidationSupport
 import mu.KLogging
