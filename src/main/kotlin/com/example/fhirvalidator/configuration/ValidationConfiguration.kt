@@ -8,7 +8,7 @@ import ca.uhn.fhir.context.support.IValidationSupport.CodeValidationResult
 import ca.uhn.fhir.context.support.ValidationSupportContext
 import ca.uhn.fhir.validation.FhirValidator
 import com.example.fhirvalidator.service.ImplementationGuideParser
-import com.example.fhirvalidator.shared.RemoteTerminoloyValidationSupport
+import com.example.fhirvalidator.shared.HybridTerminologyValidationSupport
 import com.example.fhirvalidator.util.AccessTokenInterceptor
 import mu.KLogging
 import org.hl7.fhir.common.hapi.validation.support.*
@@ -50,15 +50,15 @@ class ValidationConfiguration(
     @Bean
     fun validationSupportChain(
         fhirContext: FhirContext,
-        optionalRemoteTerminologySupport: Optional<RemoteTerminoloyValidationSupport>,
+        optionalRemoteTerminologySupport: Optional<HybridTerminologyValidationSupport>,
         inMemoryTerminologyValidationSupport: InMemoryTerminologyServerValidationSupport,
         npmPackages: List<NpmPackage>
     ): ValidationSupportChain {
         val supportChain = ValidationSupportChain(
             DefaultProfileValidationSupport(fhirContext),
             SnapshotGeneratingValidationSupport(fhirContext),
-            CommonCodeSystemsTerminologyService(fhirContext),
-            inMemoryTerminologyValidationSupport
+            CommonCodeSystemsTerminologyService(fhirContext)
+          //  inMemoryTerminologyValidationSupport
         )
 
         npmPackages.map(implementationGuideParser::createPrePopulatedValidationSupport)
@@ -78,9 +78,9 @@ class ValidationConfiguration(
     fun remoteTerminologyServiceValidationSupport(
         fhirContext: FhirContext,
         optionalAuthorizedClientManager: Optional<OAuth2AuthorizedClientManager>
-    ): RemoteTerminoloyValidationSupport {
+    ): HybridTerminologyValidationSupport {
         logger.info("Using remote terminology server at ${terminologyValidationProperties.url}")
-        val validationSupport = RemoteTerminoloyValidationSupport(fhirContext)
+        val validationSupport = HybridTerminologyValidationSupport(fhirContext)
         validationSupport.setBaseUrl(terminologyValidationProperties.url)
 
         if (optionalAuthorizedClientManager.isPresent) {
@@ -93,7 +93,7 @@ class ValidationConfiguration(
     }
 
     @Bean
-    fun inMemoryTerminologyValidationSupport(fhirContext: FhirContext,optionalRemoteTerminologySupport: Optional<RemoteTerminologyServiceValidationSupport> ): InMemoryTerminologyServerValidationSupport {
+    fun inMemoryTerminologyValidationSupport(fhirContext: FhirContext,optionalRemoteTerminologySupport: Optional<HybridTerminologyValidationSupport> ): InMemoryTerminologyServerValidationSupport {
         if (optionalRemoteTerminologySupport.isPresent) {
 
             return object : InMemoryTerminologyServerValidationSupport(fhirContext) {
