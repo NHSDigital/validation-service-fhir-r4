@@ -14,7 +14,9 @@ class MessageDefinitionApplier(
     implementationGuideParser: ImplementationGuideParser,
     npmPackages: List<NpmPackage>
 ) {
-    val messageDefinitions = npmPackages.map(implementationGuideParser::getMessageDefinitions).flatten()
+    val messageDefinitions = npmPackages.flatMap {
+        implementationGuideParser.getResourcesOfTypeFromPackage(it, MessageDefinition::class.java)
+    }
 
     fun applyMessageDefinition(resource: IBaseResource): OperationOutcome? {
         if (resource !is Bundle || resource.type != Bundle.BundleType.MESSAGE) {
