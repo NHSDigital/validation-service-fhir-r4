@@ -13,7 +13,7 @@ class CapabilityStatementApplier(
     npmPackages: List<NpmPackage>
 ) {
     private val restResources = npmPackages
-        .flatMap { implementationGuideParser.getResourcesOfTypeFromPackage(it, CapabilityStatement::class.java) }
+        .flatMap { implementationGuideParser.getResourcesOfType(it, CapabilityStatement()) }
         .flatMap { it.rest }
         .flatMap { it.resource }
 
