@@ -46,6 +46,9 @@ internal class ProfileApplierTest {
 
         applyProfile(resourceList, profile1)
         applyProfile(resourceList, profile2)
-        resourceList.forEach { assertEquals(it.meta.profile.size, 1) }
+        resourceList.forEach {
+            assertEquals(it.meta.profile.size, 1)
+            assertEquals(it.meta.profile[0].value, "test2.com")
+        }
     }
 }
