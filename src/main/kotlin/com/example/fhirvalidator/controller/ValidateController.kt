@@ -10,6 +10,7 @@ import mu.KLogging
 import org.hl7.fhir.instance.model.api.IBaseResource
 import org.hl7.fhir.r4.model.Bundle
 import org.hl7.fhir.r4.model.OperationOutcome
+import org.hl7.fhir.r4.model.ResourceType
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestHeader
@@ -44,26 +45,31 @@ class ValidateController(
             return createOperationOutcome(operationOutcomeIssues)
         } catch (e: DataFormatException) {
             logger.error("Caught parser error", e)
-            createOperationOutcome("Invalid JSON", null)
+            createOperationOutcome(e.message ?: "Invalid JSON", null)
         }
     }
 
     fun validateResource(resource: IBaseResource): OperationOutcome? {
+        capabilityStatementApplier.applyCapabilityStatementProfiles(resource)
         val messageDefinitionErrors = messageDefinitionApplier.applyMessageDefinition(resource)
         if (messageDefinitionErrors != null) {
             return messageDefinitionErrors
         }
-        capabilityStatementApplier.applyCapabilityStatementProfiles(resource)
         return validator.validateWithResult(resource).toOperationOutcome() as? OperationOutcome
     }
 
     fun getResourcesToValidate(inputResource: IBaseResource?): List<IBaseResource> {
-        return if (inputResource == null) {
-            emptyList()
-        } else if (inputResource is Bundle && inputResource.type == Bundle.BundleType.SEARCHSET) {
-            inputResource.entry.map { it.resource }
-        } else {
-            listOf(inputResource)
+        if (inputResource == null) {
+            return emptyList()
         }
+
+        if ((inputResource is Bundle) && (inputResource.type == Bundle.BundleType.SEARCHSET)) {
+            val bundleResources = inputResource.entry.map { it.resource }
+            if (bundleResources.all { it.resourceType == ResourceType.Bundle }) {
+                return bundleResources
+            }
+        }
+
+        return listOf(inputResource)
     }
 }

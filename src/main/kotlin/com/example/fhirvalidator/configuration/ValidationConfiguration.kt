@@ -85,20 +85,13 @@ class ValidationConfiguration(private val implementationGuideParser: Implementat
     }
 
     fun generateSnapshots(supportChain: IValidationSupport) {
-        supportChain.fetchAllStructureDefinitions<StructureDefinition>()
-            ?.filter { shouldGenerateSnapshot(it) }
-            ?.partition { it.baseDefinition.startsWith("http://hl7.org/fhir/") }
-            ?.toList()
-            ?.flatten()
-            ?.forEach {
+        val structureDefinitions = supportChain.fetchAllStructureDefinitions<StructureDefinition>() ?: return
+        val context = ValidationSupportContext(supportChain)
+        structureDefinitions
+            .filter { shouldGenerateSnapshot(it) }
+            .forEach {
                 try {
-                    supportChain.generateSnapshot(
-                        ValidationSupportContext(supportChain),
-                        it,
-                        it.url,
-                        "https://fhir.nhs.uk/R4",
-                        it.name
-                    )
+                    supportChain.generateSnapshot(context, it, it.url, "https://fhir.nhs.uk/R4", it.name)
                 } catch (e: Exception) {
                     logger.error("Failed to generate snapshot for $it", e)
                 }
