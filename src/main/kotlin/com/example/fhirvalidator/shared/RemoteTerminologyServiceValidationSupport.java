@@ -20,6 +20,7 @@ import org.hl7.fhir.instance.model.api.IBaseBundle;
 import org.hl7.fhir.instance.model.api.IBaseParameters;
 import org.hl7.fhir.instance.model.api.IBaseResource;
 import org.hl7.fhir.r4.model.CodeSystem;
+import org.jetbrains.annotations.Nullable;
 
 public class RemoteTerminologyServiceValidationSupport extends BaseValidationSupport implements IValidationSupport {
     private String myBaseUrl;
@@ -32,6 +33,7 @@ public class RemoteTerminologyServiceValidationSupport extends BaseValidationSup
         theFhirContext.getRestfulClientFactory().setConnectTimeout(30000); // Oh yes
         System.out.println(theFhirContext.getRestfulClientFactory().getConnectTimeout());
     }
+
 
     public CodeValidationResult validateCode(ValidationSupportContext theValidationSupportContext, ConceptValidationOptions theOptions, String theCodeSystem, String theCode, String theDisplay, String theValueSetUrl) {
         // KGM this change for a ValueSet from validator to be used (and not use the one on the ontology server
