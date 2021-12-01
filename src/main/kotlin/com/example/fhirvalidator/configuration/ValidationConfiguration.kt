@@ -78,7 +78,7 @@ class ValidationConfiguration(
             fhirContext,
             InMemoryTerminologyServerValidationSupport(fhirContext),
             snomedValidationSupport,
-            Predicate { it.startsWith("http://snomed.info/sct") }
+            Predicate { it.startsWith("http://snomed.info/sct") || it.startsWith("https://dmd.nhs.uk") }
         )
     }
 

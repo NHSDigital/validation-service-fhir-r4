@@ -75,7 +75,7 @@ internal class ValidateControllerTest {
         val operationOutcome = OperationOutcome()
         given(mockMessageDefinitionApplier.applyMessageDefinition(patient)).willReturn(operationOutcome)
 
-        assertEquals(operationOutcome, testValidateController.validateResource(patient))
+        assertEquals(operationOutcome, testValidateController.validateResource(patient,null))
     }
 }
 
