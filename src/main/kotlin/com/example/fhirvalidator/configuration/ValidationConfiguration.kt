@@ -108,6 +108,19 @@ class ValidationConfiguration(
             .filter { shouldGenerateSnapshot(it) }
             .forEach {
                 try {
+                    circularReferenceCheck(it,supportChain)
+                } catch (e: Exception) {
+                    logger.error("Failed to generate snapshot for $it", e)
+                }
+            }
+        /*
+        val ukCoreObservation : StructureDefinition = supportChain.fetchStructureDefinition("https://fhir.hl7.org.uk/StructureDefinition/UKCore-Observation") as StructureDefinition
+        supportChain.generateSnapshot(context, ukCoreObservation, ukCoreObservation.url,"https://fhir.nhs.uk/R4", ukCoreObservation.name )
+        */
+        structureDefinitions
+            .filter { shouldGenerateSnapshot(it) }
+            .forEach {
+                try {
                     supportChain.generateSnapshot(context, it, it.url, "https://fhir.nhs.uk/R4", it.name)
                 } catch (e: Exception) {
                     logger.error("Failed to generate snapshot for $it", e)
@@ -115,6 +128,43 @@ class ValidationConfiguration(
             }
     }
 
+    private fun circularReferenceCheck(structureDefinition: StructureDefinition, supportChain: IValidationSupport): StructureDefinition {
+        if (structureDefinition.hasSnapshot()) logger.error(structureDefinition.url + " has snapshot!!")
+        structureDefinition.differential.element.forEach{
+            //   it.id.contains("Observation.hasMember") ||
+            if ((
+                        it.id.endsWith(".partOf") ||
+                        it.id.endsWith(".basedOn") ||
+                        it.id.endsWith(".replaces") ||
+                        it.id.contains("Condition.stage.assessment") ||
+                        it.id.contains("Observation.derivedFrom") ||
+                        it.id.contains("CareTeam.encounter") ||
+                        it.id.contains("CareTeam.reasonReference") ||
+                        it.id.contains("ServiceRequest.encounter") ||
+                        it.id.contains("ServiceRequest.reasonReference") ||
+                        it.id.contains("EpisodeOfCare.diagnosis.condition") ||
+                        it.id.contains("Encounter.diagnosis.condition") ||
+                        it.id.contains("Encounter.reasonReference")
+                                )
+                && it.hasType()) {
+                logger.warn(structureDefinition.url + " has circular references ("+ it.id + ")")
+                it.type.forEach{
+                    if (it.hasTargetProfile())
+                        it.targetProfile.forEach {
+                            it.value = getBase(it.value, supportChain);
+                        }
+                }
+            }
+        }
+        return structureDefinition
+    }
+
+    private fun getBase(profile : String,supportChain: IValidationSupport): String? {
+        val structureDefinition : StructureDefinition=
+            supportChain.fetchStructureDefinition(profile) as StructureDefinition;
+        if (structureDefinition.hasBaseDefinition()) return structureDefinition.baseDefinition
+        return null;
+    }
     private fun shouldGenerateSnapshot(structureDefinition: StructureDefinition): Boolean {
         return !structureDefinition.hasSnapshot() && structureDefinition.derivation == StructureDefinition.TypeDerivationRule.CONSTRAINT
     }
