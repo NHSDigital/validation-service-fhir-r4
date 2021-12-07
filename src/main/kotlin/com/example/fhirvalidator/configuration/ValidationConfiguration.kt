@@ -131,14 +131,15 @@ class ValidationConfiguration(
     private fun circularReferenceCheck(structureDefinition: StructureDefinition, supportChain: IValidationSupport): StructureDefinition {
         if (structureDefinition.hasSnapshot()) logger.error(structureDefinition.url + " has snapshot!!")
         structureDefinition.differential.element.forEach{
-            //   it.id.contains("Observation.hasMember") ||
+            //   ||
             if ((
                         it.id.endsWith(".partOf") ||
                         it.id.endsWith(".basedOn") ||
                         it.id.endsWith(".replaces") ||
                         it.id.contains("Condition.stage.assessment") ||
                         it.id.contains("Observation.derivedFrom") ||
-                        it.id.contains("CareTeam.encounter") ||
+                                it.id.contains("Observation.hasMember") ||
+                                it.id.contains("CareTeam.encounter") ||
                         it.id.contains("CareTeam.reasonReference") ||
                         it.id.contains("ServiceRequest.encounter") ||
                         it.id.contains("ServiceRequest.reasonReference") ||
@@ -162,7 +163,11 @@ class ValidationConfiguration(
     private fun getBase(profile : String,supportChain: IValidationSupport): String? {
         val structureDefinition : StructureDefinition=
             supportChain.fetchStructureDefinition(profile) as StructureDefinition;
-        if (structureDefinition.hasBaseDefinition()) return structureDefinition.baseDefinition
+        if (structureDefinition.hasBaseDefinition()) {
+            var baseProfile = structureDefinition.baseDefinition
+            if (baseProfile.contains(".uk")) baseProfile = getBase(baseProfile, supportChain)
+            return baseProfile
+        }
         return null;
     }
     private fun shouldGenerateSnapshot(structureDefinition: StructureDefinition): Boolean {
