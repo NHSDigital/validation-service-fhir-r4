@@ -5,6 +5,9 @@ server:
       max: 10
 
 management:
+  health:
+    elasticsearch:
+        enabled: false
   endpoints:
     web.exposure:
       include: "*"
