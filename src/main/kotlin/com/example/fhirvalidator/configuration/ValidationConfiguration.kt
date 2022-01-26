@@ -87,6 +87,16 @@ class ValidationConfiguration(private val implementationGuideParser: Implementat
     fun generateSnapshots(supportChain: IValidationSupport) {
         val structureDefinitions = supportChain.fetchAllStructureDefinitions<StructureDefinition>() ?: return
         val context = ValidationSupportContext(supportChain)
+
+        structureDefinitions
+            .filter { shouldGenerateSnapshot(it) }
+            .forEach {
+                try {
+                    circularReferenceCheck(it,supportChain)
+                } catch (e: Exception) {
+                    logger.error("Failed to generate snapshot for $it", e)
+                }
+            }
         structureDefinitions
             .filter { shouldGenerateSnapshot(it) }
             .forEach {
@@ -98,6 +108,47 @@ class ValidationConfiguration(private val implementationGuideParser: Implementat
             }
     }
 
+    private fun circularReferenceCheck(structureDefinition: StructureDefinition, supportChain: IValidationSupport): StructureDefinition {
+        if (structureDefinition.hasSnapshot()) logger.error(structureDefinition.url + " has snapshot!!")
+        structureDefinition.differential.element.forEach{
+            //   ||
+            if ((
+                it.id.endsWith(".partOf") ||
+                it.id.endsWith(".basedOn") ||
+                it.id.endsWith(".replaces") ||
+                it.id.contains("Condition.stage.assessment") ||
+                it.id.contains("Observation.derivedFrom") ||
+                it.id.contains("Observation.hasMember") ||
+                it.id.contains("CareTeam.encounter") ||
+                it.id.contains("CareTeam.reasonReference") ||
+                it.id.contains("ServiceRequest.encounter") ||
+                it.id.contains("ServiceRequest.reasonReference") ||
+                it.id.contains("EpisodeOfCare.diagnosis.condition") ||
+                it.id.contains("Encounter.diagnosis.condition") ||
+                it.id.contains("Encounter.reasonReference")
+            ) && it.hasType()) {
+                logger.warn(structureDefinition.url + " has circular references ("+ it.id + ")")
+                it.type.forEach{
+                    if (it.hasTargetProfile())
+                        it.targetProfile.forEach {
+                            it.value = getBase(it.value, supportChain);
+                        }
+                }
+            }
+        }
+        return structureDefinition
+    }
+
+    private fun getBase(profile : String,supportChain: IValidationSupport): String? {
+        val structureDefinition : StructureDefinition=
+            supportChain.fetchStructureDefinition(profile) as StructureDefinition;
+        if (structureDefinition.hasBaseDefinition()) {
+            var baseProfile = structureDefinition.baseDefinition
+            if (baseProfile.contains(".uk")) baseProfile = getBase(baseProfile, supportChain)
+            return baseProfile
+        }
+        return null;
+    }
     private fun shouldGenerateSnapshot(structureDefinition: StructureDefinition): Boolean {
         return !structureDefinition.hasSnapshot() && structureDefinition.derivation == StructureDefinition.TypeDerivationRule.CONSTRAINT
     }
