@@ -1,9 +1,8 @@
 package com.example.fhirvalidator.controller
 
 import ca.uhn.fhir.context.FhirContext
-import com.example.fhirvalidator.openapi.OpenApi
-import com.example.fhirvalidator.service.ImplementationGuideParser
-import io.swagger.v3.core.util.Yaml
+import com.example.fhirvalidator.service.OpenAPIParser
+import io.swagger.v3.core.util.Json
 import org.hl7.fhir.r4.model.*
 import org.hl7.fhir.utilities.npm.NpmPackage
 import org.springframework.web.bind.annotation.GetMapping
@@ -12,10 +11,12 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 class ConformanceController(
     private val fhirContext: FhirContext,
-    private val npmPackages: List<NpmPackage>,
-    private val implementationGuideParser: ImplementationGuideParser
+    private val npmPackages: List<NpmPackage>
 ) {
-    private val openapi = OpenApi(fhirContext,npmPackages,implementationGuideParser)
+    private val openapi = OpenAPIParser(
+        fhirContext,
+        npmPackages
+    )
 
     @GetMapping("metadata",produces = ["application/json", "application/fhir+json"])
     fun metadata(): String {
@@ -27,7 +28,7 @@ class ConformanceController(
     fun openapi(): String {
         val cs = getCapabilityStatement()
 
-        return Yaml.pretty().writeValueAsString(openapi.generateOpenApi(cs));
+        return Json.pretty(openapi.generateOpenApi(cs));
     }
 
     @GetMapping("CapabilityStatement",produces = ["application/json", "application/fhir+json"])
@@ -58,7 +59,7 @@ class ConformanceController(
         cs.rest.add(rest)
         val operation = CapabilityStatement.CapabilityStatementRestResourceOperationComponent()
         operation.name = "validate"
-        operation.definition = "http://hl7.org/fhir/OperationDefinition/Resource-validate"
+        operation.definition = "https://fhir.nhs.uk/OperationDefinition/validation"
         rest.operation.add(operation)
 
         val resource = CapabilityStatement.CapabilityStatementRestResourceComponent()
