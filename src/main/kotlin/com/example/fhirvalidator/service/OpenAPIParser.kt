@@ -29,7 +29,7 @@ import java.util.concurrent.atomic.AtomicReference
 import java.util.function.Supplier
 import java.util.stream.Collectors
 
-class OpenAPIParser(ctx: FhirContext?, npmPackages: List<NpmPackage>?) {
+class OpenAPIParser(private val ctx: FhirContext?, private val npmPackages: List<NpmPackage>?) {
 
     val FHIR_JSON_RESOURCE = "FHIR-JSON-RESOURCE"
     val FHIR_XML_RESOURCE = "FHIR-XML-RESOURCE"
@@ -45,11 +45,7 @@ class OpenAPIParser(ctx: FhirContext?, npmPackages: List<NpmPackage>?) {
     private val myExtensionToContentType: Map<String, String> = HashMap()
     private var myBannerImage: String? = null
 
-    private var ctx: FhirContext? = null
-    private var npmPackages: List<NpmPackage>? = null
     var implementationGuideParser: ImplementationGuideParser? = ImplementationGuideParser(ctx!!)
-
-
 
     fun removeTrailingSlash(theUrl: String?): String? {
         var theUrl = theUrl
@@ -82,7 +78,7 @@ class OpenAPIParser(ctx: FhirContext?, npmPackages: List<NpmPackage>?) {
         val capabilitiesOperation = getPathItem(paths, "/metadata", PathItem.HttpMethod.GET)
         capabilitiesOperation.addTagsItem(PAGE_SYSTEM)
         capabilitiesOperation.summary = "server-capabilities: Fetch the server FHIR CapabilityStatement"
-        addFhirResourceResponse(ctx, openApi, capabilitiesOperation, "CapabilityStatement")
+        addFhirResourceResponse(this.ctx, openApi, capabilitiesOperation, "CapabilityStatement")
         val systemInteractions =
             cs.restFirstRep.interaction.stream().map { t: CapabilityStatement.SystemInteractionComponent -> t.code }
                 .collect(Collectors.toSet())
@@ -282,7 +278,7 @@ class OpenAPIParser(ctx: FhirContext?, npmPackages: List<NpmPackage>?) {
                 npmPackage,
                 OperationDefinition::class.java
             )) {
-                println(resource.url)
+
                 if (resource.url == theOperation.definition) {
                     operationDefinition.set(resource)
                     break
@@ -416,48 +412,50 @@ class OpenAPIParser(ctx: FhirContext?, npmPackages: List<NpmPackage>?) {
         } else {
             val exampleRequestBody = Parameters()
             for (nextSearchParam in theOperationDefinition.parameter) {
-                val param = exampleRequestBody.addParameter()
-                param.name = nextSearchParam.name
-                val paramType = nextSearchParam.type
-                when (StringUtils.defaultString(paramType)) {
-                    "uri", "url", "code", "string" -> {
-                        val type =
-                            FHIR_CONTEXT_CANONICAL.getElementDefinition(paramType)!!.newInstance() as IPrimitiveType<*>
-                        type.valueAsString = "example"
-                        param.value = type as Type
-                    }
-                    "integer" -> {
-                        val type =
-                            FHIR_CONTEXT_CANONICAL.getElementDefinition(paramType)!!.newInstance() as IPrimitiveType<*>
-                        type.valueAsString = "0"
-                        param.value = type as Type
-                    }
-                    "boolean" -> {
-                        val type =
-                            FHIR_CONTEXT_CANONICAL.getElementDefinition(paramType)!!.newInstance() as IPrimitiveType<*>
-                        type.valueAsString = "false"
-                        param.value = type as Type
-                    }
-                    "CodeableConcept" -> {
-                        val type = CodeableConcept()
-                        type.codingFirstRep.system = "http://example.com"
-                        type.codingFirstRep.code = "1234"
-                        param.value = type
-                    }
-                    "Coding" -> {
-                        val type = Coding()
-                        type.system = "http://example.com"
-                        type.code = "1234"
-                        param.value = type
-                    }
-                    "Reference" -> {
-                        val reference = Reference("example")
-                        param.value = reference
-                    }
-                    "Resource" -> if (theResourceType != null) {
-                        val resource = FHIR_CONTEXT_CANONICAL.getResourceDefinition(theResourceType).newInstance()
-                        resource.setId("1")
-                        param.resource = resource as Resource
+                if (nextSearchParam.use != OperationDefinition.OperationParameterUse.OUT) {
+                    val param = exampleRequestBody.addParameter()
+                    param.name = nextSearchParam.name
+                    val paramType = nextSearchParam.type
+                    when (StringUtils.defaultString(paramType)) {
+                        "uri", "url", "code", "string" -> {
+                            val type =
+                                FHIR_CONTEXT_CANONICAL.getElementDefinition(paramType)!!.newInstance() as IPrimitiveType<*>
+                            type.valueAsString = "example"
+                            param.value = type as Type
+                        }
+                        "integer" -> {
+                            val type =
+                                FHIR_CONTEXT_CANONICAL.getElementDefinition(paramType)!!.newInstance() as IPrimitiveType<*>
+                            type.valueAsString = "0"
+                            param.value = type as Type
+                        }
+                        "boolean" -> {
+                            val type =
+                                FHIR_CONTEXT_CANONICAL.getElementDefinition(paramType)!!.newInstance() as IPrimitiveType<*>
+                            type.valueAsString = "false"
+                            param.value = type as Type
+                        }
+                        "CodeableConcept" -> {
+                            val type = CodeableConcept()
+                            type.codingFirstRep.system = "http://example.com"
+                            type.codingFirstRep.code = "1234"
+                            param.value = type
+                        }
+                        "Coding" -> {
+                            val type = Coding()
+                            type.system = "http://example.com"
+                            type.code = "1234"
+                            param.value = type
+                        }
+                        "Reference" -> {
+                            val reference = Reference("example")
+                            param.value = reference
+                        }
+                        "Resource" -> if (theResourceType != null) {
+                            val resource = FHIR_CONTEXT_CANONICAL.getResourceDefinition(theResourceType).newInstance()
+                            resource.setId("1")
+                            param.resource = resource as Resource
+                        }
                     }
                 }
             }
