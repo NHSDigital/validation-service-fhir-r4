@@ -24,6 +24,7 @@ import org.hl7.fhir.r4.model.*
 import org.hl7.fhir.utilities.npm.NpmPackage
 import org.thymeleaf.templateresource.ClassLoaderTemplateResource
 import java.math.BigDecimal
+import java.net.URI
 import java.nio.charset.StandardCharsets
 import java.util.concurrent.atomic.AtomicReference
 import java.util.function.Supplier
@@ -115,7 +116,14 @@ class OpenAPIParser(private val ctx: FhirContext?, private val npmPackages: List
                 }.collect(Collectors.toSet())
             val resourceTag = Tag()
             resourceTag.name = resourceType
-            resourceTag.description = "The $resourceType FHIR resource type"
+            if (nextResource.hasProfile()) {
+                    val profile=nextResource.profile
+                    val documentation = getDocumentationPath(profile)
+                    resourceTag.description = "See $documentation for documentation. Resource type: $resourceType"
+            } else {
+                resourceTag.description = "Resource type: $resourceType"
+            }
+
             openApi.addTagsItem(resourceTag)
 
             // Instance Read
@@ -224,6 +232,30 @@ class OpenAPIParser(private val ctx: FhirContext?, private val npmPackages: List
             }
         }
         return openApi
+    }
+
+    private fun getDocumentationPath(profile : String) : String? {
+        val uri = URI(profile)
+        val path: String = uri.getPath()
+        val idStr = path.substring(path.lastIndexOf('/') + 1)
+        for (npmPackage in npmPackages!!) {
+            if (!npmPackage.name().equals("hl7.fhir.r4.core")) {
+                for (resource in implementationGuideParser!!.getResourcesOfTypeFromPackage(
+                    npmPackage,
+                    StructureDefinition::class.java
+                )) {
+                    if (resource.url == profile) {
+                        if (npmPackage.name().startsWith("uk.nhsdigital.medicines.r4"))
+                            return "[$idStr](https://simplifier.net/guide/NHSDigital-Medicines/Home/FHIRAssets/AllAssets/Profiles/" + idStr + ".guide.md" + ")"
+                        if (npmPackage.name().startsWith("uk.nhsdigital.r4"))
+                            return "[$idStr](https://simplifier.net/guide/NHSDigital/Home/FHIRAssets/AllAssets/Profiles/" + idStr + ".guide.md" + ")"
+                        if (npmPackage.name().startsWith(""))
+                            return "[$idStr](https://simplifier.net/guide/HL7FHIRUKCoreR4Release1/Home/ProfilesandExtensions/Profile" + idStr + ")"
+                    }
+                }
+            }
+        }
+        return "[$profile](https://simplifier.net/guide/nhsdigital/home)";
     }
 
     private fun patchExampleSupplier(): Supplier<IBaseResource?>? {

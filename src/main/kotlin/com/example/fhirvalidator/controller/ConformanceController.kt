@@ -30,7 +30,7 @@ class ConformanceController(
     @GetMapping("/\$openapi",produces = ["application/json"])
     fun openapi(): String {
         val cs = getCapabilityStatement()
-
+        //return Yaml.pretty(openapi.generateOpenApi(cs))
         return Json.pretty(openapi.generateOpenApi(cs));
     }
 
