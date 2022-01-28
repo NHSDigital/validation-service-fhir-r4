@@ -40,6 +40,7 @@ class OpenAPIParser(private val ctx: FhirContext?, private val npmPackages: List
     val REQUEST_DETAILS = "REQUEST_DETAILS"
     val RACCOON_PNG = "raccoon.png"
     private var mySwaggerUiVersion = "3.0.0"
+    private var cs: CapabilityStatement = CapabilityStatement()
 
 
     private val myResourcePathToClasspath: Map<String, String> = HashMap()
@@ -57,7 +58,8 @@ class OpenAPIParser(private val ctx: FhirContext?, private val npmPackages: List
     }
 
 
-    fun generateOpenApi(cs: CapabilityStatement): OpenAPI? {
+    fun generateOpenApi(_cs: CapabilityStatement): OpenAPI? {
+        cs = _cs
         val openApi = OpenAPI()
         openApi.info = Info()
         openApi.info.description = cs.description
@@ -126,14 +128,81 @@ class OpenAPIParser(private val ctx: FhirContext?, private val npmPackages: List
 
             openApi.addTagsItem(resourceTag)
 
-            // Instance Read
-            if (typeRestfulInteractions.contains(CapabilityStatement.TypeRestfulInteraction.READ)) {
-                val operation = getPathItem(paths, "/$resourceType/{id}", PathItem.HttpMethod.GET)
-                operation.addTagsItem(resourceType)
-                operation.summary = "read-instance: Read $resourceType instance"
-                addResourceIdParameter(operation)
-                addFhirResourceResponse(ctx, openApi, operation, null)
+            for (resftfulIntraction in nextResource.interaction) {
+                when (resftfulIntraction.code) {
+                    // Search
+                    CapabilityStatement.TypeRestfulInteraction.SEARCHTYPE -> {
+                        val operation = getPathItem(paths, "/$resourceType", PathItem.HttpMethod.GET)
+                        operation.addTagsItem(resourceType)
+                        operation.description = "This is a search type"
+                        operation.summary = "search-type: Search for $resourceType instances"
+                        if (resftfulIntraction.hasDocumentation()) {
+                            operation.description = resftfulIntraction.documentation
+                        }
+                        addFhirResourceResponse(ctx, openApi, operation, null)
+                        for (nextSearchParam in nextResource.searchParam) {
+                            val parametersItem = Parameter()
+                            operation.addParametersItem(parametersItem)
+                            parametersItem.name = nextSearchParam.name
+                            parametersItem.setIn("query")
+                            parametersItem.description = nextSearchParam.documentation
+                            parametersItem.style = Parameter.StyleEnum.SIMPLE
+                        }
+                    }
+                    // Instance Read
+                    CapabilityStatement.TypeRestfulInteraction.READ -> {
+                        val operation = getPathItem(paths, "/$resourceType/{id}", PathItem.HttpMethod.GET)
+                        operation.addTagsItem(resourceType)
+                        operation.summary = "read-instance: Read $resourceType instance"
+                        addResourceIdParameter(operation)
+                        addFhirResourceResponse(ctx, openApi, operation, null)
+                    }
+                    // Instance Update
+                    CapabilityStatement.TypeRestfulInteraction.UPDATE -> {
+                        val operation = getPathItem(paths, "/$resourceType/{id}", PathItem.HttpMethod.PUT)
+                        operation.addTagsItem(resourceType)
+                        operation.summary =
+                            "update-instance: Update an existing $resourceType instance, or create using a client-assigned ID"
+                        if (resftfulIntraction.hasDocumentation()) {
+                            operation.description = resftfulIntraction.documentation
+                        }
+                        addResourceIdParameter(operation)
+                        addFhirResourceRequestBody(openApi, operation, ctx, genericExampleSupplier(ctx, resourceType))
+                        addFhirResourceResponse(ctx, openApi, operation, null)
+                    }
+                    // Type Create
+                    CapabilityStatement.TypeRestfulInteraction.CREATE -> {
+                        val operation = getPathItem(paths, "/$resourceType", PathItem.HttpMethod.POST)
+                        operation.addTagsItem(resourceType)
+                        operation.summary = "create-type: Create a new $resourceType instance"
+                        if (nextResource.hasDocumentation()) {
+                            operation.description = nextResource.documentation
+                        }
+                        addFhirResourceRequestBody(openApi, operation, ctx, genericExampleSupplier(ctx, resourceType))
+                        addFhirResourceResponse(ctx, openApi, operation, null)
+                    }
+                    // Instance Patch
+                    CapabilityStatement.TypeRestfulInteraction.PATCH -> {
+                        val operation = getPathItem(paths, "/$resourceType/{id}", PathItem.HttpMethod.PATCH)
+                        operation.addTagsItem(resourceType)
+                        operation.summary = "instance-patch: Patch a resource instance of type $resourceType by ID"
+                        addResourceIdParameter(operation)
+                        addFhirResourceRequestBody(openApi, operation, FHIR_CONTEXT_CANONICAL, patchExampleSupplier())
+                        addFhirResourceResponse(ctx, openApi, operation, null)
+                    }
+
+                        // Instance Delete
+                        CapabilityStatement.TypeRestfulInteraction.DELETE -> {
+                        val operation = getPathItem(paths, "/$resourceType/{id}", PathItem.HttpMethod.DELETE)
+                        operation.addTagsItem(resourceType)
+                        operation.summary = "instance-delete: Perform a logical delete on a resource instance"
+                        addResourceIdParameter(operation)
+                        addFhirResourceResponse(ctx, openApi, operation, null)
+                    }
+
+                }
             }
+
 
             // Instance VRead
             if (typeRestfulInteractions.contains(CapabilityStatement.TypeRestfulInteraction.VREAD)) {
@@ -145,26 +214,6 @@ class OpenAPIParser(private val ctx: FhirContext?, private val npmPackages: List
                 operation.summary = "vread-instance: Read $resourceType instance with specific version"
                 addResourceIdParameter(operation)
                 addResourceVersionIdParameter(operation)
-                addFhirResourceResponse(ctx, openApi, operation, null)
-            }
-
-            // Type Create
-            if (typeRestfulInteractions.contains(CapabilityStatement.TypeRestfulInteraction.CREATE)) {
-                val operation = getPathItem(paths, "/$resourceType", PathItem.HttpMethod.POST)
-                operation.addTagsItem(resourceType)
-                operation.summary = "create-type: Create a new $resourceType instance"
-                addFhirResourceRequestBody(openApi, operation, ctx, genericExampleSupplier(ctx, resourceType))
-                addFhirResourceResponse(ctx, openApi, operation, null)
-            }
-
-            // Instance Update
-            if (typeRestfulInteractions.contains(CapabilityStatement.TypeRestfulInteraction.UPDATE)) {
-                val operation = getPathItem(paths, "/$resourceType/{id}", PathItem.HttpMethod.PUT)
-                operation.addTagsItem(resourceType)
-                operation.summary =
-                    "update-instance: Update an existing $resourceType instance, or create using a client-assigned ID"
-                addResourceIdParameter(operation)
-                addFhirResourceRequestBody(openApi, operation, ctx, genericExampleSupplier(ctx, resourceType))
                 addFhirResourceResponse(ctx, openApi, operation, null)
             }
 
@@ -190,41 +239,8 @@ class OpenAPIParser(private val ctx: FhirContext?, private val npmPackages: List
                 addFhirResourceResponse(ctx, openApi, operation, null)
             }
 
-            // Instance Patch
-            if (typeRestfulInteractions.contains(CapabilityStatement.TypeRestfulInteraction.PATCH)) {
-                val operation = getPathItem(paths, "/$resourceType/{id}", PathItem.HttpMethod.PATCH)
-                operation.addTagsItem(resourceType)
-                operation.summary = "instance-patch: Patch a resource instance of type $resourceType by ID"
-                addResourceIdParameter(operation)
-                addFhirResourceRequestBody(openApi, operation, FHIR_CONTEXT_CANONICAL, patchExampleSupplier())
-                addFhirResourceResponse(ctx, openApi, operation, null)
-            }
 
-            // Instance Delete
-            if (typeRestfulInteractions.contains(CapabilityStatement.TypeRestfulInteraction.DELETE)) {
-                val operation = getPathItem(paths, "/$resourceType/{id}", PathItem.HttpMethod.DELETE)
-                operation.addTagsItem(resourceType)
-                operation.summary = "instance-delete: Perform a logical delete on a resource instance"
-                addResourceIdParameter(operation)
-                addFhirResourceResponse(ctx, openApi, operation, null)
-            }
 
-            // Search
-            if (typeRestfulInteractions.contains(CapabilityStatement.TypeRestfulInteraction.SEARCHTYPE)) {
-                val operation = getPathItem(paths, "/$resourceType", PathItem.HttpMethod.GET)
-                operation.addTagsItem(resourceType)
-                operation.description = "This is a search type"
-                operation.summary = "search-type: Search for $resourceType instances"
-                addFhirResourceResponse(ctx, openApi, operation, null)
-                for (nextSearchParam in nextResource.searchParam) {
-                    val parametersItem = Parameter()
-                    operation.addParametersItem(parametersItem)
-                    parametersItem.name = nextSearchParam.name
-                    parametersItem.setIn("query")
-                    parametersItem.description = nextSearchParam.documentation
-                    parametersItem.style = Parameter.StyleEnum.SIMPLE
-                }
-            }
 
             // Resource-level Operations
             for (nextOperation in nextResource.operation) {
@@ -499,6 +515,40 @@ class OpenAPIParser(private val ctx: FhirContext?, private val npmPackages: List
             mediaType.example = exampleRequestBodyString
             mediaType.schema = Schema<Any?>().type("object").title("FHIR Resource")
             theOperation.requestBody.content.addMediaType(Constants.CT_FHIR_JSON_NEW, mediaType)
+
+        }
+        if (theOperationDefinition.url.equals("http://hl7.org/fhir/OperationDefinition/MessageHeader-process-message")) {
+            var supportedDocumentation = ""
+
+            for (messaging in cs.messaging) {
+                if (messaging.hasDocumentation()) {
+                    supportedDocumentation += messaging.documentation +" \n"
+                }
+                supportedDocumentation += "\n Supported Messages \n"
+                for (supportedMessage in messaging.supportedMessage) {
+                    if (supportedMessage.hasDefinition()) {
+                        val uri = URI(supportedMessage.definition)
+                        val path: String = uri.getPath()
+                        val idStr = path.substring(path.lastIndexOf('/') + 1)
+                        supportedDocumentation += "- [$idStr]("+supportedMessage.definition+")"
+                        for (npmPackage in npmPackages!!) {
+                            if (!npmPackage.name().equals("hl7.fhir.r4.core")) {
+                                for (resource in implementationGuideParser!!.getResourcesOfTypeFromPackage(
+                                    npmPackage,
+                                    MessageDefinition::class.java
+                                )) {
+                                    if (resource.url == supportedMessage.definition && resource.hasDescription()) {
+                                        supportedDocumentation += " "+resource.description
+                                    }
+                                }
+                            }
+                        }
+                        supportedDocumentation += "\n"
+
+                    }
+                }
+            }
+            theOperation.description += supportedDocumentation
         }
     }
 
