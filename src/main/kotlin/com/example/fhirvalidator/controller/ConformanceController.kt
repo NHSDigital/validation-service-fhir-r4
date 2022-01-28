@@ -4,11 +4,10 @@ import ca.uhn.fhir.context.FhirContext
 import com.example.fhirvalidator.service.ImplementationGuideParser
 import com.example.fhirvalidator.service.OpenAPIParser
 import io.swagger.v3.core.util.Json
+import org.hl7.fhir.instance.model.api.IBaseResource
 import org.hl7.fhir.r4.model.*
 import org.hl7.fhir.utilities.npm.NpmPackage
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.RequestParam
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.*
 
 @RestController
 class ConformanceController(
@@ -32,6 +31,21 @@ class ConformanceController(
         val cs = getCapabilityStatement()
         //return Yaml.pretty(openapi.generateOpenApi(cs))
         return Json.pretty(openapi.generateOpenApi(cs));
+    }
+
+    @PostMapping("/\$openapi",produces = ["application/json"])
+    fun postOpenapi( @RequestBody input: String): String {
+        var inputResource : IBaseResource
+        try {
+            inputResource = fhirContext.newJsonParser().parseResource(input)
+        } catch (ex : Exception) {
+            inputResource = fhirContext.newXmlParser().parseResource(input)
+        }
+        if (inputResource is CapabilityStatement) {
+            val cs : CapabilityStatement = inputResource
+            return Json.pretty(openapi.generateOpenApi(cs));
+        }
+        return "Nowt found"
     }
 
     @GetMapping("CapabilityStatement/\$openapi",produces = ["application/json", "application/fhir+json"], params = ["url"])

@@ -517,7 +517,8 @@ class OpenAPIParser(private val ctx: FhirContext?, private val npmPackages: List
             theOperation.requestBody.content.addMediaType(Constants.CT_FHIR_JSON_NEW, mediaType)
 
         }
-        if (theOperationDefinition.url.equals("http://hl7.org/fhir/OperationDefinition/MessageHeader-process-message")) {
+        if (theOperationDefinition.url.equals("http://hl7.org/fhir/OperationDefinition/MessageHeader-process-message")
+            || theOperationDefinition.url.equals("https://fhir.nhs.uk/OperationDefinition/MessageHeader-process-message")) {
             var supportedDocumentation = ""
 
             for (messaging in cs.messaging) {
