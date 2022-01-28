@@ -23,7 +23,7 @@ class ValidateController(
 ) {
     companion object : KLogging()
 
-    @PostMapping("/\$validate", produces = ["application/json", "application/fhir+json"])
+    @PostMapping("/\$validate", produces = ["application/json", "application/fhir+json","application/xml", "application/fhir+xml"])
     fun validate(
         @RequestBody input: String,
         @RequestHeader("x-request-id", required = false) requestId: String?,
@@ -37,7 +37,13 @@ class ValidateController(
 
     fun parseAndValidateResource(input: String, profile: String?): OperationOutcome {
         return try {
-            val inputResource = fhirContext.newJsonParser().parseResource(input)
+            var inputResource : IBaseResource
+            // TODO crude
+            try {
+                inputResource = fhirContext.newJsonParser().parseResource(input)
+            } catch (ex : Exception) {
+                inputResource = fhirContext.newXmlParser().parseResource(input)
+            }
             val resources = getResourcesToValidate(inputResource)
             val operationOutcomeList = resources.map { validateResource(it, profile) }
             val operationOutcomeIssues = operationOutcomeList.filterNotNull().flatMap { it.issue }
