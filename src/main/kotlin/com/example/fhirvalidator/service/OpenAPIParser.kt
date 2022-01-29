@@ -63,11 +63,43 @@ class OpenAPIParser(private val ctx: FhirContext?, private val npmPackages: List
         val openApi = OpenAPI()
         openApi.info = Info()
         openApi.info.description = cs.description
+        if (openApi.info.description == null) openApi.info.description = ""
         openApi.info.title = cs.software.name
         openApi.info.version = cs.software.version
         openApi.info.contact = Contact()
         openApi.info.contact.name = cs.contactFirstRep.name
         openApi.info.contact.email = cs.contactFirstRep.telecomFirstRep.value
+        if (cs.hasExtension("https://fhir.nhs.uk/StructureDefinition/Extension-NHSDigital-APIDefinition")) {
+            val apiDefinition = cs.getExtensionByUrl("https://fhir.nhs.uk/StructureDefinition/Extension-NHSDigital-APIDefinition")
+            // Sample table:\n\n| One | Two | Three |\n|-----|-----|-------|\n| a   | b   | c     |
+            if (apiDefinition.hasExtension("openApi")) {
+                var docDescription = "\n\n | API Documentation |\n |-----|\n "
+                apiDefinition.extension.forEach{
+                    if (it.url.equals("openApi")) {
+                        docDescription += " |["+(it.getExtensionByUrl("description").value as StringType).value+"]("+(it.getExtensionByUrl("documentation").value as UriType).value+")|\n"
+                    }
+                }
+                openApi.info.description += docDescription
+            }
+            if (apiDefinition.hasExtension("implementationGuide")) {
+                var igDescription = "\n\n | Implementation Guide | Version |\n |-----|-----|\n"
+                apiDefinition.extension.forEach{
+                    if (it.url.equals("implementationGuide")) {
+                        val name = it.getExtensionByUrl("name").value as StringType
+                        var url = "https://simplifier.net/guide/NHSDigital/Home"
+                        var version = ""
+                        if (it.hasExtension("version")) {
+                            version = (it.getExtensionByUrl("version").value as StringType).value
+                        }
+                        if (name.value.startsWith("uk.nhsdigital.medicines")) url = "https://simplifier.net/guide/nhsdigital-medicines/home"
+                        if (name.value.startsWith("ukcore.")) url = "https://simplifier.net/guide/hl7fhirukcorer4release1/home"
+                        igDescription += " |[$name]($url)|$version|\n"
+                    }
+                }
+                openApi.info.description += igDescription
+            }
+
+        }
         val server = Server()
         openApi.addServersItem(server)
         server.url = cs.implementation.url
@@ -154,6 +186,9 @@ class OpenAPIParser(private val ctx: FhirContext?, private val npmPackages: List
                         val operation = getPathItem(paths, "/$resourceType/{id}", PathItem.HttpMethod.GET)
                         operation.addTagsItem(resourceType)
                         operation.summary = "read-instance: Read $resourceType instance"
+                        if (resftfulIntraction.hasDocumentation()) {
+                            operation.description = resftfulIntraction.documentation
+                        }
                         addResourceIdParameter(operation)
                         addFhirResourceResponse(ctx, openApi, operation, null)
                     }
@@ -186,6 +221,9 @@ class OpenAPIParser(private val ctx: FhirContext?, private val npmPackages: List
                         val operation = getPathItem(paths, "/$resourceType/{id}", PathItem.HttpMethod.PATCH)
                         operation.addTagsItem(resourceType)
                         operation.summary = "instance-patch: Patch a resource instance of type $resourceType by ID"
+                        if (resftfulIntraction.hasDocumentation()) {
+                            operation.description = resftfulIntraction.documentation
+                        }
                         addResourceIdParameter(operation)
                         addFhirResourceRequestBody(openApi, operation, FHIR_CONTEXT_CANONICAL, patchExampleSupplier())
                         addFhirResourceResponse(ctx, openApi, operation, null)
@@ -196,6 +234,9 @@ class OpenAPIParser(private val ctx: FhirContext?, private val npmPackages: List
                         val operation = getPathItem(paths, "/$resourceType/{id}", PathItem.HttpMethod.DELETE)
                         operation.addTagsItem(resourceType)
                         operation.summary = "instance-delete: Perform a logical delete on a resource instance"
+                        if (resftfulIntraction.hasDocumentation()) {
+                            operation.description = resftfulIntraction.documentation
+                        }
                         addResourceIdParameter(operation)
                         addFhirResourceResponse(ctx, openApi, operation, null)
                     }

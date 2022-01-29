@@ -137,6 +137,11 @@ class ConformanceController(
             packageExtension.extension.add(Extension().setUrl("version").setValue(StringType(it.version())))
             apiextension.extension.add(packageExtension)
         }
+        val packageExtension = Extension();
+        packageExtension.url="openApi"
+        packageExtension.extension.add(Extension().setUrl("documentation").setValue(UriType("https://simplifier.net/guide/NHSDigital/Home")))
+        packageExtension.extension.add(Extension().setUrl("description").setValue(StringType("NHS Digital FHIR Implementation Guide")))
+        apiextension.extension.add(packageExtension)
         cs.status = Enumerations.PublicationStatus.ACTIVE
         cs.kind = CapabilityStatement.CapabilityStatementKind.INSTANCE
         cs.fhirVersion = Enumerations.FHIRVersion._4_0_1
