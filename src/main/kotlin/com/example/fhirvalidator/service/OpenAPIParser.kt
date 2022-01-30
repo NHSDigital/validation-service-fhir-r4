@@ -113,7 +113,7 @@ class OpenAPIParser(private val ctx: FhirContext?, private val npmPackages: List
         val capabilitiesOperation = getPathItem(paths, "/metadata", PathItem.HttpMethod.GET)
         capabilitiesOperation.addTagsItem(PAGE_SYSTEM)
         capabilitiesOperation.summary = "server-capabilities: Fetch the server FHIR CapabilityStatement"
-        addFhirResourceResponse(this.ctx, openApi, capabilitiesOperation, "CapabilityStatement")
+        addFhirResourceResponse(this.ctx, openApi, capabilitiesOperation, "CapabilityStatement",null)
         val systemInteractions =
             cs.restFirstRep.interaction.stream().map { t: CapabilityStatement.SystemInteractionComponent -> t.code }
                 .collect(Collectors.toSet())
@@ -125,7 +125,7 @@ class OpenAPIParser(private val ctx: FhirContext?, private val npmPackages: List
             val transaction = getPathItem(paths, "/", PathItem.HttpMethod.POST)
             transaction.addTagsItem(PAGE_SYSTEM)
             transaction.summary = "server-transaction: Execute a FHIR Transaction (or FHIR Batch) Bundle"
-            addFhirResourceResponse(ctx, openApi, transaction, null)
+            addFhirResourceResponse(ctx, openApi, transaction, null, null)
             addFhirResourceRequestBody(openApi, transaction, ctx, null)
         }
 
@@ -135,7 +135,7 @@ class OpenAPIParser(private val ctx: FhirContext?, private val npmPackages: List
             systemHistory.addTagsItem(PAGE_SYSTEM)
             systemHistory.summary =
                 "server-history: Fetch the resource change history across all resource types on the server"
-            addFhirResourceResponse(ctx, openApi, systemHistory, null)
+            addFhirResourceResponse(ctx, openApi, systemHistory, null, null)
         }
 
         // System-level Operations
@@ -161,6 +161,9 @@ class OpenAPIParser(private val ctx: FhirContext?, private val npmPackages: List
             openApi.addTagsItem(resourceTag)
 
             for (resftfulIntraction in nextResource.interaction) {
+                var requestExample = getRequestExample(resftfulIntraction)
+                if (requestExample == null) requestExample = genericExampleSupplier(ctx, resourceType)
+
                 when (resftfulIntraction.code) {
                     // Search
                     CapabilityStatement.TypeRestfulInteraction.SEARCHTYPE -> {
@@ -171,7 +174,7 @@ class OpenAPIParser(private val ctx: FhirContext?, private val npmPackages: List
                         if (resftfulIntraction.hasDocumentation()) {
                             operation.description = resftfulIntraction.documentation
                         }
-                        addFhirResourceResponse(ctx, openApi, operation, null)
+                        addFhirResourceResponse(ctx, openApi, operation, null,resftfulIntraction)
                         for (nextSearchParam in nextResource.searchParam) {
                             val parametersItem = Parameter()
                             operation.addParametersItem(parametersItem)
@@ -190,7 +193,7 @@ class OpenAPIParser(private val ctx: FhirContext?, private val npmPackages: List
                             operation.description = resftfulIntraction.documentation
                         }
                         addResourceIdParameter(operation)
-                        addFhirResourceResponse(ctx, openApi, operation, null)
+                        addFhirResourceResponse(ctx, openApi, operation, null,resftfulIntraction)
                     }
                     // Instance Update
                     CapabilityStatement.TypeRestfulInteraction.UPDATE -> {
@@ -202,19 +205,19 @@ class OpenAPIParser(private val ctx: FhirContext?, private val npmPackages: List
                             operation.description = resftfulIntraction.documentation
                         }
                         addResourceIdParameter(operation)
-                        addFhirResourceRequestBody(openApi, operation, ctx, genericExampleSupplier(ctx, resourceType))
-                        addFhirResourceResponse(ctx, openApi, operation, null)
+                        addFhirResourceRequestBody(openApi, operation, ctx, requestExample)
+                        addFhirResourceResponse(ctx, openApi, operation, null,resftfulIntraction)
                     }
                     // Type Create
                     CapabilityStatement.TypeRestfulInteraction.CREATE -> {
                         val operation = getPathItem(paths, "/$resourceType", PathItem.HttpMethod.POST)
                         operation.addTagsItem(resourceType)
                         operation.summary = "create-type: Create a new $resourceType instance"
-                        if (nextResource.hasDocumentation()) {
-                            operation.description = nextResource.documentation
+                        if (resftfulIntraction.hasDocumentation()) {
+                            operation.description = resftfulIntraction.documentation
                         }
-                        addFhirResourceRequestBody(openApi, operation, ctx, genericExampleSupplier(ctx, resourceType))
-                        addFhirResourceResponse(ctx, openApi, operation, null)
+                        addFhirResourceRequestBody(openApi, operation, ctx,requestExample)
+                        addFhirResourceResponse(ctx, openApi, operation, null,resftfulIntraction)
                     }
                     // Instance Patch
                     CapabilityStatement.TypeRestfulInteraction.PATCH -> {
@@ -226,7 +229,7 @@ class OpenAPIParser(private val ctx: FhirContext?, private val npmPackages: List
                         }
                         addResourceIdParameter(operation)
                         addFhirResourceRequestBody(openApi, operation, FHIR_CONTEXT_CANONICAL, patchExampleSupplier())
-                        addFhirResourceResponse(ctx, openApi, operation, null)
+                        addFhirResourceResponse(ctx, openApi, operation, null,resftfulIntraction)
                     }
 
                         // Instance Delete
@@ -238,7 +241,7 @@ class OpenAPIParser(private val ctx: FhirContext?, private val npmPackages: List
                             operation.description = resftfulIntraction.documentation
                         }
                         addResourceIdParameter(operation)
-                        addFhirResourceResponse(ctx, openApi, operation, null)
+                        addFhirResourceResponse(ctx, openApi, operation, null,resftfulIntraction)
                     }
 
                 }
@@ -255,7 +258,7 @@ class OpenAPIParser(private val ctx: FhirContext?, private val npmPackages: List
                 operation.summary = "vread-instance: Read $resourceType instance with specific version"
                 addResourceIdParameter(operation)
                 addResourceVersionIdParameter(operation)
-                addFhirResourceResponse(ctx, openApi, operation, null)
+                addFhirResourceResponse(ctx, openApi, operation, null,null)
             }
 
             // Type history
@@ -264,7 +267,7 @@ class OpenAPIParser(private val ctx: FhirContext?, private val npmPackages: List
                 operation.addTagsItem(resourceType)
                 operation.summary =
                     "type-history: Fetch the resource change history for all resources of type $resourceType"
-                addFhirResourceResponse(ctx, openApi, operation, null)
+                addFhirResourceResponse(ctx, openApi, operation, null,null)
             }
 
             // Instance history
@@ -277,7 +280,7 @@ class OpenAPIParser(private val ctx: FhirContext?, private val npmPackages: List
                 operation.summary =
                     "instance-history: Fetch the resource change history for all resources of type $resourceType"
                 addResourceIdParameter(operation)
-                addFhirResourceResponse(ctx, openApi, operation, null)
+                addFhirResourceResponse(ctx, openApi, operation, null,null)
             }
 
 
@@ -478,7 +481,7 @@ class OpenAPIParser(private val ctx: FhirContext?, private val npmPackages: List
         }
         theOperation.summary = theOperationDefinition!!.title
         theOperation.description = theOperationDefinition.description
-        addFhirResourceResponse(theFhirContext, theOpenApi, theOperation, null)
+        addFhirResourceResponse(theFhirContext, theOpenApi, theOperation, null,null)
         if (theGet) {
             for (nextParameter in theOperationDefinition.parameter) {
                 val parametersItem = Parameter()
@@ -655,19 +658,116 @@ class OpenAPIParser(private val ctx: FhirContext?, private val npmPackages: List
         theFhirContext: FhirContext?,
         theOpenApi: OpenAPI,
         theOperation: Operation,
-        theResourceType: String?
+        theResourceType: String?,
+        resftfulIntraction : CapabilityStatement.ResourceInteractionComponent?
     ) {
         theOperation.responses = ApiResponses()
         val response200 = ApiResponse()
         response200.description = "Success"
-        response200.content = provideContentFhirResource(
-            theOpenApi,
-            theFhirContext,
-            genericExampleSupplier(theFhirContext, theResourceType)
-        )
+        if (resftfulIntraction != null) {
+            val exampleResponse = getResponseExample(resftfulIntraction)
+            if (exampleResponse != null) response200.content = provideContentFhirResource(
+                theOpenApi,
+                theFhirContext,
+                exampleResponse
+            )
+        }
+        if (response200.content == null) {
+            response200.content = provideContentFhirResource(
+                theOpenApi,
+                theFhirContext,
+                genericExampleSupplier(theFhirContext, theResourceType)
+            )
+        }
         theOperation.responses.addApiResponse("200", response200)
     }
 
+    private fun getRequestExample(interaction : CapabilityStatement.ResourceInteractionComponent) : Supplier<IBaseResource?>? {
+        if (interaction.hasExtension("https://fhir.nhs.uk/StructureDefinition/Extension-NHSDigital-APIDefinition-Examples")) {
+            val apiExtension =
+                interaction.getExtensionByUrl("https://fhir.nhs.uk/StructureDefinition/Extension-NHSDigital-APIDefinition-Examples")
+            if (apiExtension.hasExtension("request")) {
+                val request = apiExtension.getExtensionByUrl("request")
+                if (request.hasExtension("resource") && request.hasExtension("id")) {
+                    for (npmPackage in npmPackages!!) {
+                        if (!npmPackage.name().equals("hl7.fhir.r4.core")) {
+                            implementationGuideParser?.getResourcesFromFolder(npmPackage, "examples")
+                                ?.forEach {
+                                        if (it is DomainResource) {
+                                            val resource: DomainResource = it
+                                            //println(resource.resourceType.name + " - "+(request.getExtensionByUrl("resource").value as CodeType).value)
+                                            if (resource.resourceType.name == (request.getExtensionByUrl("resource").value as CodeType).value ) {
+                                               // println("Match "+ resource.idElement.idPart + " - "+ (request.getExtensionByUrl("id").value as StringType).value )
+                                                if (resource.idElement.idPart == (request.getExtensionByUrl("id").value as StringType).value ) {
+                                                 //   println("Matched")
+                                                    return Supplier {
+                                                        var example: IBaseResource? = resource
+                                                        example
+                                                    }
+                                                }
+                                            }
+                                        }
+                                }
+                        }
+                    }
+                }
+            }
+        }
+        return null
+    }
+    private fun getResponseExample(interaction : CapabilityStatement.ResourceInteractionComponent) : Supplier<IBaseResource?>? {
+        if (interaction.hasExtension("https://fhir.nhs.uk/StructureDefinition/Extension-NHSDigital-APIDefinition-Examples")) {
+            val apiExtension =
+                interaction.getExtensionByUrl("https://fhir.nhs.uk/StructureDefinition/Extension-NHSDigital-APIDefinition-Examples")
+            if (apiExtension.hasExtension("response")) {
+                val request = apiExtension.getExtensionByUrl("response")
+                if (request.hasExtension("resource") && request.hasExtension("id")) {
+                    for (npmPackage in npmPackages!!) {
+                        if (!npmPackage.name().equals("hl7.fhir.r4.core")) {
+                            implementationGuideParser?.getResourcesFromFolder(npmPackage, "examples")
+                                ?.forEach {
+                                    if (it is DomainResource) {
+                                        val resource: DomainResource = it
+                                        //println(resource.resourceType.name + " - "+(request.getExtensionByUrl("resource").value as CodeType).value)
+                                        if (resource.resourceType.name == (request.getExtensionByUrl("resource").value as CodeType).value ) {
+                                            // println("Match "+ resource.idElement.idPart + " - "+ (request.getExtensionByUrl("id").value as StringType).value )
+                                            if (resource.idElement.idPart == (request.getExtensionByUrl("id").value as StringType).value ) {
+                                                //   println("Matched")
+                                                if (interaction.code == CapabilityStatement.TypeRestfulInteraction.SEARCHTYPE) {
+                                                    val bundle = Bundle()
+                                                    bundle.type = Bundle.BundleType.SEARCHSET
+                                                    bundle.entry.add(Bundle.BundleEntryComponent().setResource(resource))
+                                                    return Supplier {
+                                                        var example: IBaseResource? = bundle
+                                                        example
+                                                    }
+                                                }
+                                                return Supplier {
+                                                    var example: IBaseResource? = resource
+                                                    example
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                        }
+                    }
+                }
+            }
+        }
+        if (interaction.code == CapabilityStatement.TypeRestfulInteraction.CREATE
+            || interaction.code == CapabilityStatement.TypeRestfulInteraction.UPDATE) {
+            val operation = OperationOutcome()
+            operation.issue.add(OperationOutcome.OperationOutcomeIssueComponent()
+                .setCode(OperationOutcome.IssueType.INFORMATIONAL)
+                .setSeverity(OperationOutcome.IssueSeverity.INFORMATION))
+            return Supplier {
+                var example: IBaseResource? = operation
+                example
+            }
+        }
+        return null
+    }
     private fun genericExampleSupplier(
         theFhirContext: FhirContext?,
         theResourceType: String?
