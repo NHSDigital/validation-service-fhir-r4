@@ -318,6 +318,21 @@ class OpenAPIParser(private val ctx: FhirContext?, private val npmPackages: List
         return "[$profile](https://simplifier.net/guide/nhsdigital/home)";
     }
 
+    private fun getDocumentationPathNpm(profile : String, npmPackage : NpmPackage) : String? {
+        val uri = URI(profile)
+        val path: String = uri.getPath()
+        val idStr = path.substring(path.lastIndexOf('/') + 1)
+
+        if (npmPackage.name().startsWith("uk.nhsdigital.medicines.r4"))
+            return "[$idStr](https://simplifier.net/guide/NHSDigital-Medicines/Home/FHIRAssets/AllAssets/Profiles/" + idStr + ".guide.md" + ")"
+        if (npmPackage.name().startsWith("uk.nhsdigital.r4"))
+            return "[$idStr](https://simplifier.net/guide/NHSDigital/Home/FHIRAssets/AllAssets/Profiles/" + idStr + ".guide.md" + ")"
+        if (npmPackage.name().startsWith(""))
+            return "[$idStr](https://simplifier.net/guide/HL7FHIRUKCoreR4Release1/Home/ProfilesandExtensions/Profile" + idStr + ")"
+
+        return "[$profile](https://simplifier.net/guide/nhsdigital/home)";
+    }
+
     private fun patchExampleSupplier(): Supplier<IBaseResource?>? {
         return Supplier {
             val example = Parameters()
@@ -393,7 +408,8 @@ class OpenAPIParser(private val ctx: FhirContext?, private val npmPackages: List
                         theResourceType,
                         operationDefinition.get(),
                         operation,
-                        true
+                        true,
+                        theOperation
                     )
                 }
                 if (operationDefinition.get()!!.instance) {
@@ -408,7 +424,8 @@ class OpenAPIParser(private val ctx: FhirContext?, private val npmPackages: List
                         theResourceType,
                         operationDefinition.get(),
                         operation,
-                        true
+                        true,
+                        theOperation
                     )
                 }
             } else {
@@ -417,7 +434,9 @@ class OpenAPIParser(private val ctx: FhirContext?, private val npmPackages: List
                         thePaths, "/$" + operationDefinition.get()!!
                             .code, PathItem.HttpMethod.GET
                     )
-                    populateOperation(theFhirContext, theOpenApi, null, operationDefinition.get(), operation, true)
+                    populateOperation(theFhirContext, theOpenApi, null, operationDefinition.get(), operation, true,
+                        theOperation
+                    )
                 }
             }
         } else {
@@ -435,7 +454,8 @@ class OpenAPIParser(private val ctx: FhirContext?, private val npmPackages: List
                         theResourceType,
                         operationDefinition.get(),
                         operation,
-                        false
+                        false,
+                        theOperation
                     )
                 }
                 if (operationDefinition.get()!!.instance) {
@@ -450,7 +470,9 @@ class OpenAPIParser(private val ctx: FhirContext?, private val npmPackages: List
                         theResourceType,
                         operationDefinition.get(),
                         operation,
-                        false
+                        false,
+                        theOperation
+
                     )
                 }
             } else {
@@ -459,7 +481,8 @@ class OpenAPIParser(private val ctx: FhirContext?, private val npmPackages: List
                         thePaths, "/$" + operationDefinition.get()!!
                             .code, PathItem.HttpMethod.POST
                     )
-                    populateOperation(theFhirContext, theOpenApi, null, operationDefinition.get(), operation, false)
+                    populateOperation(theFhirContext, theOpenApi, null, operationDefinition.get(), operation, false,                        theOperation
+                    )
                 }
             }
         }
@@ -472,7 +495,8 @@ class OpenAPIParser(private val ctx: FhirContext?, private val npmPackages: List
         theResourceType: String?,
         theOperationDefinition: OperationDefinition?,
         theOperation: Operation,
-        theGet: Boolean
+        theGet: Boolean,
+        theOperationComponent: CapabilityStatement.CapabilityStatementRestResourceOperationComponent
     ) {
         if (theResourceType == null) {
             theOperation.addTagsItem(PAGE_SYSTEM)
@@ -551,12 +575,19 @@ class OpenAPIParser(private val ctx: FhirContext?, private val npmPackages: List
                     }
                 }
             }
-            val exampleRequestBodyString =
-                FHIR_CONTEXT_CANONICAL.newJsonParser().setPrettyPrint(true).encodeResourceToString(exampleRequestBody)
+            var exampleRequestBodyString =
+                FHIR_CONTEXT_CANONICAL.newJsonParser().setPrettyPrint(true)
+                    .encodeResourceToString(exampleRequestBody)
+            val operationExample = getOperationRequestExample(theOperationComponent)
+            if (operationExample != null && operationExample.get() !=null ) {
+                exampleRequestBodyString = FHIR_CONTEXT_CANONICAL.newJsonParser().setPrettyPrint(true)
+                    .encodeResourceToString(operationExample.get())
+            }
             theOperation.requestBody = RequestBody()
             theOperation.requestBody.content = Content()
             val mediaType = MediaType()
             mediaType.example = exampleRequestBodyString
+
             mediaType.schema = Schema<Any?>().type("object").title("FHIR Resource")
             theOperation.requestBody.content.addMediaType(Constants.CT_FHIR_JSON_NEW, mediaType)
 
@@ -575,15 +606,35 @@ class OpenAPIParser(private val ctx: FhirContext?, private val npmPackages: List
                         val uri = URI(supportedMessage.definition)
                         val path: String = uri.getPath()
                         val idStr = path.substring(path.lastIndexOf('/') + 1)
-                        supportedDocumentation += "- [$idStr]("+supportedMessage.definition+")"
+                        supportedDocumentation += "\n\n $idStr \n --------------------\n `"+ supportedMessage.definition+"` \n"
                         for (npmPackage in npmPackages!!) {
                             if (!npmPackage.name().equals("hl7.fhir.r4.core")) {
                                 for (resource in implementationGuideParser!!.getResourcesOfTypeFromPackage(
                                     npmPackage,
                                     MessageDefinition::class.java
                                 )) {
-                                    if (resource.url == supportedMessage.definition && resource.hasDescription()) {
-                                        supportedDocumentation += " "+resource.description
+                                    if (resource.url == supportedMessage.definition) {
+                                        if (resource.hasDescription()) {
+                                            supportedDocumentation += " " + resource.description + "\n"
+                                        }
+                                        if (resource.hasEventCoding()) {
+                                            supportedDocumentation += " \n\n MessageHeader.eventCoding = **" + resource.eventCoding.code + "** \n"
+                                        }
+                                        if (resource.hasFocus()) {
+                                            supportedDocumentation += "\n\n | Resource | Profile | Min | Max | \n"
+                                            supportedDocumentation += "|----------|---------|-----|-----| \n"
+                                            for (foci in resource.focus) {
+                                                var min = foci.min
+                                                var max = foci.max
+                                                var resource = foci.code
+                                                var profile = foci.profile
+                                                if (profile==null) { profile="" }
+                                                else {
+                                                    profile = getDocumentationPathNpm(profile,npmPackage)
+                                                }
+                                                supportedDocumentation += "| $resource | $profile | $min | $max | \n"
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -691,10 +742,10 @@ class OpenAPIParser(private val ctx: FhirContext?, private val npmPackages: List
                 if (request.hasExtension("resource") && request.hasExtension("id")) {
                     for (npmPackage in npmPackages!!) {
                         if (!npmPackage.name().equals("hl7.fhir.r4.core")) {
-                            implementationGuideParser?.getResourcesFromFolder(npmPackage, "examples")
+                            implementationGuideParser?.getResourcesFromPackage(npmPackage)
                                 ?.forEach {
-                                        if (it is DomainResource) {
-                                            val resource: DomainResource = it
+                                        if (it is Resource) {
+                                            val resource: Resource = it
                                             //println(resource.resourceType.name + " - "+(request.getExtensionByUrl("resource").value as CodeType).value)
                                             if (resource.resourceType.name == (request.getExtensionByUrl("resource").value as CodeType).value ) {
                                                // println("Match "+ resource.idElement.idPart + " - "+ (request.getExtensionByUrl("id").value as StringType).value )
@@ -715,6 +766,8 @@ class OpenAPIParser(private val ctx: FhirContext?, private val npmPackages: List
         }
         return null
     }
+
+
     private fun getResponseExample(interaction : CapabilityStatement.ResourceInteractionComponent) : Supplier<IBaseResource?>? {
         if (interaction.hasExtension("https://fhir.nhs.uk/StructureDefinition/Extension-NHSDigital-APIDefinition-Examples")) {
             val apiExtension =
@@ -724,10 +777,10 @@ class OpenAPIParser(private val ctx: FhirContext?, private val npmPackages: List
                 if (request.hasExtension("resource") && request.hasExtension("id")) {
                     for (npmPackage in npmPackages!!) {
                         if (!npmPackage.name().equals("hl7.fhir.r4.core")) {
-                            implementationGuideParser?.getResourcesFromFolder(npmPackage, "examples")
+                            implementationGuideParser?.getResourcesFromPackage(npmPackage)
                                 ?.forEach {
-                                    if (it is DomainResource) {
-                                        val resource: DomainResource = it
+                                    if (it is Resource) {
+                                        val resource: Resource = it
                                         //println(resource.resourceType.name + " - "+(request.getExtensionByUrl("resource").value as CodeType).value)
                                         if (resource.resourceType.name == (request.getExtensionByUrl("resource").value as CodeType).value ) {
                                             // println("Match "+ resource.idElement.idPart + " - "+ (request.getExtensionByUrl("id").value as StringType).value )
@@ -737,6 +790,7 @@ class OpenAPIParser(private val ctx: FhirContext?, private val npmPackages: List
                                                     val bundle = Bundle()
                                                     bundle.type = Bundle.BundleType.SEARCHSET
                                                     bundle.entry.add(Bundle.BundleEntryComponent().setResource(resource))
+                                                    bundle.total = 1
                                                     return Supplier {
                                                         var example: IBaseResource? = bundle
                                                         example
@@ -764,6 +818,39 @@ class OpenAPIParser(private val ctx: FhirContext?, private val npmPackages: List
             return Supplier {
                 var example: IBaseResource? = operation
                 example
+            }
+        }
+        return null
+    }
+    private fun getOperationRequestExample(interaction: CapabilityStatement.CapabilityStatementRestResourceOperationComponent) : Supplier<IBaseResource?>? {
+        if (interaction.hasExtension("https://fhir.nhs.uk/StructureDefinition/Extension-NHSDigital-APIDefinition-Examples")) {
+            val apiExtension =
+                interaction.getExtensionByUrl("https://fhir.nhs.uk/StructureDefinition/Extension-NHSDigital-APIDefinition-Examples")
+            if (apiExtension.hasExtension("request")) {
+                val request = apiExtension.getExtensionByUrl("request")
+                if (request.hasExtension("resource") && request.hasExtension("id")) {
+                    for (npmPackage in npmPackages!!) {
+                        if (!npmPackage.name().equals("hl7.fhir.r4.core")) {
+                            implementationGuideParser?.getResourcesFromPackage(npmPackage)
+                                ?.forEach {
+                                    if (it is Resource) {
+                                        val resource: Resource = it
+                                        //println(resource.resourceType.name + " - "+(request.getExtensionByUrl("resource").value as CodeType).value)
+                                        if (resource.resourceType.name == (request.getExtensionByUrl("resource").value as CodeType).value ) {
+                                            //println("Match "+ resource.idElement.idPart + " - "+ (request.getExtensionByUrl("id").value as StringType).value )
+                                            if (resource.idElement.idPart == (request.getExtensionByUrl("id").value as StringType).value ) {
+                                                //   println("Matched")
+                                                return Supplier {
+                                                    var example: IBaseResource? = resource
+                                                    example
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                        }
+                    }
+                }
             }
         }
         return null
