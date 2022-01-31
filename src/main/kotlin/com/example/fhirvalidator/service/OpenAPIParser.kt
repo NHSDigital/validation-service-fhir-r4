@@ -82,7 +82,7 @@ class OpenAPIParser(private val ctx: FhirContext?, private val npmPackages: List
                 openApi.info.description += docDescription
             }
             if (apiDefinition.hasExtension("implementationGuide")) {
-                var igDescription = "\n\n | Implementation Guide | Version |\n |-----|-----|\n"
+                var igDescription = "\n\n | FHIR Implementation Guide | Version |\n |-----|-----|\n"
                 apiDefinition.extension.forEach{
                     if (it.url.equals("implementationGuide")) {
                         val name = it.getExtensionByUrl("name").value as StringType
@@ -126,7 +126,7 @@ class OpenAPIParser(private val ctx: FhirContext?, private val npmPackages: List
             transaction.addTagsItem(PAGE_SYSTEM)
             transaction.summary = "server-transaction: Execute a FHIR Transaction (or FHIR Batch) Bundle"
             addFhirResourceResponse(ctx, openApi, transaction, null, null)
-            addFhirResourceRequestBody(openApi, transaction, ctx, null)
+            addFhirResourceRequestBody(openApi, transaction, ctx, null, "Bundle")
         }
 
         // System History Operation
@@ -150,6 +150,9 @@ class OpenAPIParser(private val ctx: FhirContext?, private val npmPackages: List
                 }.collect(Collectors.toSet())
             val resourceTag = Tag()
             resourceTag.name = resourceType
+
+            addFhirResourceSchema(openApi, resourceType, nextResource.profile)
+
             if (nextResource.hasProfile()) {
                     val profile=nextResource.profile
                     val documentation = getDocumentationPath(profile)
@@ -159,6 +162,7 @@ class OpenAPIParser(private val ctx: FhirContext?, private val npmPackages: List
             }
 
             openApi.addTagsItem(resourceTag)
+
 
             for (resftfulIntraction in nextResource.interaction) {
                 var requestExample = getRequestExample(resftfulIntraction)
@@ -205,7 +209,7 @@ class OpenAPIParser(private val ctx: FhirContext?, private val npmPackages: List
                             operation.description = resftfulIntraction.documentation
                         }
                         addResourceIdParameter(operation)
-                        addFhirResourceRequestBody(openApi, operation, ctx, requestExample)
+                        addFhirResourceRequestBody(openApi, operation, ctx, requestExample, resourceType)
                         addFhirResourceResponse(ctx, openApi, operation, null,resftfulIntraction)
                     }
                     // Type Create
@@ -216,7 +220,7 @@ class OpenAPIParser(private val ctx: FhirContext?, private val npmPackages: List
                         if (resftfulIntraction.hasDocumentation()) {
                             operation.description = resftfulIntraction.documentation
                         }
-                        addFhirResourceRequestBody(openApi, operation, ctx,requestExample)
+                        addFhirResourceRequestBody(openApi, operation, ctx,requestExample, resourceType)
                         addFhirResourceResponse(ctx, openApi, operation, null,resftfulIntraction)
                     }
                     // Instance Patch
@@ -228,7 +232,7 @@ class OpenAPIParser(private val ctx: FhirContext?, private val npmPackages: List
                             operation.description = resftfulIntraction.documentation
                         }
                         addResourceIdParameter(operation)
-                        addFhirResourceRequestBody(openApi, operation, FHIR_CONTEXT_CANONICAL, patchExampleSupplier())
+                        addFhirResourceRequestBody(openApi, operation, FHIR_CONTEXT_CANONICAL, patchExampleSupplier(), resourceType)
                         addFhirResourceResponse(ctx, openApi, operation, null,resftfulIntraction)
                     }
 
@@ -293,6 +297,20 @@ class OpenAPIParser(private val ctx: FhirContext?, private val npmPackages: List
         }
         return openApi
     }
+    private fun addFhirResourceSchema(openApi: OpenAPI, resourceType: String?, profile: String?) {
+        // Add schema
+        if (!openApi.components.schemas.containsKey(resourceType)) {
+            val schema = ObjectSchema()
+            if (profile != null) {
+
+                val documentation = getDocumentationPath(profile)
+                schema.description = "See $documentation for the FHIR Profile on resource [$resourceType](https://www.hl7.org/fhir/$resourceType.html). HL7 FHIR R4 Schema can be found here [HL7 FHIR Downloads](https://www.hl7.org/fhir/downloads.html)"
+            } else {
+                schema.description = "See resource [$resourceType](https://www.hl7.org/fhir/$resourceType.html). HL7 FHIR R4 Schema can be found here [HL7 FHIR Downloads](https://www.hl7.org/fhir/downloads.html)"
+            }
+            openApi.components.addSchemas(resourceType, schema)
+        }
+    }
 
     private fun getDocumentationPath(profile : String) : String? {
         val uri = URI(profile)
@@ -347,18 +365,23 @@ class OpenAPIParser(private val ctx: FhirContext?, private val npmPackages: List
         }
     }
 
+
     private fun addSchemaFhirResource(theOpenApi: OpenAPI) {
         ensureComponentsSchemasPopulated(theOpenApi)
+        /*
         if (!theOpenApi.components.schemas.containsKey(FHIR_JSON_RESOURCE)) {
             val fhirJsonSchema = ObjectSchema()
-            fhirJsonSchema.description = "A FHIR resource"
+            fhirJsonSchema.description = "This API is based on HL7 FHIR R4 Schema. See [HL7 FHIR Downloads](https://www.hl7.org/fhir/downloads.html) for details. Note: the FHIR schema needs to be used in conjunction with FHIR profiles, which define additional rules and constrainst on top of the core resource schemas. These profiles are found in FHIR Implementation Guides."
             theOpenApi.components.addSchemas(FHIR_JSON_RESOURCE, fhirJsonSchema)
         }
         if (!theOpenApi.components.schemas.containsKey(FHIR_XML_RESOURCE)) {
             val fhirXmlSchema = ObjectSchema()
-            fhirXmlSchema.description = "A FHIR resource"
+            fhirXmlSchema.description = "This API is based on HL7 FHIR R4 Schema. See [HL7 FHIR Downloads](https://www.hl7.org/fhir/downloads.html) for details. Note: the FHIR schema needs to be used in conjunction with FHIR profiles, which define additional rules and constrainst on top of the core resource schemas. These profiles are found in FHIR Implementation Guides."
+
             theOpenApi.components.addSchemas(FHIR_XML_RESOURCE, fhirXmlSchema)
         }
+
+         */
     }
 
     private fun ensureComponentsSchemasPopulated(theOpenApi: OpenAPI) {
@@ -687,10 +710,11 @@ class OpenAPIParser(private val ctx: FhirContext?, private val npmPackages: List
         theOpenApi: OpenAPI,
         theOperation: Operation,
         theExampleFhirContext: FhirContext?,
-        theExampleSupplier: Supplier<IBaseResource?>?
+        theExampleSupplier: Supplier<IBaseResource?>?,
+        theResourceType: String?
     ) {
         val requestBody = RequestBody()
-        requestBody.content = provideContentFhirResource(theOpenApi, theExampleFhirContext, theExampleSupplier)
+        requestBody.content = provideContentFhirResource(theOpenApi, theExampleFhirContext, theExampleSupplier,theResourceType)
         theOperation.requestBody = requestBody
     }
 
@@ -720,14 +744,16 @@ class OpenAPIParser(private val ctx: FhirContext?, private val npmPackages: List
             if (exampleResponse != null) response200.content = provideContentFhirResource(
                 theOpenApi,
                 theFhirContext,
-                exampleResponse
+                exampleResponse,
+                theResourceType
             )
         }
         if (response200.content == null) {
             response200.content = provideContentFhirResource(
                 theOpenApi,
                 theFhirContext,
-                genericExampleSupplier(theFhirContext, theResourceType)
+                genericExampleSupplier(theFhirContext, theResourceType),
+                theResourceType
             )
         }
         theOperation.responses.addApiResponse("200", response200)
@@ -874,13 +900,19 @@ class OpenAPIParser(private val ctx: FhirContext?, private val npmPackages: List
     private fun provideContentFhirResource(
         theOpenApi: OpenAPI,
         theExampleFhirContext: FhirContext?,
-        theExampleSupplier: Supplier<IBaseResource?>?
+        theExampleSupplier: Supplier<IBaseResource?>?,
+        resourceType: String?
     ): Content? {
+        var resourceType2 = resourceType
         addSchemaFhirResource(theOpenApi)
+
         val retVal = Content()
+        if (resourceType2 == null && theExampleSupplier?.get() != null)
+            resourceType2 = theExampleSupplier?.get()?.fhirType()
+        if (resourceType2 != null) addFhirResourceSchema(theOpenApi, resourceType2,null)
         val jsonSchema = MediaType().schema(
             ObjectSchema().`$ref`(
-                "#/components/schemas/$FHIR_JSON_RESOURCE"
+                "#/components/schemas/"+resourceType2
             )
         )
         if (theExampleSupplier != null) {
@@ -890,9 +922,10 @@ class OpenAPIParser(private val ctx: FhirContext?, private val npmPackages: List
         retVal.addMediaType(Constants.CT_FHIR_JSON_NEW, jsonSchema)
         val xmlSchema = MediaType().schema(
             ObjectSchema().`$ref`(
-                "#/components/schemas/$FHIR_XML_RESOURCE"
+                "#/components/schemas/"+resourceType2
             )
         )
+        val schema = ObjectSchema().externalDocs
         if (theExampleSupplier != null) {
             xmlSchema.example = theExampleFhirContext!!.newXmlParser().setPrettyPrint(true)
                 .encodeResourceToString(theExampleSupplier.get())
