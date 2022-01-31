@@ -41,7 +41,8 @@ class ValidateController(
             // TODO crude
             try {
                 inputResource = fhirContext.newJsonParser().parseResource(input)
-            } catch (ex : Exception) {
+            } catch (ex : DataFormatException) {
+                if (!ex.message?.contains("was: '<'")!!) throw ex
                 inputResource = fhirContext.newXmlParser().parseResource(input)
             }
             val resources = getResourcesToValidate(inputResource)
