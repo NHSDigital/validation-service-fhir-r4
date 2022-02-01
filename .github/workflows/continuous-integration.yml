@@ -58,11 +58,11 @@ jobs:
       - name: Upload release artifacts
         id: upload_release_artifacts
         #if: github.ref == 'refs/heads/master'
-        uses: actions/upload-release-asset@v2
+        uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./target/fhir-validator-*.jar
+          asset_path: ./target/fhir-validator.jar
           asset_name: fhir-validator.jar
           asset_content_type: application/java-archive
