@@ -63,7 +63,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./target/fhir-validator.jar
+          asset_path: ./fhir-validator.jar
           asset_name: fhir-validator.jar
           asset_content_type: application/java-archive
 
@@ -75,7 +75,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: Dockerfile-CI
+          asset_path: Dockerfile
           asset_name: Dockerfile
           asset_content_type: text/plain
 
