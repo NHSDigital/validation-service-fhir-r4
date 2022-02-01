@@ -46,7 +46,7 @@ jobs:
 
       - name: Create release (master only)
         id: create_release
-        if: github.ref == 'refs/heads/master'
+        #if: github.ref == 'refs/heads/master'
         uses: actions/create-release@v1
         continue-on-error: true
         env:
@@ -55,9 +55,9 @@ jobs:
           tag_name: ${{ env.SPEC_VERSION }}
           release_name: ${{ env.SPEC_VERSION }}
         
-      - name: Upload release artifacts (master only)
+      - name: Upload jar release artifact (master only)
         id: upload_release_artifacts
-        if: github.ref == 'refs/heads/master'
+        #if: github.ref == 'refs/heads/master'
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -66,3 +66,14 @@ jobs:
           asset_path: ./target/fhir-validator.jar
           asset_name: fhir-validator.jar
           asset_content_type: application/java-archive
+
+      - name: Upload Dockerfile release artifact (master only)
+        id: upload_release_artifacts
+        #if: github.ref == 'refs/heads/master'
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: Dockerfile
+          asset_name: Dockerfile
