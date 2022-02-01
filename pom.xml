@@ -98,7 +98,7 @@
     <build>
         <finalName>fhir-validator</finalName>
         <sourceDirectory>${project.basedir}/src/main/kotlin</sourceDirectory>
-        <testSourceDirectory>${project.basedir}/src/test/kotlin</testSourceDirectory>
+        <!-- <testSourceDirectory>${project.basedir}/src/test/kotlin</testSourceDirectory> -->
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
@@ -129,7 +129,7 @@
                 <version>1.8</version>
                 <executions>
                     <execution>
-                        <phase>install</phase>
+                        <phase>package</phase>
                         <configuration>
                             <target>
                                 <copy file="target/fhir-validator.jar" tofile="./fhir-validator.jar"/>
