@@ -77,3 +77,4 @@ jobs:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: Dockerfile
           asset_name: Dockerfile
+          asset_content_type: text/plain
