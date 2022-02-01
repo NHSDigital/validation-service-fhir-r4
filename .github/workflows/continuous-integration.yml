@@ -45,8 +45,8 @@ jobs:
         run: echo "SPEC_VERSION=$(poetry run python scripts/calculate_version.py)" >> $GITHUB_ENV
 
       - name: Create release (master only)
-        id: create-release
-        if: github.ref == 'refs/heads/master'
+        id: create_release
+        #if: github.ref == 'refs/heads/master'
         uses: actions/create-release@v1
         continue-on-error: true
         env:
@@ -54,3 +54,15 @@ jobs:
         with:
           tag_name: ${{ env.SPEC_VERSION }}
           release_name: ${{ env.SPEC_VERSION }}
+        
+      - name: Upload release artifacts
+        id: upload_release_artifacts
+        #if: github.ref == 'refs/heads/master'
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./target/fhir-validator-*.jar
+          asset_name: fhir-validator.jar
+          asset_content_type: application/java-archive
