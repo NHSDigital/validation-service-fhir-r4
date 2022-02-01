@@ -56,7 +56,7 @@ jobs:
           release_name: ${{ env.SPEC_VERSION }}
         
       - name: Upload jar release artifact (master only)
-        id: upload_release_artifacts
+        id: upload_jar_release_artifact
         #if: github.ref == 'refs/heads/master'
         uses: actions/upload-release-asset@v1
         env:
@@ -68,7 +68,7 @@ jobs:
           asset_content_type: application/java-archive
 
       - name: Upload Dockerfile release artifact (master only)
-        id: upload_release_artifacts
+        id: upload_Dockerfile_release_artifact
         #if: github.ref == 'refs/heads/master'
         uses: actions/upload-release-asset@v1
         env:
