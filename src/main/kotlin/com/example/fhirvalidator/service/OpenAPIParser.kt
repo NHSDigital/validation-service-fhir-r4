@@ -178,7 +178,7 @@ class OpenAPIParser(private val ctx: FhirContext?, private val npmPackages: List
                         if (resftfulIntraction.hasDocumentation()) {
                             operation.description = resftfulIntraction.documentation
                         }
-                        addFhirResourceResponse(ctx, openApi, operation, null,resftfulIntraction)
+                        addFhirResourceResponse(ctx, openApi, operation, resourceType,resftfulIntraction)
                         for (nextSearchParam in nextResource.searchParam) {
                             val parametersItem = Parameter()
                             operation.addParametersItem(parametersItem)
@@ -197,7 +197,7 @@ class OpenAPIParser(private val ctx: FhirContext?, private val npmPackages: List
                             operation.description = resftfulIntraction.documentation
                         }
                         addResourceIdParameter(operation)
-                        addFhirResourceResponse(ctx, openApi, operation, null,resftfulIntraction)
+                        addFhirResourceResponse(ctx, openApi, operation,resourceType,resftfulIntraction)
                     }
                     // Instance Update
                     CapabilityStatement.TypeRestfulInteraction.UPDATE -> {
@@ -210,7 +210,7 @@ class OpenAPIParser(private val ctx: FhirContext?, private val npmPackages: List
                         }
                         addResourceIdParameter(operation)
                         addFhirResourceRequestBody(openApi, operation, ctx, requestExample, resourceType)
-                        addFhirResourceResponse(ctx, openApi, operation, null,resftfulIntraction)
+                        addFhirResourceResponse(ctx, openApi, operation, "OperationOutcome",resftfulIntraction)
                     }
                     // Type Create
                     CapabilityStatement.TypeRestfulInteraction.CREATE -> {
@@ -221,7 +221,7 @@ class OpenAPIParser(private val ctx: FhirContext?, private val npmPackages: List
                             operation.description = resftfulIntraction.documentation
                         }
                         addFhirResourceRequestBody(openApi, operation, ctx,requestExample, resourceType)
-                        addFhirResourceResponse(ctx, openApi, operation, null,resftfulIntraction)
+                        addFhirResourceResponse(ctx, openApi, operation, "OperationOutcome",resftfulIntraction)
                     }
                     // Instance Patch
                     CapabilityStatement.TypeRestfulInteraction.PATCH -> {
@@ -233,7 +233,7 @@ class OpenAPIParser(private val ctx: FhirContext?, private val npmPackages: List
                         }
                         addResourceIdParameter(operation)
                         addFhirResourceRequestBody(openApi, operation, FHIR_CONTEXT_CANONICAL, patchExampleSupplier(), resourceType)
-                        addFhirResourceResponse(ctx, openApi, operation, null,resftfulIntraction)
+                        addFhirResourceResponse(ctx, openApi, operation, "OperationOutcome",resftfulIntraction)
                     }
 
                         // Instance Delete
@@ -245,7 +245,7 @@ class OpenAPIParser(private val ctx: FhirContext?, private val npmPackages: List
                             operation.description = resftfulIntraction.documentation
                         }
                         addResourceIdParameter(operation)
-                        addFhirResourceResponse(ctx, openApi, operation, null,resftfulIntraction)
+                        addFhirResourceResponse(ctx, openApi, operation, "OperationOutcome",resftfulIntraction)
                     }
 
                 }
@@ -740,7 +740,26 @@ class OpenAPIParser(private val ctx: FhirContext?, private val npmPackages: List
         val response200 = ApiResponse()
         response200.description = "Success"
         if (resftfulIntraction != null) {
-            val exampleResponse = getResponseExample(resftfulIntraction)
+            var exampleResponse = getResponseExample(resftfulIntraction)
+
+            if (exampleResponse == null && theResourceType != null) {
+                val example = ctx?.newJsonParser()?.parseResource("{ \"resourceType\" : \"" + theResourceType + "\" }")
+                exampleResponse = Supplier {
+                    var example: IBaseResource? = example
+                    example
+                }
+                if (resftfulIntraction.code == CapabilityStatement.TypeRestfulInteraction.SEARCHTYPE) {
+                    val bundle = Bundle()
+                    bundle.type = Bundle.BundleType.SEARCHSET
+                    bundle.entry.add(Bundle.BundleEntryComponent().setResource(example as Resource?))
+                    bundle.total = 0
+                    exampleResponse = Supplier {
+                        var example: IBaseResource? = bundle
+                        example
+                    }
+                }
+            }
+
             if (exampleResponse != null) response200.content = provideContentFhirResource(
                 theOpenApi,
                 theFhirContext,
@@ -756,6 +775,7 @@ class OpenAPIParser(private val ctx: FhirContext?, private val npmPackages: List
                 theResourceType
             )
         }
+
         theOperation.responses.addApiResponse("200", response200)
     }
 
@@ -885,6 +905,10 @@ class OpenAPIParser(private val ctx: FhirContext?, private val npmPackages: List
         theFhirContext: FhirContext?,
         theResourceType: String?
     ): Supplier<IBaseResource?>? {
+        if (theResourceType == "CapabilityStatement") return Supplier {
+            var example: IBaseResource? = this.cs
+            example
+        }
         return if (theResourceType == null) {
             null
         } else Supplier {
