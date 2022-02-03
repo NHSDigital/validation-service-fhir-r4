@@ -142,6 +142,13 @@ class ConformanceController(
                 }
             }
         }
+        for (entry in searchParameters.entry) {
+            if (entry.resource is SearchParameter) {
+                if ((entry.resource as SearchParameter).url.equals(url)) {
+                    bundle.entry.add(Bundle.BundleEntryComponent().setResource(entry.resource))
+                }
+            }
+        }
 
         return fhirContext.newJsonParser().encodeResourceToString(bundle);
     }
@@ -191,7 +198,7 @@ class ConformanceController(
         cs.rest.add(rest)
         val operation = CapabilityStatement.CapabilityStatementRestResourceOperationComponent()
         operation.name = "validate"
-        operation.definition = "https://fhir.nhs.uk/OperationDefinition/validation"
+        operation.definition = "https://fhir.nhs.uk/OperationDefinition/validate"
         rest.operation.add(operation)
 
         // CapabilityStatement
