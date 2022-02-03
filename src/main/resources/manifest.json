@@ -1,14 +1,1 @@
-[
-    {
-        "packageName": "UKCore.Release1.test",
-        "version": "1.2.2-prerelease"
-    },
-    {
-        "packageName": "uk.nhsdigital.r4.test",
-        "version": "2.4.9-prerelease"
-    },
-    {
-        "packageName": "uk.nhsdigital.medicines.r4.test",
-        "version": "2.4.2-prerelease"
-    }
-]
+[{"packageName":"UKCore.Release1.test","version":"1.2.2-prerelease"},{"packageName":"uk.nhsdigital.r4.test","version":"2.4.11-prerelease"},{"packageName":"uk.nhsdigital.medicines.r4.test","version":"2.4.2-prerelease"},{"packageName":"uk.nhsdigital.medicines.r4","version":"0.0.0-prerelease"}]

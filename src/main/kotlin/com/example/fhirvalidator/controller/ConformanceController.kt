@@ -16,9 +16,11 @@ class ConformanceController(
     private val searchParameters : Bundle
 ) {
     var implementationGuideParser: ImplementationGuideParser? = ImplementationGuideParser(fhirContext!!)
+
     private val openapi = OpenAPIParser(
         fhirContext,
-        npmPackages
+        npmPackages,
+        searchParameters
     )
 
     @GetMapping("metadata",produces = ["application/json", "application/fhir+json"])
@@ -49,22 +51,6 @@ class ConformanceController(
         return "Nowt found"
     }
 
-    @GetMapping("CapabilityStatement/\$openapi",produces = ["application/json", "application/fhir+json"], params = ["url"])
-    fun capabilityStatementOpenAPI(@RequestParam(name="url") url : String ): String {
-        for (npmPackage in npmPackages!!) {
-            if (!npmPackage.name().equals("hl7.fhir.r4.core")) {
-                for (resource in implementationGuideParser!!.getResourcesOfTypeFromPackage(
-                    npmPackage,
-                    CapabilityStatement::class.java
-                )) {
-                    if (resource.url.equals(url)) {
-                        return Json.pretty(openapi.generateOpenApi(resource));
-                    }
-                }
-            }
-        }
-        return ""
-    }
 
     @GetMapping("CapabilityStatement",produces = ["application/json", "application/fhir+json"], params = ["url"])
     fun capabilityStatement(@RequestParam(name="url") url : String ): String {
@@ -130,25 +116,8 @@ class ConformanceController(
     fun searchParameter(@RequestParam(name="url") url : String ): String {
         val bundle = Bundle();
         bundle.type = Bundle.BundleType.SEARCHSET;
-        for (npmPackage in npmPackages!!) {
-            if (!npmPackage.name().equals("hl7.fhir.r4.core")) {
-                for (resource in implementationGuideParser!!.getResourcesOfTypeFromPackage(
-                    npmPackage,
-                    SearchParameter::class.java
-                )) {
-                    if (resource.url.equals(url)) {
-                        bundle.entry.add(Bundle.BundleEntryComponent().setResource(resource))
-                    }
-                }
-            }
-        }
-        for (entry in searchParameters.entry) {
-            if (entry.resource is SearchParameter) {
-                if ((entry.resource as SearchParameter).url.equals(url)) {
-                    bundle.entry.add(Bundle.BundleEntryComponent().setResource(entry.resource))
-                }
-            }
-        }
+        val searchParameter = openapi.getSearchParameter(url)
+        if (searchParameter != null) bundle.entry.add(Bundle.BundleEntryComponent().setResource(searchParameter))
 
         return fhirContext.newJsonParser().encodeResourceToString(bundle);
     }

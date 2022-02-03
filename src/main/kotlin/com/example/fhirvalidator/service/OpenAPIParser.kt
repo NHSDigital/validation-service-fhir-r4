@@ -30,15 +30,13 @@ import java.util.concurrent.atomic.AtomicReference
 import java.util.function.Supplier
 import java.util.stream.Collectors
 
-class OpenAPIParser(private val ctx: FhirContext?, private val npmPackages: List<NpmPackage>?) {
+class OpenAPIParser(private val ctx: FhirContext?,
+                    private val npmPackages: List<NpmPackage>?,
+                    private val searchParameters : Bundle) {
 
-    val FHIR_JSON_RESOURCE = "FHIR-JSON-RESOURCE"
-    val FHIR_XML_RESOURCE = "FHIR-XML-RESOURCE"
+
     val PAGE_SYSTEM = "System Level Operations"
-    val PAGE_ALL = "All"
     val FHIR_CONTEXT_CANONICAL = FhirContext.forR4()
-    val REQUEST_DETAILS = "REQUEST_DETAILS"
-    val RACCOON_PNG = "raccoon.png"
     private var mySwaggerUiVersion = "3.0.0"
     private var cs: CapabilityStatement = CapabilityStatement()
 
@@ -185,6 +183,17 @@ class OpenAPIParser(private val ctx: FhirContext?, private val npmPackages: List
                             parametersItem.name = nextSearchParam.name
                             parametersItem.setIn("query")
                             parametersItem.description = nextSearchParam.documentation
+                            var searchParameter :SearchParameter?
+
+                            if (!nextSearchParam.hasDefinition()) searchParameter = getSearchParameter("http://hl7.org/fhir/SearchParameter/$resourceType-"+nextSearchParam.name)
+                            else searchParameter = getSearchParameter(nextSearchParam.definition)
+
+
+                            if (searchParameter != null) {
+                                parametersItem.description += "\n\n | Type | Description | Expression | \n |--------|--------|--------| \n | [" + searchParameter.type.display.lowercase() + " ](https://www.hl7.org/fhir/search.html#"+searchParameter.type.display.lowercase() + ")|" +searchParameter.description+"|"+searchParameter.expression + "| \n"
+                            } else {
+                                parametersItem.description += "\n\n Caution: This does not appear to be a valid search parameter. Please check Hl7 FHIR conformance."
+                            }
                             parametersItem.style = Parameter.StyleEnum.SIMPLE
                         }
                     }
@@ -759,6 +768,12 @@ class OpenAPIParser(private val ctx: FhirContext?, private val npmPackages: List
                     }
                 }
             }
+            if (resftfulIntraction == null && theResourceType!=null && theResourceType == "CapabilityStatement") {
+                exampleResponse = Supplier {
+                    var example: IBaseResource? = cs
+                    example
+                }
+            }
 
             if (exampleResponse != null) response200.content = provideContentFhirResource(
                 theOpenApi,
@@ -982,5 +997,28 @@ class OpenAPIParser(private val ctx: FhirContext?, private val npmPackages: List
 
     fun getBannerImage(): String? {
         return myBannerImage
+    }
+
+    fun getSearchParameter(url : String) : SearchParameter? {
+        for (npmPackage in npmPackages!!) {
+            if (!npmPackage.name().equals("hl7.fhir.r4.core")) {
+                for (resource in implementationGuideParser!!.getResourcesOfTypeFromPackage(
+                    npmPackage,
+                    SearchParameter::class.java
+                )) {
+                    if (resource.url.equals(url)) {
+                        return resource
+                    }
+                }
+            }
+        }
+        for (entry in searchParameters.entry) {
+            if (entry.resource is SearchParameter) {
+                if ((entry.resource as SearchParameter).url.equals(url)) {
+                    return entry.resource as SearchParameter
+                }
+            }
+        }
+        return null
     }
 }
