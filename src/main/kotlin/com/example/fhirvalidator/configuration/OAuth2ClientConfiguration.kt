@@ -32,6 +32,7 @@ class OAuth2ClientConfiguration(private val terminologyValidationProperties: Ter
         return InMemoryClientRegistrationRepository(clientRegistration)
     }
 
+
     @Bean
     fun authorizedClientManager(
         clientRegistrationRepository: ClientRegistrationRepository,

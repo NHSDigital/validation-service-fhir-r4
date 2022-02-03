@@ -12,7 +12,8 @@ import org.springframework.web.bind.annotation.*
 @RestController
 class ConformanceController(
     private val fhirContext: FhirContext,
-    private val npmPackages: List<NpmPackage>
+    private val npmPackages: List<NpmPackage>,
+    private val searchParameters : Bundle
 ) {
     var implementationGuideParser: ImplementationGuideParser? = ImplementationGuideParser(fhirContext!!)
     private val openapi = OpenAPIParser(
@@ -94,6 +95,46 @@ class ConformanceController(
                 for (resource in implementationGuideParser!!.getResourcesOfTypeFromPackage(
                     npmPackage,
                     MessageDefinition::class.java
+                )) {
+                    if (resource.url.equals(url)) {
+                        bundle.entry.add(Bundle.BundleEntryComponent().setResource(resource))
+                    }
+                }
+            }
+        }
+
+        return fhirContext.newJsonParser().encodeResourceToString(bundle);
+    }
+
+    @GetMapping("OperationDefinition",produces = ["application/json", "application/fhir+json"], params = ["url"])
+    fun operationDefinition(@RequestParam(name="url") url : String ): String {
+        val bundle = Bundle();
+        bundle.type = Bundle.BundleType.SEARCHSET;
+        for (npmPackage in npmPackages!!) {
+            if (!npmPackage.name().equals("hl7.fhir.r4.core")) {
+                for (resource in implementationGuideParser!!.getResourcesOfTypeFromPackage(
+                    npmPackage,
+                    OperationDefinition::class.java
+                )) {
+                    if (resource.url.equals(url)) {
+                        bundle.entry.add(Bundle.BundleEntryComponent().setResource(resource))
+                    }
+                }
+            }
+        }
+
+        return fhirContext.newJsonParser().encodeResourceToString(bundle);
+    }
+
+    @GetMapping("SearchParameter",produces = ["application/json", "application/fhir+json"], params = ["url"])
+    fun searchParameter(@RequestParam(name="url") url : String ): String {
+        val bundle = Bundle();
+        bundle.type = Bundle.BundleType.SEARCHSET;
+        for (npmPackage in npmPackages!!) {
+            if (!npmPackage.name().equals("hl7.fhir.r4.core")) {
+                for (resource in implementationGuideParser!!.getResourcesOfTypeFromPackage(
+                    npmPackage,
+                    SearchParameter::class.java
                 )) {
                     if (resource.url.equals(url)) {
                         bundle.entry.add(Bundle.BundleEntryComponent().setResource(resource))
@@ -193,7 +234,31 @@ class ConformanceController(
                 .setDocumentation("The uri that identifies the MessageDefintiion")
         )
 
+        // OperationDefinition
 
+        val resource4 = CapabilityStatement.CapabilityStatementRestResourceComponent()
+        rest.resource.add(resource4)
+        resource4.type = "OperationDefinition"
+        resource4.interaction.add(CapabilityStatement.ResourceInteractionComponent().setCode(CapabilityStatement.TypeRestfulInteraction.SEARCHTYPE))
+        resource4.searchParam.add(
+            CapabilityStatement.CapabilityStatementRestResourceSearchParamComponent()
+                .setName("url")
+                .setType(Enumerations.SearchParamType.TOKEN)
+                .setDocumentation("The uri that identifies the OperationDefintiion")
+        )
+
+        // SearchParameter
+
+        val resource5 = CapabilityStatement.CapabilityStatementRestResourceComponent()
+        rest.resource.add(resource5)
+        resource5.type = "SearchParameter"
+        resource5.interaction.add(CapabilityStatement.ResourceInteractionComponent().setCode(CapabilityStatement.TypeRestfulInteraction.SEARCHTYPE))
+        resource5.searchParam.add(
+            CapabilityStatement.CapabilityStatementRestResourceSearchParamComponent()
+                .setName("url")
+                .setType(Enumerations.SearchParamType.TOKEN)
+                .setDocumentation("The uri that identifies the SearchParameter")
+        )
 
 
         for (npmPackage in npmPackages!!) {
