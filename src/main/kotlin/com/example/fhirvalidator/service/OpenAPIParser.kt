@@ -183,17 +183,8 @@ class OpenAPIParser(private val ctx: FhirContext?,
                             parametersItem.name = nextSearchParam.name
                             parametersItem.setIn("query")
                             parametersItem.description = nextSearchParam.documentation
-                            var searchParameter :SearchParameter?
+                            parametersItem.description += getSearchParameterDocumentation(nextSearchParam,resourceType)
 
-                            if (!nextSearchParam.hasDefinition()) searchParameter = getSearchParameter("http://hl7.org/fhir/SearchParameter/$resourceType-"+nextSearchParam.name)
-                            else searchParameter = getSearchParameter(nextSearchParam.definition)
-
-
-                            if (searchParameter != null) {
-                                parametersItem.description += "\n\n | Type | Description | Expression | \n |--------|--------|--------| \n | [" + searchParameter.type.display.lowercase() + " ](https://www.hl7.org/fhir/search.html#"+searchParameter.type.display.lowercase() + ")|" +searchParameter.description+"|"+searchParameter.expression + "| \n"
-                            } else {
-                                parametersItem.description += "\n\n Caution: This does not appear to be a valid search parameter. Please check Hl7 FHIR conformance."
-                            }
                             parametersItem.style = Parameter.StyleEnum.SIMPLE
                         }
                     }
@@ -1021,4 +1012,52 @@ class OpenAPIParser(private val ctx: FhirContext?,
         }
         return null
     }
+    private fun getSearchParameterDocumentation(nextSearchParam: CapabilityStatement.CapabilityStatementRestResourceSearchParamComponent, resourceType: String?) : String
+    {
+        var searchParameter : SearchParameter?
+        var description = ""
+
+        val parameters = nextSearchParam.name.split(".")
+
+        val name = parameters.get(0)
+
+        if (!nextSearchParam.hasDefinition()) {
+            searchParameter = getSearchParameter("http://hl7.org/fhir/SearchParameter/$resourceType-"+ name)
+            if (searchParameter == null) searchParameter = getSearchParameter("http://hl7.org/fhir/SearchParameter/clinical-"+ name)
+            if (searchParameter == null) searchParameter = getSearchParameter("http://hl7.org/fhir/SearchParameter/conformance-"+ name)
+        } else searchParameter = getSearchParameter(nextSearchParam.definition)
+
+        if (parameters.size>1) {
+            description += "\n\n Chained search parameter. Please see [chained](http://www.hl7.org/fhir/search.html#chaining)"
+            if (searchParameter == null) {
+                description += "\n\n Caution: **$name** does not appear to be a valid search parameter. Please check Hl7 FHIR conformance."
+            } else {
+                description += "\n\n | Name | Description | Expression | \n |--------|--------|--------| \n | $name | " + searchParameter.description + "|" + searchParameter.expression + "| \n"
+            }
+        } else {
+            if (searchParameter != null) {
+                description += "\n\n | Type | Description | Expression | \n |--------|--------|--------| \n | [" + searchParameter.type.display.lowercase() + " ](https://www.hl7.org/fhir/search.html#" + searchParameter.type.display.lowercase() + ")|" + searchParameter.description + "|" + searchParameter.expression + "| \n"
+            } else {
+                description += "\n\n Caution: This does not appear to be a valid search parameter. Please check Hl7 FHIR conformance."
+            }
+        }
+        if (parameters.size>1) {
+            if (searchParameter?.type != Enumerations.SearchParamType.REFERENCE) {
+                description += "\n\n Caution: This does not appear to be a valid search parameter. Chained search paramters **MUST** always be on reference types Please check Hl7 FHIR conformance."
+            } else {
+                val secondNames= parameters.get(1).split(":")
+                var resourceType: String?
+                if (secondNames.size>1) resourceType = secondNames.get(1) else resourceType = "Resource"
+                var newSearchParam = CapabilityStatement.CapabilityStatementRestResourceSearchParamComponent()
+                newSearchParam.name = secondNames.get(0)
+                // Add back in remaining chained parameters
+                for (i in 3..parameters.size) {
+                    newSearchParam.name += "."+parameters.get(i)
+                }
+                description += getSearchParameterDocumentation(newSearchParam,resourceType)
+            }
+        }
+        return description
+    }
+
 }
