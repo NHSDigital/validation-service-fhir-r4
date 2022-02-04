@@ -92,6 +92,9 @@ class OpenAPIParser(private val ctx: FhirContext?,
                         if (name.value.startsWith("uk.nhsdigital.medicines")) url = "https://simplifier.net/guide/nhsdigital-medicines/home"
                         if (name.value.startsWith("ukcore.")) url = "https://simplifier.net/guide/hl7fhirukcorer4release1/home"
                         igDescription += " |[$name]($url)|$version|\n"
+                        openApi.externalDocs = ExternalDocumentation()
+                        openApi.externalDocs.description = name.value
+                        openApi.externalDocs.url = url
                     }
                 }
                 openApi.info.description += igDescription
@@ -153,8 +156,12 @@ class OpenAPIParser(private val ctx: FhirContext?,
 
             if (nextResource.hasProfile()) {
                     val profile=nextResource.profile
+                    val idStr = getProfileName(profile)
                     val documentation = getDocumentationPath(profile)
-                    resourceTag.description = "See $documentation for documentation. Resource type: $resourceType"
+                    resourceTag.description = "Profile : [$idStr]($documentation) (additional rules to the resource) \n Resource type: [$resourceType](https://www.hl7.org/fhir/$resourceType.html) (also contains links to code generations schemas)"
+                   // resourceTag.externalDocs = ExternalDocumentation()
+                   // resourceTag.externalDocs.url = "Profile: [$idStr]($documentation)"
+
             } else {
                 resourceTag.description = "Resource type: $resourceType"
             }
@@ -302,20 +309,22 @@ class OpenAPIParser(private val ctx: FhirContext?,
         if (!openApi.components.schemas.containsKey(resourceType)) {
             val schema = ObjectSchema()
             if (profile != null) {
-
+                val idStr = getProfileName(profile)
                 val documentation = getDocumentationPath(profile)
-                schema.description = "See $documentation for the FHIR Profile on resource [$resourceType](https://www.hl7.org/fhir/$resourceType.html). HL7 FHIR R4 Schema can be found here [HL7 FHIR Downloads](https://www.hl7.org/fhir/downloads.html)"
+                schema.description = "See [$idStr]($documentation) for the FHIR Profile on resource [$resourceType](https://www.hl7.org/fhir/$resourceType.html). HL7 FHIR R4 Schema can be found here [HL7 FHIR Downloads](https://www.hl7.org/fhir/downloads.html)"
+
             } else {
                 schema.description = "See resource [$resourceType](https://www.hl7.org/fhir/$resourceType.html). HL7 FHIR R4 Schema can be found here [HL7 FHIR Downloads](https://www.hl7.org/fhir/downloads.html)"
             }
+            // This doesn't appear to be used. Consider removing
+            schema.externalDocs = ExternalDocumentation()
+            schema.externalDocs.description = resourceType
+            schema.externalDocs.url = "https://www.hl7.org/fhir/$resourceType.html"
             openApi.components.addSchemas(resourceType, schema)
         }
     }
 
     private fun getDocumentationPath(profile : String) : String? {
-        val uri = URI(profile)
-        val path: String = uri.getPath()
-        val idStr = path.substring(path.lastIndexOf('/') + 1)
         for (npmPackage in npmPackages!!) {
             if (!npmPackage.name().equals("hl7.fhir.r4.core")) {
                 for (resource in implementationGuideParser!!.getResourcesOfTypeFromPackage(
@@ -323,32 +332,34 @@ class OpenAPIParser(private val ctx: FhirContext?,
                     StructureDefinition::class.java
                 )) {
                     if (resource.url == profile) {
-                        if (npmPackage.name().startsWith("uk.nhsdigital.medicines.r4"))
-                            return "[$idStr](https://simplifier.net/guide/NHSDigital-Medicines/Home/FHIRAssets/AllAssets/Profiles/" + idStr + ".guide.md" + ")"
-                        if (npmPackage.name().startsWith("uk.nhsdigital.r4"))
-                            return "[$idStr](https://simplifier.net/guide/NHSDigital/Home/FHIRAssets/AllAssets/Profiles/" + idStr + ".guide.md" + ")"
-                        if (npmPackage.name().startsWith(""))
-                            return "[$idStr](https://simplifier.net/guide/HL7FHIRUKCoreR4Release1/Home/ProfilesandExtensions/Profile" + idStr + ")"
+                        return getDocumentationPathNpm(profile,npmPackage)
                     }
                 }
             }
         }
-        return "[$profile](https://simplifier.net/guide/nhsdigital/home)";
+        return "https://simplifier.net/guide/nhsdigital/home";
+    }
+
+    private fun getProfileUrl(idStr : String, packageName : String) : String {
+
+        if (packageName.startsWith("uk.nhsdigital.medicines.r4"))
+            return "https://simplifier.net/guide/NHSDigital-Medicines/Home/FHIRAssets/AllAssets/Profiles/" + idStr + ".guide.md"
+        if (packageName.startsWith("uk.nhsdigital.r4"))
+            return "https://simplifier.net/guide/NHSDigital/Home/FHIRAssets/AllAssets/Profiles/" + idStr + ".guide.md"
+        if (packageName.contains("ukcore"))
+            return "https://simplifier.net/guide/HL7FHIRUKCoreR4Release1/Home/ProfilesandExtensions/Profile" + idStr
+        return "https://simplifier.net/guide/nhsdigital/home";
+    }
+    private fun getProfileName(profile : String) : String {
+        val uri = URI(profile)
+        val path: String = uri.getPath()
+        return path.substring(path.lastIndexOf('/') + 1)
     }
 
     private fun getDocumentationPathNpm(profile : String, npmPackage : NpmPackage) : String? {
-        val uri = URI(profile)
-        val path: String = uri.getPath()
-        val idStr = path.substring(path.lastIndexOf('/') + 1)
-
-        if (npmPackage.name().startsWith("uk.nhsdigital.medicines.r4"))
-            return "[$idStr](https://simplifier.net/guide/NHSDigital-Medicines/Home/FHIRAssets/AllAssets/Profiles/" + idStr + ".guide.md" + ")"
-        if (npmPackage.name().startsWith("uk.nhsdigital.r4"))
-            return "[$idStr](https://simplifier.net/guide/NHSDigital/Home/FHIRAssets/AllAssets/Profiles/" + idStr + ".guide.md" + ")"
-        if (npmPackage.name().startsWith(""))
-            return "[$idStr](https://simplifier.net/guide/HL7FHIRUKCoreR4Release1/Home/ProfilesandExtensions/Profile" + idStr + ")"
-
-        return "[$profile](https://simplifier.net/guide/nhsdigital/home)";
+        val idStr = getProfileName(profile)
+        val profileUrl = getProfileUrl(idStr,npmPackage.name())
+        return profileUrl;
     }
 
     private fun patchExampleSupplier(): Supplier<IBaseResource?>? {
@@ -955,7 +966,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
                 "#/components/schemas/"+resourceType2
             )
         )
-        val schema = ObjectSchema().externalDocs
+
         if (theExampleSupplier != null) {
             xmlSchema.example = theExampleFhirContext!!.newXmlParser().setPrettyPrint(true)
                 .encodeResourceToString(theExampleSupplier.get())
