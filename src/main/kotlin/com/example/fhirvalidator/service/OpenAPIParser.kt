@@ -540,6 +540,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
         theOperation.summary = theOperationDefinition!!.title
         theOperation.description = theOperationDefinition.description
         addFhirResourceResponse(theFhirContext, theOpenApi, theOperation, null,null)
+        val mediaType = MediaType()
         if (theGet) {
             for (nextParameter in theOperationDefinition.parameter) {
                 val parametersItem = Parameter()
@@ -619,10 +620,11 @@ class OpenAPIParser(private val ctx: FhirContext?,
             }
             theOperation.requestBody = RequestBody()
             theOperation.requestBody.content = Content()
-            val mediaType = MediaType()
-            mediaType.example = exampleRequestBodyString
+
+            //mediaType.example = exampleRequestBodyString
 
             mediaType.schema = Schema<Any?>().type("object").title("FHIR Resource")
+            mediaType.examples = mutableMapOf<String,Example>()
             theOperation.requestBody.content.addMediaType(Constants.CT_FHIR_JSON_NEW, mediaType)
 
         }
@@ -637,9 +639,8 @@ class OpenAPIParser(private val ctx: FhirContext?,
                 supportedDocumentation += "\n Supported Messages \n"
                 for (supportedMessage in messaging.supportedMessage) {
                     if (supportedMessage.hasDefinition()) {
-                        val uri = URI(supportedMessage.definition)
-                        val path: String = uri.getPath()
-                        val idStr = path.substring(path.lastIndexOf('/') + 1)
+
+                        val idStr = getProfileName(supportedMessage.definition)
                         supportedDocumentation += "\n\n $idStr \n --------------------\n `"+ supportedMessage.definition+"` \n"
                         for (npmPackage in npmPackages!!) {
                             if (!npmPackage.name().equals("hl7.fhir.r4.core")) {
@@ -664,13 +665,25 @@ class OpenAPIParser(private val ctx: FhirContext?,
                                                 var profile = foci.profile
                                                 if (profile==null) { profile="" }
                                                 else {
-                                                    profile = getDocumentationPathNpm(profile,npmPackage)
+                                                    profile = getDocumentationPath(profile)
                                                 }
-                                                supportedDocumentation += "| $resource | $profile | $min | $max | \n"
+                                                var idStr = "Not specified"
+                                                idStr = getProfileName(foci.profile)
+                                                supportedDocumentation += "| [$resource](https://www.hl7.org/fhir/$resource.html) | [$idStr]($profile) | $min | $max | \n"
                                             }
                                         }
                                     }
                                 }
+                            }
+                        }
+                        if (supportedMessage.hasExtension("https://fhir.nhs.uk/StructureDefinition/Extension-NHSDigital-APIDefinition-Examples")) {
+                            val supplier = getMessageExample(supportedMessage)
+                            if (supplier != null && supplier.get() !=null) {
+                                var example : Example = Example()
+
+                                example.value = ctx?.newJsonParser()?.encodeResourceToString(supplier.get())
+
+                                mediaType.examples.put(getProfileName(supportedMessage.definition), example)
                             }
                         }
                         supportedDocumentation += "\n"
@@ -794,6 +807,40 @@ class OpenAPIParser(private val ctx: FhirContext?,
         }
 
         theOperation.responses.addApiResponse("200", response200)
+    }
+
+    private fun getMessageExample(interaction : CapabilityStatement.CapabilityStatementMessagingSupportedMessageComponent) : Supplier<IBaseResource?>? {
+        if (interaction.hasExtension("https://fhir.nhs.uk/StructureDefinition/Extension-NHSDigital-APIDefinition-Examples")) {
+            val apiExtension =
+                interaction.getExtensionByUrl("https://fhir.nhs.uk/StructureDefinition/Extension-NHSDigital-APIDefinition-Examples")
+            if (apiExtension.hasExtension("request")) {
+                val request = apiExtension.getExtensionByUrl("request")
+                if (request.hasExtension("resource") && request.hasExtension("id")) {
+                    for (npmPackage in npmPackages!!) {
+                        if (!npmPackage.name().equals("hl7.fhir.r4.core")) {
+                            implementationGuideParser?.getResourcesFromPackage(npmPackage)
+                                ?.forEach {
+                                    if (it is Resource) {
+                                        val resource: Resource = it
+
+                                        if (resource.resourceType.name == (request.getExtensionByUrl("resource").value as CodeType).value ) {
+
+                                            if (resource.idElement.idPart == (request.getExtensionByUrl("id").value as StringType).value ) {
+
+                                                return Supplier {
+                                                    var example: IBaseResource? = resource
+                                                    example
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                        }
+                    }
+                }
+            }
+        }
+        return null
     }
 
     private fun getRequestExample(interaction : CapabilityStatement.ResourceInteractionComponent) : Supplier<IBaseResource?>? {
