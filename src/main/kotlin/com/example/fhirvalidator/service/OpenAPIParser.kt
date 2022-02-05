@@ -7,10 +7,7 @@ import io.swagger.v3.oas.models.*
 import io.swagger.v3.oas.models.examples.Example
 import io.swagger.v3.oas.models.info.Contact
 import io.swagger.v3.oas.models.info.Info
-import io.swagger.v3.oas.models.media.Content
-import io.swagger.v3.oas.models.media.MediaType
-import io.swagger.v3.oas.models.media.ObjectSchema
-import io.swagger.v3.oas.models.media.Schema
+import io.swagger.v3.oas.models.media.*
 import io.swagger.v3.oas.models.parameters.Parameter
 import io.swagger.v3.oas.models.parameters.RequestBody
 import io.swagger.v3.oas.models.responses.ApiResponse
@@ -190,7 +187,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
                             parametersItem.name = nextSearchParam.name
                             parametersItem.setIn("query")
                             parametersItem.description = nextSearchParam.documentation
-                            parametersItem.description += getSearchParameterDocumentation(nextSearchParam,resourceType)
+                            parametersItem.description += getSearchParameterDocumentation(nextSearchParam,resourceType, parametersItem)
 
                             parametersItem.style = Parameter.StyleEnum.SIMPLE
                         }
@@ -1070,33 +1067,93 @@ class OpenAPIParser(private val ctx: FhirContext?,
         }
         return null
     }
-    private fun getSearchParameterDocumentation(nextSearchParam: CapabilityStatement.CapabilityStatementRestResourceSearchParamComponent, resourceType: String?) : String
+    private fun getSearchParameterDocumentation(nextSearchParam: CapabilityStatement.CapabilityStatementRestResourceSearchParamComponent,
+                                                resourceType: String,
+                                                parameter: Parameter) : String
     {
         var searchParameter : SearchParameter?
-        var description = ""
+
 
         val parameters = nextSearchParam.name.split(".")
 
-        val name = parameters.get(0)
+        val modifiers = parameters.get(0).split(":")
+
+        var name = modifiers.get(0)
+
+        if (nextSearchParam.hasType()) {
+            when (nextSearchParam.type) {
+                Enumerations.SearchParamType.TOKEN -> {
+                    parameter.schema = StringSchema()
+                    parameter.schema.example = "[system][code]"
+                }
+                Enumerations.SearchParamType.REFERENCE -> {
+                    parameter.schema = StringSchema()
+                    parameter.schema.example = "[type]/[id] or [id] or [uri]"
+                }
+                Enumerations.SearchParamType.DATE -> {
+                    parameter.schema = StringSchema()
+                    parameter.description = "See FHIR documentation for more details."
+                    parameter.schema.example = "eq2013-01-14"
+                }
+                Enumerations.SearchParamType.STRING -> {
+                    parameter.schema = StringSchema()
+                    parameter.schema.example = "LS15"
+                }
+            }
+        }
 
         if (!nextSearchParam.hasDefinition()) {
             searchParameter = getSearchParameter("http://hl7.org/fhir/SearchParameter/$resourceType-"+ name)
-            if (searchParameter == null) searchParameter = getSearchParameter("http://hl7.org/fhir/SearchParameter/clinical-"+ name)
-            if (searchParameter == null) searchParameter = getSearchParameter("http://hl7.org/fhir/SearchParameter/conformance-"+ name)
+            if (searchParameter == null) searchParameter = getSearchParameter("http://hl7.org/fhir/SearchParameter/individual-"+ name)
+            if (searchParameter == null) {
+                searchParameter = getSearchParameter("http://hl7.org/fhir/SearchParameter/clinical-"+ name)
+                if (searchParameter != null && !searchParameter.expression.contains(resourceType)) {
+                    searchParameter = null
+                }
+            }
+            if (searchParameter == null) {
+                searchParameter = getSearchParameter("http://hl7.org/fhir/SearchParameter/conformance-"+ name)
+                if (searchParameter != null && !searchParameter.expression.contains(resourceType)) {
+                    searchParameter = null
+                }
+            }
         } else searchParameter = getSearchParameter(nextSearchParam.definition)
+
+        var code : String? = searchParameter?.code
+        var expression : String = searchParameter?.expression.toString()
+        var type = searchParameter?.type?.display
+        var description = ""
+        if (searchParameter?.description != null)  description = "\n\n "+searchParameter?.description
+
+        if (modifiers.size>1 && searchParameter != null) {
+            val modifier = modifiers.get(1)
+            code += ":" + modifier
+            name += ":" + modifier
+            if (modifier == "identifier") {
+                code += ":" + modifier
+                type = "token"
+                expression += ".identifier | "+ expression +".where(resolve() is Resource).identifier"
+            }
+        }
+
+        if (searchParameter != null) {
+            description = description.replace("\r","<br/>")
+            description = description.replace("\n","")
+            expression = expression.replace("|","&#124;")
+        }
 
         if (parameters.size>1) {
             description += "\n\n Chained search parameter. Please see [chained](http://www.hl7.org/fhir/search.html#chaining)"
             if (searchParameter == null) {
-                description += "\n\n Caution: **$name** does not appear to be a valid search parameter. Please check Hl7 FHIR conformance."
+                description += "\n\n Caution: **$name** does not appear to be a valid search parameter. **Please check Hl7 FHIR conformance.**"
             } else {
-                description += "\n\n | Name | Description | Expression | \n |--------|--------|--------| \n | $name | " + searchParameter.description + "|" + searchParameter.expression + "| \n"
+                description += "\n\n | Name |  Expression | \n |--------|--------| \n | $name |  $expression | \n"
             }
         } else {
             if (searchParameter != null) {
-                description += "\n\n | Type | Description | Expression | \n |--------|--------|--------| \n | [" + searchParameter.type.display.lowercase() + " ](https://www.hl7.org/fhir/search.html#" + searchParameter.type.display.lowercase() + ")|" + searchParameter.description + "|" + searchParameter.expression + "| \n"
+                description += "\n\n | Type |  Expression | \n |--------|--------| \n | [" + type?.lowercase() + " ](https://www.hl7.org/fhir/search.html#" + type?.lowercase() + ")|  $expression | \n"
             } else {
-                description += "\n\n Caution: This does not appear to be a valid search parameter. Please check Hl7 FHIR conformance."
+                description += "\n\n Caution: This does not appear to be a valid search parameter. **Please check Hl7 FHIR conformance.**"
             }
         }
         if (parameters.size>1) {
@@ -1112,7 +1169,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
                 for (i in 3..parameters.size) {
                     newSearchParam.name += "."+parameters.get(i)
                 }
-                description += getSearchParameterDocumentation(newSearchParam,resourceType)
+                description += getSearchParameterDocumentation(newSearchParam,resourceType, parameter)
             }
         }
         return description
