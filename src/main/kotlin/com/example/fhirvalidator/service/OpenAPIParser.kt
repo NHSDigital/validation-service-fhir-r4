@@ -180,6 +180,29 @@ class OpenAPIParser(private val ctx: FhirContext?,
                         if (resftfulIntraction.hasDocumentation()) {
                             operation.description = resftfulIntraction.documentation
                         }
+                        if (nextResource.hasExtension("http://hl7.org/fhir/StructureDefinition/capabilitystatement-search-parameter-combination")) {
+                            var comboDoc = "\n\n **Required Parameters** \n\n One of the following paramters(s) is **required** \n\n" +
+                                    "| Required | Optional | \n"
+                            comboDoc += "|----------|---------| \n"
+
+                            for (extension in nextResource.getExtensionsByUrl("http://hl7.org/fhir/StructureDefinition/capabilitystatement-search-parameter-combination")) {
+                                var requiredDoc = ""
+                                var optionalDoc = ""
+                                if (extension.hasExtension("required")) {
+                                    for (required in extension.getExtensionsByUrl("required")) {
+                                        if (requiredDoc != "") requiredDoc += "+"
+                                        requiredDoc += (required.value as StringType).value
+                                    }
+                                }
+                                if (extension.hasExtension("optional")) {
+                                    for (optional in extension.getExtensionsByUrl("optional")) {
+                                        optionalDoc += (optional.value as StringType).value + "<br/>"
+                                    }
+                                }
+                                comboDoc += "| $requiredDoc| $optionalDoc | \n"
+                            }
+                            operation.description += comboDoc
+                        }
                         addFhirResourceResponse(ctx, openApi, operation, resourceType,resftfulIntraction)
                         for (nextSearchParam in nextResource.searchParam) {
                             val parametersItem = Parameter()
@@ -190,6 +213,12 @@ class OpenAPIParser(private val ctx: FhirContext?,
                             parametersItem.description += getSearchParameterDocumentation(nextSearchParam,resourceType, parametersItem)
 
                             parametersItem.style = Parameter.StyleEnum.SIMPLE
+
+                            if (nextSearchParam.hasExtension("https://fhir.nhs.uk/StructureDefinition/Extension-NHSDigital-APIDefinition-Examples")) {
+                                val extension = nextSearchParam.getExtensionByUrl("https://fhir.nhs.uk/StructureDefinition/Extension-NHSDigital-APIDefinition-Examples")
+                                if (extension.hasExtension("required"))
+                                    parametersItem.required = ((extension.getExtensionByUrl("required").value as BooleanType).value)
+                            }
                         }
                     }
                     // Instance Read
@@ -290,8 +319,6 @@ class OpenAPIParser(private val ctx: FhirContext?,
                 addResourceIdParameter(operation)
                 addFhirResourceResponse(ctx, openApi, operation, null,null)
             }
-
-
 
 
             // Resource-level Operations
@@ -536,7 +563,28 @@ class OpenAPIParser(private val ctx: FhirContext?,
         }
         theOperation.summary = theOperationDefinition!!.title
         theOperation.description = theOperationDefinition.description
-        addFhirResourceResponse(theFhirContext, theOpenApi, theOperation, null,null)
+        if (theOperationComponent.hasExtension("https://fhir.nhs.uk/StructureDefinition/Extension-NHSDigital-APIDefinition-Examples")) {
+            //
+            val exampleOperation = getOperationExample("response",theOperationComponent)
+            if (exampleOperation != null && exampleOperation.get() !=null) {
+                theOperation.responses = ApiResponses()
+                val response200 = ApiResponse()
+                response200.description = "Success"
+                response200.content = provideContentFhirResource(
+                    theOpenApi,
+                    theFhirContext,
+                    exampleOperation,
+                    theResourceType
+                )
+                theOperation.responses.addApiResponse("200",response200)
+            } else {
+                addFhirResourceResponse(theFhirContext, theOpenApi, theOperation, null, null)
+            }
+
+            //theOperation.requestBody.content = provideContentFhirResource(theOpenApi,ctx,exampleOperation, null)
+        } else {
+            addFhirResourceResponse(theFhirContext, theOpenApi, theOperation, null, null)
+        }
         val mediaType = MediaType()
         if (theGet) {
             for (nextParameter in theOperationDefinition.parameter) {
@@ -610,7 +658,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
             var exampleRequestBodyString =
                 FHIR_CONTEXT_CANONICAL.newJsonParser().setPrettyPrint(true)
                     .encodeResourceToString(exampleRequestBody)
-            val operationExample = getOperationRequestExample(theOperationComponent)
+            val operationExample = getOperationExample("request",theOperationComponent)
             if (operationExample != null && operationExample.get() !=null ) {
                 exampleRequestBodyString = FHIR_CONTEXT_CANONICAL.newJsonParser().setPrettyPrint(true)
                     .encodeResourceToString(operationExample.get())
@@ -618,27 +666,58 @@ class OpenAPIParser(private val ctx: FhirContext?,
             theOperation.requestBody = RequestBody()
             theOperation.requestBody.content = Content()
 
-            //mediaType.example = exampleRequestBodyString
+            if (!theOperationDefinition.url.equals("http://hl7.org/fhir/OperationDefinition/MessageHeader-process-message")
+                && !theOperationDefinition.url.equals("https://fhir.nhs.uk/OperationDefinition/MessageHeader-process-message")) {
+                if (theOperationComponent.hasExtension("https://fhir.nhs.uk/StructureDefinition/Extension-NHSDigital-APIDefinition-Examples")) {
+                    //
+                    val exampleOperation = getOperationExample("request",theOperationComponent)
+                    if (exampleOperation != null && exampleOperation.get() !=null) exampleRequestBodyString = ctx?.newJsonParser()?.encodeResourceToString(exampleOperation.get())
+                    //theOperation.requestBody.content = provideContentFhirResource(theOpenApi,ctx,exampleOperation, null)
+                }
+                mediaType.example = exampleRequestBodyString
+            } else {
+                mediaType.examples = mutableMapOf<String,Example>()
+            }
 
             mediaType.schema = Schema<Any?>().type("object").title("FHIR Resource")
-            mediaType.examples = mutableMapOf<String,Example>()
+
             theOperation.requestBody.content.addMediaType(Constants.CT_FHIR_JSON_NEW, mediaType)
 
         }
+        if (theOperationDefinition.hasParameter()) {
+            var inDoc = "\n\n ## Parameters (In) \n\n |Name | Cardinality | Type | Documentation |\n |-------|-----------|-------------|------------|"
+            var outDoc = "\n\n ## Parameters (Out) \n\n |Name | Cardinality | Type | Documentation |\n |-------|-----------|-------------|------------|"
+            for (parameter in theOperationDefinition.parameter) {
+                var entry = "\n |"+parameter.name + "|" + parameter.min + ".." + parameter.max + "|"
+                if (parameter.hasType()) entry += parameter.type + "|"
+                else entry += "|"
+                if (parameter.hasDocumentation()) entry += parameter.documentation + "|"
+                else entry += "|"
+                if (parameter.use == OperationDefinition.OperationParameterUse.IN) {
+                    inDoc += entry
+                } else {
+                    outDoc += entry
+                }
+            }
+            theOperation.description += inDoc
+            theOperation.description += outDoc
+        }
+        if (theOperationDefinition.hasComment()) {
+            theOperation.description += "\n\n ## Comment \n\n"+theOperationDefinition.comment
+        }
         if (theOperationDefinition.url.equals("http://hl7.org/fhir/OperationDefinition/MessageHeader-process-message")
             || theOperationDefinition.url.equals("https://fhir.nhs.uk/OperationDefinition/MessageHeader-process-message")) {
-            var supportedDocumentation = ""
+            var supportedDocumentation = "\n\n ## Supported Messages \n\n"
 
             for (messaging in cs.messaging) {
                 if (messaging.hasDocumentation()) {
                     supportedDocumentation += messaging.documentation +" \n"
                 }
-                supportedDocumentation += "\n Supported Messages \n"
                 for (supportedMessage in messaging.supportedMessage) {
                     if (supportedMessage.hasDefinition()) {
 
                         val idStr = getProfileName(supportedMessage.definition)
-                        supportedDocumentation += "\n\n $idStr \n --------------------\n `"+ supportedMessage.definition+"` \n"
+                        supportedDocumentation += "\n\n ### $idStr \n\n --------------------\n `"+ supportedMessage.definition+"` \n"
                         for (npmPackage in npmPackages!!) {
                             if (!npmPackage.name().equals("hl7.fhir.r4.core")) {
                                 for (resource in implementationGuideParser!!.getResourcesOfTypeFromPackage(
@@ -874,6 +953,40 @@ class OpenAPIParser(private val ctx: FhirContext?,
         return null
     }
 
+    private fun getRequestExample(interaction : CapabilityStatement.CapabilityStatementRestResourceOperationComponent) : Supplier<IBaseResource?>? {
+        if (interaction.hasExtension("https://fhir.nhs.uk/StructureDefinition/Extension-NHSDigital-APIDefinition-Examples")) {
+            val apiExtension =
+                interaction.getExtensionByUrl("https://fhir.nhs.uk/StructureDefinition/Extension-NHSDigital-APIDefinition-Examples")
+            if (apiExtension.hasExtension("request")) {
+                val request = apiExtension.getExtensionByUrl("request")
+                if (request.hasExtension("resource") && request.hasExtension("id")) {
+                    for (npmPackage in npmPackages!!) {
+                        if (!npmPackage.name().equals("hl7.fhir.r4.core")) {
+                            implementationGuideParser?.getResourcesFromPackage(npmPackage)
+                                ?.forEach {
+                                    if (it is Resource) {
+                                        val resource: Resource = it
+                                        //println(resource.resourceType.name + " - "+(request.getExtensionByUrl("resource").value as CodeType).value)
+                                        if (resource.resourceType.name == (request.getExtensionByUrl("resource").value as CodeType).value ) {
+                                            // println("Match "+ resource.idElement.idPart + " - "+ (request.getExtensionByUrl("id").value as StringType).value )
+                                            if (resource.idElement.idPart == (request.getExtensionByUrl("id").value as StringType).value ) {
+                                                //   println("Matched")
+                                                return Supplier {
+                                                    var example: IBaseResource? = resource
+                                                    example
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                        }
+                    }
+                }
+            }
+        }
+        return null
+    }
+
 
     private fun getResponseExample(interaction : CapabilityStatement.ResourceInteractionComponent) : Supplier<IBaseResource?>? {
         if (interaction.hasExtension("https://fhir.nhs.uk/StructureDefinition/Extension-NHSDigital-APIDefinition-Examples")) {
@@ -929,12 +1042,12 @@ class OpenAPIParser(private val ctx: FhirContext?,
         }
         return null
     }
-    private fun getOperationRequestExample(interaction: CapabilityStatement.CapabilityStatementRestResourceOperationComponent) : Supplier<IBaseResource?>? {
+    private fun getOperationExample(request: String,interaction: CapabilityStatement.CapabilityStatementRestResourceOperationComponent) : Supplier<IBaseResource?>? {
         if (interaction.hasExtension("https://fhir.nhs.uk/StructureDefinition/Extension-NHSDigital-APIDefinition-Examples")) {
             val apiExtension =
                 interaction.getExtensionByUrl("https://fhir.nhs.uk/StructureDefinition/Extension-NHSDigital-APIDefinition-Examples")
-            if (apiExtension.hasExtension("request")) {
-                val request = apiExtension.getExtensionByUrl("request")
+            if (apiExtension.hasExtension(request)) {
+                val request = apiExtension.getExtensionByUrl(request)
                 if (request.hasExtension("resource") && request.hasExtension("id")) {
                     for (npmPackage in npmPackages!!) {
                         if (!npmPackage.name().equals("hl7.fhir.r4.core")) {
