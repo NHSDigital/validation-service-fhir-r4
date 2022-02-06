@@ -574,16 +574,16 @@ class OpenAPIParser(private val ctx: FhirContext?,
                     theOpenApi,
                     theFhirContext,
                     exampleOperation,
-                    theResourceType
+                    (exampleOperation.get())?.fhirType()
                 )
                 theOperation.responses.addApiResponse("200",response200)
             } else {
-                addFhirResourceResponse(theFhirContext, theOpenApi, theOperation, null, null)
+                addFhirResourceResponse(theFhirContext, theOpenApi, theOperation, "Parameters", null)
             }
 
             //theOperation.requestBody.content = provideContentFhirResource(theOpenApi,ctx,exampleOperation, null)
         } else {
-            addFhirResourceResponse(theFhirContext, theOpenApi, theOperation, null, null)
+            addFhirResourceResponse(theFhirContext, theOpenApi, theOperation, "Parameters", null)
         }
         val mediaType = MediaType()
         if (theGet) {
@@ -678,7 +678,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
             } else {
                 mediaType.examples = mutableMapOf<String,Example>()
             }
-
+            // TODO add in correct schema
             mediaType.schema = Schema<Any?>().type("object").title("FHIR Resource")
 
             theOperation.requestBody.content.addMediaType(Constants.CT_FHIR_JSON_NEW, mediaType)
