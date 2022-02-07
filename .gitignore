@@ -1,5 +1,6 @@
 HELP.md
 target/
+fhir-validator.jar
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/

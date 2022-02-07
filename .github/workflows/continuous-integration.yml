@@ -45,7 +45,7 @@ jobs:
         run: echo "SPEC_VERSION=$(poetry run python scripts/calculate_version.py)" >> $GITHUB_ENV
 
       - name: Create release (master only)
-        id: create-release
+        id: create_release
         if: github.ref == 'refs/heads/master'
         uses: actions/create-release@v1
         continue-on-error: true
@@ -54,3 +54,39 @@ jobs:
         with:
           tag_name: ${{ env.SPEC_VERSION }}
           release_name: ${{ env.SPEC_VERSION }}
+        
+      - name: Upload jar release artifact (master only)
+        id: upload_jar_release_artifact
+        if: github.ref == 'refs/heads/master'
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./fhir-validator.jar
+          asset_name: fhir-validator.jar
+          asset_content_type: application/java-archive
+
+      - name: Upload Dockerfile release artifact (master only)
+        id: upload_Dockerfile_release_artifact
+        if: github.ref == 'refs/heads/master'
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: Dockerfile
+          asset_name: Dockerfile
+          asset_content_type: text/plain
+
+      - name: Upload manifest release artifact (master only)
+        id: upload_manifest_release_artifact
+        if: github.ref == 'refs/heads/master'
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./src/main/resources/manifest.json
+          asset_name: manifest.json
+          asset_content_type: application/json
