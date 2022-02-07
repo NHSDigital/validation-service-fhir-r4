@@ -115,6 +115,8 @@ class OpenAPIParser(private val ctx: FhirContext?,
         val systemInteractions =
             cs.restFirstRep.interaction.stream().map { t: CapabilityStatement.SystemInteractionComponent -> t.code }
                 .collect(Collectors.toSet())
+
+
         // Transaction Operation
         if (systemInteractions.contains(CapabilityStatement.SystemRestfulInteraction.TRANSACTION) || systemInteractions.contains(
                 CapabilityStatement.SystemRestfulInteraction.BATCH
@@ -140,6 +142,10 @@ class OpenAPIParser(private val ctx: FhirContext?,
         for (nextOperation in cs.restFirstRep.operation) {
             addFhirOperation(ctx, openApi, paths, null, nextOperation)
         }
+
+
+        // System-level REST
+
         for (nextResource in cs.restFirstRep.resource) {
             val resourceType = nextResource.type
             val typeRestfulInteractions =
@@ -437,7 +443,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
         theOperation: CapabilityStatement.CapabilityStatementRestResourceOperationComponent
     ) {
         val operationDefinition = AtomicReference<OperationDefinition?>()
-        val definitionId = IdType(theOperation.definition)
+        //val definitionId = IdType(theOperation.definition)
         for (npmPackage in npmPackages!!) {
             for (resource in implementationGuideParser!!.getResourcesOfTypeFromPackage(
                 npmPackage,
@@ -450,7 +456,29 @@ class OpenAPIParser(private val ctx: FhirContext?,
                 }
             }
         }
-        if (operationDefinition.get() == null) return
+        if (operationDefinition.get() == null) {
+            val operationDef = OperationDefinition()
+            operationDef.description = "**NOT HL7 FHIR Conformant** - No definition found for custom operation"
+            operationDef.affectsState = false
+            operationDef.url = "http://example.fhir.org/unknown-operation"
+            operationDef.code = theOperation.name
+            operationDef.system = true // default to system
+            operationDefinition.set(operationDef)
+            val operation = getPathItem(
+                thePaths, "/$" + operationDefinition.get()!!
+                    .code, PathItem.HttpMethod.GET
+            )
+            populateOperation(
+                theFhirContext,
+                theOpenApi,
+                theResourceType,
+                operationDefinition.get(),
+                operation,
+                true,
+                theOperation
+            )
+            return
+        }
         if (!operationDefinition.get()!!.affectsState) {
 
             // GET form for non-state-affecting operations
