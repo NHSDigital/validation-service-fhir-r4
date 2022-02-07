@@ -91,15 +91,16 @@ class OpenAPIParser(private val ctx: FhirContext?,
                         if (name.value.startsWith("uk.nhsdigital.medicines")) url = "https://simplifier.net/guide/nhsdigital-medicines/home"
                         if (name.value.startsWith("ukcore.")) url = "https://simplifier.net/guide/hl7fhirukcorer4release1/home"
                         igDescription += " |[$name]($url)|$version|\n"
-                        openApi.externalDocs = ExternalDocumentation()
-                        openApi.externalDocs.description = name.value
-                        openApi.externalDocs.url = url
+
                     }
                 }
                 openApi.info.description += igDescription
             }
 
         }
+        openApi.externalDocs = ExternalDocumentation()
+        openApi.externalDocs.description = "Hl7 FHIR R4"
+        openApi.externalDocs.url = "https://www.hl7.org/fhir/"
         val server = Server()
         openApi.addServersItem(server)
         server.url = cs.implementation.url
@@ -172,7 +173,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
                 resourceTag.description = "Resource type: $resourceType"
             }
 
-            openApi.addTagsItem(resourceTag)
+            if (nextResource.hasInteraction()) openApi.addTagsItem(resourceTag)
 
 
             for (resftfulIntraction in nextResource.interaction) {
