@@ -35,6 +35,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
     val PAGE_SYSTEM = "System Level Operations"
     val FHIR_CONTEXT_CANONICAL = FhirContext.forR4()
     private var mySwaggerUiVersion = "3.0.0"
+    private var generateXML = false;
     private var cs: CapabilityStatement = CapabilityStatement()
 
 
@@ -64,6 +65,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
         openApi.info.contact = Contact()
         openApi.info.contact.name = cs.contactFirstRep.name
         openApi.info.contact.email = cs.contactFirstRep.telecomFirstRep.value
+
         if (cs.hasExtension("https://fhir.nhs.uk/StructureDefinition/Extension-NHSDigital-APIDefinition")) {
             val apiDefinition = cs.getExtensionByUrl("https://fhir.nhs.uk/StructureDefinition/Extension-NHSDigital-APIDefinition")
             // Sample table:\n\n| One | Two | Three |\n|-----|-----|-------|\n| a   | b   | c     |
@@ -102,6 +104,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
         openApi.addServersItem(server)
         server.url = cs.implementation.url
         server.description = cs.software.name
+
         val paths = Paths()
         openApi.paths = paths
         val serverTag = Tag()
@@ -1156,7 +1159,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
             xmlSchema.example = theExampleFhirContext!!.newXmlParser().setPrettyPrint(true)
                 .encodeResourceToString(theExampleSupplier.get())
         }
-        retVal.addMediaType(Constants.CT_FHIR_XML_NEW, xmlSchema)
+        if (generateXML) retVal.addMediaType(Constants.CT_FHIR_XML_NEW, xmlSchema)
         return retVal
     }
 
