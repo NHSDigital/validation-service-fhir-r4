@@ -19,6 +19,8 @@ import org.hl7.fhir.instance.model.api.IBaseResource
 import org.hl7.fhir.instance.model.api.IPrimitiveType
 import org.hl7.fhir.r4.model.*
 import org.hl7.fhir.utilities.npm.NpmPackage
+import org.json.JSONArray
+import org.json.JSONObject
 import org.thymeleaf.templateresource.ClassLoaderTemplateResource
 import java.math.BigDecimal
 import java.net.URI
@@ -275,7 +277,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
                             operation.description = resftfulIntraction.documentation
                         }
                         addResourceIdParameter(operation)
-                        addFhirResourceRequestBody(openApi, operation, FHIR_CONTEXT_CANONICAL, patchExampleSupplier(), resourceType)
+                        addPatchResourceRequestBody(openApi, operation, FHIR_CONTEXT_CANONICAL, patchExampleSupplier(resourceType), resourceType)
                         addFhirResourceResponse(ctx, openApi, operation, "OperationOutcome",resftfulIntraction)
                     }
 
@@ -396,18 +398,54 @@ class OpenAPIParser(private val ctx: FhirContext?,
         return profileUrl;
     }
 
-    private fun patchExampleSupplier(): Supplier<IBaseResource?>? {
-        return Supplier {
-            val example = Parameters()
-            val operation = example
-                .addParameter()
-                .setName("operation")
-            operation.addPart().setName("type").value = StringType("add")
-            operation.addPart().setName("path").value = StringType("Patient")
-            operation.addPart().setName("name").value = StringType("birthDate")
-            operation.addPart().setName("value").value = DateType("1930-01-01")
-            example
+    private fun patchExampleSupplier(resourceType: String?): String? {
+
+        if (resourceType.equals("MedicationDispense")) {
+            val patch1 = JSONObject()
+                .put("op", "replace")
+                .put("path", "/status")
+                .put("value", "in-progress")
+
+            val patch2 = JSONObject()
+                .put("op", "add")
+                .put("path", "/whenPrepared")
+                .put("value", JSONArray().put("2022-02-08T00:00:00+00:00"))
+
+            val jsonString: String = JSONObject()
+                .put("patches", JSONArray().put(patch1).put(patch2))
+                .toString()
+
+            return jsonString
+
         }
+        if (resourceType.equals("MedicationRequest")) {
+            val patch1 = JSONObject()
+                .put("op", "replace")
+                .put("path", "/status")
+                .put("value", "cancelled")
+
+            val jsonString: String = JSONObject()
+                .put("patches", JSONArray().put(patch1))
+                .toString()
+
+            return jsonString
+
+        }
+        val patch1 = JSONObject()
+            .put("op", "add")
+            .put("path", "/foo")
+            .put("value", JSONArray().put("bar"))
+
+        val patch2 = JSONObject()
+            .put("op", "add")
+            .put("path", "/foo2")
+            .put("value", JSONArray().put("barbar"))
+
+        val jsonString: String = JSONObject()
+            .put("patches", JSONArray().put(patch1).put(patch2))
+            .toString()
+
+        return jsonString
     }
 
 
@@ -838,6 +876,28 @@ class OpenAPIParser(private val ctx: FhirContext?,
         }
     }
 
+
+    private fun addPatchResourceRequestBody(
+        theOpenApi: OpenAPI,
+        theOperation: Operation,
+        theExampleFhirContext: FhirContext?,
+        theExampleSupplier: String?,
+        theResourceType: String?
+    ) {
+        val requestBody = RequestBody()
+        requestBody.content = Content()
+        requestBody.content.addMediaType("application/json-patch+json",
+            MediaType()
+                .example(theExampleSupplier)
+                .schema(ObjectSchema().`$ref`(
+                "json"
+                    )
+                )
+        )
+
+        theOperation.requestBody = requestBody
+    }
+
     private fun addFhirResourceRequestBody(
         theOpenApi: OpenAPI,
         theOperation: Operation,
@@ -1169,7 +1229,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
         parameter.name = "id"
         parameter.setIn("path")
         parameter.description = "The resource ID"
-        parameter.example = "123"
+        parameter.example = "6160eb19-6fc3-4b43-953a-54ea01dc1cf4"
         parameter.schema = Schema<Any?>().type("string").minimum(BigDecimal(1))
         parameter.style = Parameter.StyleEnum.SIMPLE
         theOperation.addParametersItem(parameter)
@@ -1262,13 +1322,38 @@ class OpenAPIParser(private val ctx: FhirContext?,
                     searchParameter = null
                 }
             }
+            if (searchParameter == null) {
+                searchParameter = getSearchParameter("http://hl7.org/fhir/SearchParameter/medications-"+ name)
+                if (searchParameter != null && !searchParameter.expression.contains(resourceType)) {
+                    searchParameter = null
+                }
+            }
         } else searchParameter = getSearchParameter(nextSearchParam.definition)
 
         var code : String? = searchParameter?.code
         var expression : String = searchParameter?.expression.toString()
+        if (expression.split("|").size>1) {
+            val exps = expression.split("|")
+            for (exp in exps) {
+                if (exp.replace(" ","").startsWith(resourceType)) {
+                    expression = exp
+                }
+            }
+        }
         var type = searchParameter?.type?.display
         var description = ""
-        if (searchParameter?.description != null)  description = "\n\n "+searchParameter?.description
+        if (searchParameter?.description != null) {
+            var desc = searchParameter?.description
+            if (desc.split("*").size>1) {
+                val exps = desc.split("*")
+                for (exp in exps) {
+                    if (exp.replace(" [","").startsWith(resourceType)) {
+                        desc = exp
+                    }
+                }
+            }
+            description += "\n\n "+desc
+        }
 
         if (modifiers.size>1 && searchParameter != null) {
             val modifier = modifiers.get(1)
