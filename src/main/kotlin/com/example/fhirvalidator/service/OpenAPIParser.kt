@@ -68,6 +68,10 @@ class OpenAPIParser(private val ctx: FhirContext?,
         openApi.info.contact.name = cs.contactFirstRep.name
         openApi.info.contact.email = cs.contactFirstRep.telecomFirstRep.value
 
+        for (code in cs.format) {
+            if (code.value.contains("xml")) generateXML = true
+        }
+
         if (cs.hasExtension("https://fhir.nhs.uk/StructureDefinition/Extension-NHSDigital-APIDefinition")) {
             val apiDefinition = cs.getExtensionByUrl("https://fhir.nhs.uk/StructureDefinition/Extension-NHSDigital-APIDefinition")
             // Sample table:\n\n| One | Two | Three |\n|-----|-----|-------|\n| a   | b   | c     |
@@ -1330,6 +1334,14 @@ class OpenAPIParser(private val ctx: FhirContext?,
             }
         } else searchParameter = getSearchParameter(nextSearchParam.definition)
 
+        if (searchParameter == null && name.startsWith("_")) {
+            searchParameter = SearchParameter()
+            searchParameter?.code = name.replace("_","")
+            searchParameter?.description = "Special search parameter, see [FHIR Search](http://www.hl7.org/fhir/search.html)"
+            searchParameter?.expression = ""
+            searchParameter?.type = Enumerations.SearchParamType.SPECIAL
+        }
+
         var code : String? = searchParameter?.code
         var expression : String = searchParameter?.expression.toString()
         if (expression.split("|").size>1) {
@@ -1375,7 +1387,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
         if (parameters.size>1) {
             description += "\n\n Chained search parameter. Please see [chained](http://www.hl7.org/fhir/search.html#chaining)"
             if (searchParameter == null) {
-                description += "\n\n Caution: **$name** does not appear to be a valid search parameter. **Please check Hl7 FHIR conformance.**"
+                description += "\n\n Caution: **$name** does not appear to be a valid search parameter. **Please check HL7 FHIR conformance.**"
             } else {
                 description += "\n\n | Name |  Expression | \n |--------|--------| \n | $name |  $expression | \n"
             }
@@ -1383,7 +1395,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
             if (searchParameter != null) {
                 description += "\n\n | Type |  Expression | \n |--------|--------| \n | [" + type?.lowercase() + " ](https://www.hl7.org/fhir/search.html#" + type?.lowercase() + ")|  $expression | \n"
             } else {
-                description += "\n\n Caution: This does not appear to be a valid search parameter. **Please check Hl7 FHIR conformance.**"
+                description += "\n\n Caution: This does not appear to be a valid search parameter. **Please check HL7 FHIR conformance.**"
             }
         }
         if (parameters.size>1) {
