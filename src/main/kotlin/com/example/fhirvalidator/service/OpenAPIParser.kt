@@ -39,7 +39,8 @@ class OpenAPIParser(private val ctx: FhirContext?,
     private var mySwaggerUiVersion = "3.0.0"
     private var generateXML = false;
     private var cs: CapabilityStatement = CapabilityStatement()
-
+    private val exampleServer = "http://example.org/"
+    private val exampleServerPrefix = "FHIR/R4/"
 
     private val myResourcePathToClasspath: Map<String, String> = HashMap()
     private val myExtensionToContentType: Map<String, String> = HashMap()
@@ -191,10 +192,10 @@ class OpenAPIParser(private val ctx: FhirContext?,
                     CapabilityStatement.TypeRestfulInteraction.SEARCHTYPE -> {
                         val operation = getPathItem(paths, "/$resourceType", PathItem.HttpMethod.GET)
                         operation.addTagsItem(resourceType)
-                        operation.description = "This is a search type"
-                        operation.summary = "search-type: Search for $resourceType instances"
+                        operation.description = "See also [FHIR Search](http://www.hl7.org/fhir/search.html).\n\n"
+                        operation.summary = "search-type: Search for $resourceType instances."
                         if (resftfulIntraction.hasDocumentation()) {
-                            operation.description = resftfulIntraction.documentation
+                            operation.description += resftfulIntraction.documentation
                         }
                         if (nextResource.hasExtension("http://hl7.org/fhir/StructureDefinition/capabilitystatement-search-parameter-combination")) {
                             var comboDoc = "\n\n **Required Parameters** \n\n One of the following paramters(s) is **required** \n\n" +
@@ -236,16 +237,19 @@ class OpenAPIParser(private val ctx: FhirContext?,
                                     parametersItem.required = ((extension.getExtensionByUrl("required").value as BooleanType).value)
                             }
                         }
+                        addResourceAPIMParameter(operation)
                     }
                     // Instance Read
                     CapabilityStatement.TypeRestfulInteraction.READ -> {
                         val operation = getPathItem(paths, "/$resourceType/{id}", PathItem.HttpMethod.GET)
                         operation.addTagsItem(resourceType)
-                        operation.summary = "read-instance: Read $resourceType instance"
+                        operation.summary = "read-instance: Read $resourceType instance."
+                        operation.description = "See also [FHIR read](http://www.hl7.org/fhir/http.html#read)\n\n"
                         if (resftfulIntraction.hasDocumentation()) {
-                            operation.description = resftfulIntraction.documentation
+                            operation.description += resftfulIntraction.documentation
                         }
                         addResourceIdParameter(operation)
+                        addResourceAPIMParameter(operation)
                         addFhirResourceResponse(ctx, openApi, operation,resourceType,resftfulIntraction)
                     }
                     // Instance Update
@@ -253,11 +257,13 @@ class OpenAPIParser(private val ctx: FhirContext?,
                         val operation = getPathItem(paths, "/$resourceType/{id}", PathItem.HttpMethod.PUT)
                         operation.addTagsItem(resourceType)
                         operation.summary =
-                            "update-instance: Update an existing $resourceType instance, or create using a client-assigned ID"
+                            "update-instance: Update an existing $resourceType instance, or create using a client-assigned ID."
+                        operation.description = "See also [FHIR update](http://www.hl7.org/fhir/http.html#update)\n\n"
                         if (resftfulIntraction.hasDocumentation()) {
-                            operation.description = resftfulIntraction.documentation
+                            operation.description += resftfulIntraction.documentation
                         }
                         addResourceIdParameter(operation)
+                        addResourceAPIMParameter(operation)
                         addFhirResourceRequestBody(openApi, operation, ctx, requestExample, resourceType)
                         addFhirResourceResponse(ctx, openApi, operation, "OperationOutcome",resftfulIntraction)
                     }
@@ -265,10 +271,12 @@ class OpenAPIParser(private val ctx: FhirContext?,
                     CapabilityStatement.TypeRestfulInteraction.CREATE -> {
                         val operation = getPathItem(paths, "/$resourceType", PathItem.HttpMethod.POST)
                         operation.addTagsItem(resourceType)
-                        operation.summary = "create-type: Create a new $resourceType instance"
+                        operation.summary = "create-type: Create a new $resourceType instance."
+                        operation.description = "See also [FHIR create](http://www.hl7.org/fhir/http.html#create)\n\n"
                         if (resftfulIntraction.hasDocumentation()) {
-                            operation.description = resftfulIntraction.documentation
+                            operation.description += resftfulIntraction.documentation
                         }
+                        addResourceAPIMParameter(operation)
                         addFhirResourceRequestBody(openApi, operation, ctx,requestExample, resourceType)
                         addFhirResourceResponse(ctx, openApi, operation, "OperationOutcome",resftfulIntraction)
                     }
@@ -276,11 +284,14 @@ class OpenAPIParser(private val ctx: FhirContext?,
                     CapabilityStatement.TypeRestfulInteraction.PATCH -> {
                         val operation = getPathItem(paths, "/$resourceType/{id}", PathItem.HttpMethod.PATCH)
                         operation.addTagsItem(resourceType)
-                        operation.summary = "instance-patch: Patch a resource instance of type $resourceType by ID"
+                        operation.summary = "instance-patch: Patch a resource instance of type $resourceType by ID."
+                        operation.description = "See also [FHIR patch](http://www.hl7.org/fhir/http.html#patch)\n\n"
                         if (resftfulIntraction.hasDocumentation()) {
-                            operation.description = resftfulIntraction.documentation
+                            operation.description += resftfulIntraction.documentation
                         }
                         addResourceIdParameter(operation)
+                        addResourceAPIMParameter(operation)
+                        addFhirResourceSchema(openApi,"JSONPATCH",null)
                         addPatchResourceRequestBody(openApi, operation, FHIR_CONTEXT_CANONICAL, patchExampleSupplier(resourceType), resourceType)
                         addFhirResourceResponse(ctx, openApi, operation, "OperationOutcome",resftfulIntraction)
                     }
@@ -289,9 +300,10 @@ class OpenAPIParser(private val ctx: FhirContext?,
                         CapabilityStatement.TypeRestfulInteraction.DELETE -> {
                         val operation = getPathItem(paths, "/$resourceType/{id}", PathItem.HttpMethod.DELETE)
                         operation.addTagsItem(resourceType)
-                        operation.summary = "instance-delete: Perform a logical delete on a resource instance"
+                        operation.summary = "instance-delete: Perform a logical delete on a resource instance."
+                            operation.description = "See also [FHIR delete](http://www.hl7.org/fhir/http.html#delete)\n\n"
                         if (resftfulIntraction.hasDocumentation()) {
-                            operation.description = resftfulIntraction.documentation
+                            operation.description += resftfulIntraction.documentation
                         }
                         addResourceIdParameter(operation)
                         addFhirResourceResponse(ctx, openApi, operation, "OperationOutcome",resftfulIntraction)
@@ -308,9 +320,11 @@ class OpenAPIParser(private val ctx: FhirContext?,
                     "/$resourceType/{id}/_history/{version_id}", PathItem.HttpMethod.GET
                 )
                 operation.addTagsItem(resourceType)
-                operation.summary = "vread-instance: Read $resourceType instance with specific version"
+                operation.summary = "vread-instance: Read $resourceType instance with specific version."
+                operation.description = "See also [FHIR vread](http://www.hl7.org/fhir/http.html#vread)\n\n"
                 addResourceIdParameter(operation)
                 addResourceVersionIdParameter(operation)
+                addResourceAPIMParameter(operation)
                 addFhirResourceResponse(ctx, openApi, operation, null,null)
             }
 
@@ -319,7 +333,9 @@ class OpenAPIParser(private val ctx: FhirContext?,
                 val operation = getPathItem(paths, "/$resourceType/_history", PathItem.HttpMethod.GET)
                 operation.addTagsItem(resourceType)
                 operation.summary =
-                    "type-history: Fetch the resource change history for all resources of type $resourceType"
+                    "type-history: Fetch the resource change history for all resources of type $resourceType."
+                operation.description = "See also [FHIR history](http://www.hl7.org/fhir/http.html#history)\n\n"
+                addResourceAPIMParameter(operation)
                 addFhirResourceResponse(ctx, openApi, operation, null,null)
             }
 
@@ -332,7 +348,9 @@ class OpenAPIParser(private val ctx: FhirContext?,
                 operation.addTagsItem(resourceType)
                 operation.summary =
                     "instance-history: Fetch the resource change history for all resources of type $resourceType"
+                operation.description = "See also [FHIR history](http://www.hl7.org/fhir/http.html#history)\n\n"
                 addResourceIdParameter(operation)
+                addResourceAPIMParameter(operation)
                 addFhirResourceResponse(ctx, openApi, operation, null,null)
             }
 
@@ -347,14 +365,20 @@ class OpenAPIParser(private val ctx: FhirContext?,
     private fun addFhirResourceSchema(openApi: OpenAPI, resourceType: String?, profile: String?) {
         // Add schema
         if (!openApi.components.schemas.containsKey(resourceType)) {
+            if (resourceType == "JSONPATCH") {
+                val schema = ObjectSchema()
+                schema.description = "See [JSON Patch](http://jsonpatch.com/) and []()"
+                openApi.components.addSchemas(resourceType, schema)
+                return
+            }
             val schema = ObjectSchema()
             if (profile != null) {
                 val idStr = getProfileName(profile)
                 val documentation = getDocumentationPath(profile)
-                schema.description = "See [$idStr]($documentation) for the FHIR Profile on resource [$resourceType](https://www.hl7.org/fhir/$resourceType.html). HL7 FHIR R4 Schema can be found here [HL7 FHIR Downloads](https://www.hl7.org/fhir/downloads.html)"
+                schema.description = "See [$idStr]($documentation) for the FHIR Profile on resource [$resourceType](https://www.hl7.org/fhir/$resourceType.html). For HL7 FHIR R4 Schema see [HL7 FHIR Downloads](https://www.hl7.org/fhir/downloads.html)"
 
             } else {
-                schema.description = "See resource [$resourceType](https://www.hl7.org/fhir/$resourceType.html). HL7 FHIR R4 Schema can be found here [HL7 FHIR Downloads](https://www.hl7.org/fhir/downloads.html)"
+                schema.description = "See [HL7 FHIR $resourceType](https://www.hl7.org/fhir/$resourceType.html). For HL7 FHIR R4 Schema see [HL7 FHIR Downloads](https://www.hl7.org/fhir/downloads.html)"
             }
             // This doesn't appear to be used. Consider removing
             schema.externalDocs = ExternalDocumentation()
@@ -894,7 +918,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
             MediaType()
                 .example(theExampleSupplier)
                 .schema(ObjectSchema().`$ref`(
-                "json"
+                "JSONPATCH"
                     )
                 )
         )
@@ -947,7 +971,17 @@ class OpenAPIParser(private val ctx: FhirContext?,
                 if (resftfulIntraction.code == CapabilityStatement.TypeRestfulInteraction.SEARCHTYPE) {
                     val bundle = Bundle()
                     bundle.type = Bundle.BundleType.SEARCHSET
-                    bundle.entry.add(Bundle.BundleEntryComponent().setResource(example as Resource?))
+                    bundle.addLink(
+                        Bundle.BundleLinkComponent()
+                            .setRelation("self")
+                            .setUrl(exampleServer + exampleServerPrefix + (example as Resource?)?.resourceType + "?parameterExample=123&page=1")
+                    )
+                    bundle.addLink(
+                        Bundle.BundleLinkComponent()
+                            .setRelation("next")
+                            .setUrl(exampleServer + exampleServerPrefix + (example as Resource?)?.resourceType + "?parameterExample=123&page=2")
+                    )
+                    bundle.entry.add(Bundle.BundleEntryComponent().setResource(example as Resource?).setFullUrl(exampleServer + exampleServerPrefix + (example as Resource?)?.resourceType + "/" + (example as Resource?)?.id ))
                     bundle.total = 0
                     exampleResponse = Supplier {
                         var example: IBaseResource? = bundle
@@ -1105,7 +1139,17 @@ class OpenAPIParser(private val ctx: FhirContext?,
                                                 if (interaction.code == CapabilityStatement.TypeRestfulInteraction.SEARCHTYPE) {
                                                     val bundle = Bundle()
                                                     bundle.type = Bundle.BundleType.SEARCHSET
-                                                    bundle.entry.add(Bundle.BundleEntryComponent().setResource(resource))
+                                                    bundle.addLink(
+                                                        Bundle.BundleLinkComponent()
+                                                            .setRelation("self")
+                                                            .setUrl(exampleServer + exampleServerPrefix + (resource).resourceType + "?parameterExample=123&page=1")
+                                                    )
+                                                    bundle.addLink(
+                                                        Bundle.BundleLinkComponent()
+                                                            .setRelation("next")
+                                                            .setUrl(exampleServer + exampleServerPrefix + (resource as Resource)?.resourceType + "?parameterExample=123&page=2")
+                                                    )
+                                                    bundle.entry.add(Bundle.BundleEntryComponent().setResource(resource).setFullUrl(exampleServer + exampleServerPrefix + (resource).resourceType + "/" + (resource).id ))
                                                     bundle.total = 1
                                                     return Supplier {
                                                         var example: IBaseResource? = bundle
@@ -1234,6 +1278,54 @@ class OpenAPIParser(private val ctx: FhirContext?,
         parameter.setIn("path")
         parameter.description = "The resource ID"
         parameter.example = "6160eb19-6fc3-4b43-953a-54ea01dc1cf4"
+        parameter.schema = Schema<Any?>().type("string").minimum(BigDecimal(1))
+        parameter.style = Parameter.StyleEnum.SIMPLE
+        theOperation.addParametersItem(parameter)
+    }
+
+    private fun addResourceAPIMParameter(theOperation: Operation) {
+
+        var parameter = Parameter()
+
+        if (cs.restFirstRep.hasSecurity()) {
+            parameter.name = "Authorization"
+            parameter.setIn("header")
+            parameter.required = true
+            parameter.description =
+                "An [OAuth 2.0 bearer token](https://digital.nhs.uk/developer/guides-and-documentation/security-and-authorisation#user-restricted-apis).\n" +
+                        "\n" +
+                        "Required in all environments except sandbox."
+            parameter.example = "Bearer g1112R_ccQ1Ebbb4gtHBP1aaaNM"
+            parameter.schema = Schema<Any?>().type("string").minimum(BigDecimal(1))
+            parameter.style = Parameter.StyleEnum.SIMPLE
+            theOperation.addParametersItem(parameter)
+
+            parameter = Parameter()
+        }
+
+        parameter.name = "NHSD-Session-URID"
+        parameter.setIn("header")
+        parameter.description = "The user role ID (URID) for the current session. Also known as a user role profile ID (URPID)."
+        parameter.example = "555254240100"
+        parameter.schema = Schema<Any?>().type("string").minimum(BigDecimal(1))
+        parameter.style = Parameter.StyleEnum.SIMPLE
+        theOperation.addParametersItem(parameter)
+
+        parameter = Parameter()
+        parameter.name = "X-Request-ID"
+        parameter.required = true
+        parameter.setIn("header")
+        parameter.description = "A globally unique identifier (GUID) for the request, which we use to de-duplicate repeated requests and to trace the request if you contact our helpdesk"
+        parameter.example = "60E0B220-8136-4CA5-AE46-1D97EF59D068"
+        parameter.schema = Schema<Any?>().type("string").minimum(BigDecimal(1))
+        parameter.style = Parameter.StyleEnum.SIMPLE
+        theOperation.addParametersItem(parameter)
+
+        parameter = Parameter()
+        parameter.name = "X-Correlation-ID"
+        parameter.setIn("header")
+        parameter.description = "An optional ID which you can use to track transactions across multiple systems. It can have any value, but we recommend avoiding `.` characters."
+        parameter.example = "11C46F5F-CDEF-4865-94B2-0EE0EDCC26DA"
         parameter.schema = Schema<Any?>().type("string").minimum(BigDecimal(1))
         parameter.style = Parameter.StyleEnum.SIMPLE
         theOperation.addParametersItem(parameter)
