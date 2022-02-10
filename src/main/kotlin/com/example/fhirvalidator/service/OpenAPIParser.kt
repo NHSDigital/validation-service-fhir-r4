@@ -138,7 +138,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
             transaction.addTagsItem(PAGE_SYSTEM)
             transaction.summary = "server-transaction: Execute a FHIR Transaction (or FHIR Batch) Bundle"
             addFhirResourceResponse(ctx, openApi, transaction, null, null)
-            addFhirResourceRequestBody(openApi, transaction, ctx, null, "Bundle")
+            addFhirResourceRequestBody(openApi, transaction, emptyList(), "Bundle")
         }
 
         // System History Operation
@@ -265,7 +265,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
                         }
                         addResourceIdParameter(operation)
                         addResourceAPIMParameter(operation)
-                        addFhirResourceRequestBody(openApi, operation, ctx, requestExample, resourceType)
+                        addFhirResourceRequestBody(openApi, operation,  requestExample, resourceType)
                         addFhirResourceResponse(ctx, openApi, operation, "OperationOutcome",resftfulIntraction)
                     }
                     // Type Create
@@ -278,7 +278,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
                             operation.description += resftfulIntraction.documentation
                         }
                         addResourceAPIMParameter(operation)
-                        addFhirResourceRequestBody(openApi, operation, ctx,requestExample, resourceType)
+                        addFhirResourceRequestBody(openApi, operation, requestExample, resourceType)
                         addFhirResourceResponse(ctx, openApi, operation, "OperationOutcome",resftfulIntraction)
                     }
                     // Instance Patch
@@ -669,10 +669,11 @@ class OpenAPIParser(private val ctx: FhirContext?,
                 theOperation.responses = ApiResponses()
                 val response200 = ApiResponse()
                 response200.description = "Success"
+                val exampleList = mutableListOf<Example>()
+                exampleList.add(Example().value(ctx?.newJsonParser()?.encodeResourceToString(exampleOperation.get())))
                 response200.content = provideContentFhirResource(
                     theOpenApi,
-                    theFhirContext,
-                    exampleOperation,
+                    exampleList,
                     (exampleOperation.get())?.fhirType()
                 )
                 theOperation.responses.addApiResponse("200",response200)
@@ -899,12 +900,11 @@ class OpenAPIParser(private val ctx: FhirContext?,
     private fun addFhirResourceRequestBody(
         theOpenApi: OpenAPI,
         theOperation: Operation,
-        theExampleFhirContext: FhirContext?,
-        theExampleSupplier: Supplier<IBaseResource?>?,
+        theExampleSupplier: List<Example>,
         theResourceType: String?
     ) {
         val requestBody = RequestBody()
-        requestBody.content = provideContentFhirResource(theOpenApi, theExampleFhirContext, theExampleSupplier,theResourceType)
+        requestBody.content = provideContentFhirResource(theOpenApi, theExampleSupplier,theResourceType)
         theOperation.requestBody = requestBody
     }
 
@@ -933,50 +933,31 @@ class OpenAPIParser(private val ctx: FhirContext?,
             var exampleResponse = getResponseExample(resftfulIntraction)
 
             if (exampleResponse == null && theResourceType != null) {
-                val example = ctx?.newJsonParser()?.parseResource("{ \"resourceType\" : \"" + theResourceType + "\" }")
-                exampleResponse = Supplier {
-                    var example: IBaseResource? = example
-                    example
-                }
-                if (resftfulIntraction.code == CapabilityStatement.TypeRestfulInteraction.SEARCHTYPE) {
-                    val bundle = Bundle()
-                    bundle.type = Bundle.BundleType.SEARCHSET
-                    bundle.addLink(
-                        Bundle.BundleLinkComponent()
-                            .setRelation("self")
-                            .setUrl(exampleServer + exampleServerPrefix + (example as Resource?)?.resourceType + "?parameterExample=123&page=1")
-                    )
-                    bundle.addLink(
-                        Bundle.BundleLinkComponent()
-                            .setRelation("next")
-                            .setUrl(exampleServer + exampleServerPrefix + (example as Resource?)?.resourceType + "?parameterExample=123&page=2")
-                    )
-                    bundle.entry.add(Bundle.BundleEntryComponent().setResource(example as Resource?).setFullUrl(exampleServer + exampleServerPrefix + (example as Resource?)?.resourceType + "/" + (example as Resource?)?.id ))
-                    bundle.total = 0
-                    exampleResponse = Supplier {
-                        var example: IBaseResource? = bundle
-                        example
-                    }
-                }
-            }
-            if (resftfulIntraction == null && theResourceType!=null && theResourceType == "CapabilityStatement") {
-                exampleResponse = Supplier {
-                    var example: IBaseResource? = cs
-                    example
-                }
+                val example = Example()
+                example.value = ctx?.newJsonParser()?.parseResource("{ \"resourceType\" : \"" + theResourceType + "\" }")
+                exampleResponse = mutableListOf<Example>()
+                exampleResponse.add(example)
             }
 
-            if (exampleResponse != null) response200.content = provideContentFhirResource(
-                theOpenApi,
-                theFhirContext,
-                exampleResponse,
-                theResourceType
-            )
+            if (resftfulIntraction == null && theResourceType!=null && theResourceType == "CapabilityStatement") {
+                val example = Example()
+                example.value = ctx?.newJsonParser()?.encodeResourceToString(cs)
+                exampleResponse = mutableListOf<Example>()
+                exampleResponse.add(example)
+            }
+
+            if (exampleResponse != null) {
+                response200.content = provideContentFhirResource(
+                    theOpenApi,
+                    exampleResponse,
+                    theResourceType
+                )
+            }
         }
         if (response200.content == null) {
+
             response200.content = provideContentFhirResource(
                 theOpenApi,
-                theFhirContext,
                 genericExampleSupplier(theFhirContext, theResourceType),
                 theResourceType
             )
@@ -1046,7 +1027,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
     private fun getExampleFromPackages(request: Boolean, extension: Extension) : Supplier<IBaseResource?>? {
         // TODO Return array of examples including documentation
         val path = (extension.getExtensionByUrl("value").value as Reference).reference
-        val example = path.split("/")
+        val pathParts = path.split("/")
         val requestExt = extension.getExtensionByUrl("request")
 
         if ((requestExt.value as BooleanType).value == request && extension.hasExtension("value")) {
@@ -1056,11 +1037,11 @@ class OpenAPIParser(private val ctx: FhirContext?,
                         ?.forEach {
                             if (it is Resource) {
                                 val resource: Resource = it
-                                //println(resource.resourceType.name + " - "+(request.getExtensionByUrl("resource").value as CodeType).value)
-                                if (resource.resourceType.name == example.get(0)) {
-                                    //println("Match "+ resource.idElement.idPart + " - "+ (request.getExtensionByUrl("id").value as StringType).value )
-                                    if (resource.idElement.idPart == example.get(1)) {
-                                        //   println("Matched")
+                                ///println(resource.resourceType.name + " - "+pathParts.get(0))
+                                if (resource.resourceType.name == pathParts.get(0)) {
+                                    //println("Match "+ resource.idElement.idPart + " - " + resource.id + " - "+ path )
+                                    if (resource.id == pathParts.get(1) || resource.id == path) {
+                                        //println("*** Matched")
                                         return Supplier {
                                             var example: IBaseResource? = resource
                                             example
@@ -1071,80 +1052,99 @@ class OpenAPIParser(private val ctx: FhirContext?,
                         }
                     }
                 }
+            println("----- Not found " + request + path)
         }
         return null
     }
-    private fun getRequestExample(interaction : CapabilityStatement.ResourceInteractionComponent) : Supplier<IBaseResource?>? {
+    private fun getRequestExample(interaction : CapabilityStatement.ResourceInteractionComponent) : List<Example>{
         //
+        var examples = mutableListOf<Example>()
         if (interaction.hasExtension("https://fhir.nhs.uk/StructureDefinition/Extension-NHSDigital-APIDefinition-OAS")) {
             val apiExtension =
                 interaction.getExtensionByUrl("https://fhir.nhs.uk/StructureDefinition/Extension-NHSDigital-APIDefinition-OAS")
             if (apiExtension.hasExtension("example")) {
-                val exampleExt = apiExtension.getExtensionByUrl("example")
-                    return getExampleFromPackages(true, exampleExt)
+                for (exampleExt in apiExtension.getExtensionsByUrl("example")) {
+                    var supplierExample = getExampleFromPackages(true, exampleExt)?.get()
+                    var exampleOAS = Example()
+                    examples.add(exampleOAS)
+                    if (supplierExample != null && supplierExample !=null) {
+                        var example = supplierExample
+                        exampleOAS.value = ctx?.newJsonParser()?.encodeResourceToString(example)
+                    }
+                    if (exampleExt.hasExtension("summary")) {
+                        exampleOAS.summary = (exampleExt.getExtensionString("summary") as String)
+                    }
+                    if (exampleExt.hasExtension("description")) {
+                        exampleOAS.description = (exampleExt.getExtensionString("description") as String)
+                    }
+                }
             }
         }
-        return null
+        return examples
     }
 
 
-    private fun getResponseExample(interaction : CapabilityStatement.ResourceInteractionComponent) : Supplier<IBaseResource?>? {
-        var supplierExample : Supplier<IBaseResource?>? = null
+    private fun getResponseExample(interaction : CapabilityStatement.ResourceInteractionComponent) : List<Example> {
+
+        var examples = mutableListOf<Example>()
 
         if (interaction.hasExtension("https://fhir.nhs.uk/StructureDefinition/Extension-NHSDigital-APIDefinition-OAS")) {
-            val apiExtension =
-                interaction.getExtensionByUrl("https://fhir.nhs.uk/StructureDefinition/Extension-NHSDigital-APIDefinition-OAS")
-            if (apiExtension.hasExtension("example")) {
-                val exampleExt = apiExtension.getExtensionByUrl("example")
-                supplierExample = getExampleFromPackages(false, exampleExt)
-            }
-        }
+                val apiExtension = interaction.getExtensionByUrl("https://fhir.nhs.uk/StructureDefinition/Extension-NHSDigital-APIDefinition-OAS")
 
-        if (supplierExample != null) {
-            if (interaction.code == CapabilityStatement.TypeRestfulInteraction.SEARCHTYPE) {
-                val bundle = Bundle()
-                bundle.type = Bundle.BundleType.SEARCHSET
-                bundle.addLink(
-                    Bundle.BundleLinkComponent()
-                        .setRelation("self")
-                        .setUrl(exampleServer + exampleServerPrefix + (supplierExample.get() as Resource).resourceType + "?parameterExample=123&page=1")
-                )
-                bundle.addLink(
-                    Bundle.BundleLinkComponent()
-                        .setRelation("next")
-                        .setUrl(exampleServer + exampleServerPrefix + (supplierExample.get() as Resource)?.resourceType + "?parameterExample=123&page=2")
-                )
-                bundle.entry.add(
-                    Bundle.BundleEntryComponent().setResource(supplierExample.get() as Resource)
-                        .setFullUrl(exampleServer + exampleServerPrefix + (supplierExample.get() as Resource).resourceType + "/" + (supplierExample.get() as Resource).id)
-                )
-                bundle.total = 1
-                return Supplier {
-                    var example: IBaseResource? = bundle
-                    example
+                if (apiExtension.hasExtension("example")) {
+
+                    for (exampleExt in apiExtension.getExtensionsByUrl("example")) {
+                        var exampleOAS = Example()
+                        examples.add(exampleOAS)
+                        var supplierExample = getExampleFromPackages(false, exampleExt)
+
+                        if (supplierExample != null && supplierExample.get() !=null) {
+                            var example = supplierExample.get()
+                            if (interaction.code == CapabilityStatement.TypeRestfulInteraction.SEARCHTYPE) {
+                                val bundle = Bundle()
+                                bundle.type = Bundle.BundleType.SEARCHSET
+                                bundle.addLink(
+                                    Bundle.BundleLinkComponent()
+                                        .setRelation("self")
+                                        .setUrl(exampleServer + exampleServerPrefix + (example as Resource).resourceType + "?parameterExample=123&page=1")
+                                )
+                                bundle.addLink(
+                                    Bundle.BundleLinkComponent()
+                                        .setRelation("next")
+                                        .setUrl(exampleServer + exampleServerPrefix + (example as Resource)?.resourceType + "?parameterExample=123&page=2")
+                                )
+                                bundle.entry.add(
+                                    Bundle.BundleEntryComponent().setResource(example as Resource)
+                                        .setFullUrl(exampleServer + exampleServerPrefix + (example as Resource).resourceType + "/" + (supplierExample.get() as Resource).id)
+                                )
+                                bundle.total = 1
+                                example = bundle
+                            }
+
+                            if (interaction.code == CapabilityStatement.TypeRestfulInteraction.CREATE
+                                || interaction.code == CapabilityStatement.TypeRestfulInteraction.UPDATE
+                            ) {
+                                val operation = OperationOutcome()
+                                operation.issue.add(
+                                    OperationOutcome.OperationOutcomeIssueComponent()
+                                        .setCode(OperationOutcome.IssueType.INFORMATIONAL)
+                                        .setSeverity(OperationOutcome.IssueSeverity.INFORMATION)
+                                )
+                            }
+                            if (exampleExt.hasExtension("summary")) {
+                                exampleOAS.summary = (exampleExt.getExtensionString("summary") as MarkdownType).value
+                            }
+                            if (exampleExt.hasExtension("description")) {
+                                exampleOAS.description = (exampleExt.getExtensionString("description") as MarkdownType).value
+                            }
+                            exampleOAS.value = ctx?.newJsonParser()?.encodeResourceToString(example)
+
+                    }
                 }
             }
 
-            if (interaction.code == CapabilityStatement.TypeRestfulInteraction.CREATE
-                || interaction.code == CapabilityStatement.TypeRestfulInteraction.UPDATE
-            ) {
-                val operation = OperationOutcome()
-                operation.issue.add(
-                    OperationOutcome.OperationOutcomeIssueComponent()
-                        .setCode(OperationOutcome.IssueType.INFORMATIONAL)
-                        .setSeverity(OperationOutcome.IssueSeverity.INFORMATION)
-                )
-                return Supplier {
-                    var example: IBaseResource? = operation
-                    example
-                }
-            }
-            return Supplier {
-                var example: IBaseResource? = supplierExample.get() as Resource
-                example
-            }
         }
-        return null
+        return examples
     }
     private fun getOperationExample(request: Boolean,interaction: CapabilityStatement.CapabilityStatementRestResourceOperationComponent) : Supplier<IBaseResource?>? {
         if (interaction.hasExtension("https://fhir.nhs.uk/StructureDefinition/Extension-NHSDigital-APIDefinition-OAS")) {
@@ -1160,57 +1160,83 @@ class OpenAPIParser(private val ctx: FhirContext?,
     private fun genericExampleSupplier(
         theFhirContext: FhirContext?,
         theResourceType: String?
-    ): Supplier<IBaseResource?>? {
-        if (theResourceType == "CapabilityStatement") return Supplier {
-            var example: IBaseResource? = this.cs
-            example
-        }
-        return if (theResourceType == null) {
-            null
-        } else Supplier {
-            var example: IBaseResource? = null
+    ): List<Example> {
+        val exampleList = mutableListOf<Example>()
+        var example = Example()
+        exampleList.add(example)
+        if (theResourceType == "CapabilityStatement") {
+            example.value = ctx?.newJsonParser()?.encodeResourceToString(this.cs)
+        } else {
             if (theResourceType != null) {
-                example = theFhirContext!!.getResourceDefinition(theResourceType).newInstance()
+                val resource = theFhirContext!!.getResourceDefinition(theResourceType).newInstance()
+                example.value = ctx?.newJsonParser()?.encodeResourceToString(resource)
             }
-            example
         }
+        return exampleList
     }
 
 
     private fun provideContentFhirResource(
         theOpenApi: OpenAPI,
-        theExampleFhirContext: FhirContext?,
-        theExampleSupplier: Supplier<IBaseResource?>?,
+        examples: List<Example>,
         resourceType: String?
     ): Content? {
+        val retVal = Content()
         var resourceType2 = resourceType
         addSchemaFhirResource(theOpenApi)
 
-        val retVal = Content()
-        if (resourceType2 == null && theExampleSupplier?.get() != null)
-            resourceType2 = theExampleSupplier?.get()?.fhirType()
-        if (resourceType2 != null) addFhirResourceSchema(theOpenApi, resourceType2,null)
-        val jsonSchema = MediaType().schema(
-            ObjectSchema().`$ref`(
-                "#/components/schemas/"+resourceType2
-            )
-        )
-        if (theExampleSupplier != null) {
-            jsonSchema.example = theExampleFhirContext!!.newJsonParser().setPrettyPrint(true)
-                .encodeResourceToString(theExampleSupplier.get())
-        }
-        retVal.addMediaType(Constants.CT_FHIR_JSON_NEW, jsonSchema)
-        val xmlSchema = MediaType().schema(
-            ObjectSchema().`$ref`(
-                "#/components/schemas/"+resourceType2
-            )
-        )
+        if (examples.size == 1) {
+            if (examples.get(0).value == null) {
+                val generic = genericExampleSupplier(ctx,resourceType)
+                examples.get(0).value = generic.get(0).value
+            }
+            if (examples.get(0).value is List<*>) {
+                val generic = genericExampleSupplier(ctx,resourceType)
+                examples.get(0).value = generic.get(0).value
+            }
 
-        if (theExampleSupplier != null) {
-            xmlSchema.example = theExampleFhirContext!!.newXmlParser().setPrettyPrint(true)
-                .encodeResourceToString(theExampleSupplier.get())
+            val theExampleSupplier = ctx?.newJsonParser()?.parseResource(examples.get(0).value as String)
+
+            if (resourceType2 == null && theExampleSupplier != null)
+                resourceType2 = theExampleSupplier?.fhirType()
+            if (resourceType2 != null) addFhirResourceSchema(theOpenApi, resourceType2, null)
+            val jsonSchema = MediaType().schema(
+                ObjectSchema().`$ref`(
+                    "#/components/schemas/" + resourceType2
+                )
+            )
+            if (theExampleSupplier != null) {
+                jsonSchema.example = examples.get(0).value
+            }
+            retVal.addMediaType(Constants.CT_FHIR_JSON_NEW, jsonSchema)
+            val xmlSchema = MediaType().schema(
+                ObjectSchema().`$ref`(
+                    "#/components/schemas/" + resourceType2
+                )
+            )
+
+            if (theExampleSupplier != null) {
+                xmlSchema.example = examples.get(0).value
+            }
+            if (generateXML) retVal.addMediaType(Constants.CT_FHIR_XML_NEW, xmlSchema)
+        } else {
+            val jsonSchema = MediaType().schema(
+                ObjectSchema().`$ref`(
+                    "#/components/schemas/" + resourceType2
+                )
+            )
+            retVal.addMediaType(Constants.CT_FHIR_JSON_NEW, jsonSchema)
+            jsonSchema.examples = mutableMapOf<String,Example>()
+            for (example in examples) {
+                var key = example.summary
+                if (example.value == null) {
+                    val generic = genericExampleSupplier(ctx,resourceType)
+                    example.value = generic.get(0).value
+                }
+                if (key == null) key = "example"
+                   jsonSchema.examples.put(key,example)
+            }
         }
-        if (generateXML) retVal.addMediaType(Constants.CT_FHIR_XML_NEW, xmlSchema)
         return retVal
     }
 
