@@ -1039,8 +1039,8 @@ class OpenAPIParser(private val ctx: FhirContext?,
                                 val resource: Resource = it
                                 ///println(resource.resourceType.name + " - "+pathParts.get(0))
                                 if (resource.resourceType.name == pathParts.get(0)) {
-                                    //println("Match "+ resource.idElement.idPart + " - " + resource.id + " - "+ path )
-                                    if (resource.id == pathParts.get(1) || resource.id == path) {
+                                    //println("Match "+ resource.idElement.idPart + " - resource.id=" + resource.id + " - "+ path + " - pathParts.get(1)="+pathParts.get(1))
+                                    if (resource.id !=null && (resource.idElement.idPart.equals(pathParts.get(1)) || resource.id.equals(path))) {
                                         //println("*** Matched")
                                         return Supplier {
                                             var example: IBaseResource? = resource
