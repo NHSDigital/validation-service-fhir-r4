@@ -1016,7 +1016,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
             val apiExtension =
                 supportedMessage.getExtensionByUrl("https://fhir.nhs.uk/StructureDefinition/Extension-NHSDigital-APIDefinition-OAS")
             for (extension in apiExtension.getExtensionsByUrl("example")) {
-                val messageExample =  getExampleFromPackages(true, extension)
+                val messageExample =  getExampleFromPackages(true, extension,false)
                 example.value = ctx?.newJsonParser()?.encodeResourceToString(messageExample?.get())
             }
         }
@@ -1024,7 +1024,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
         return example
     }
 
-    private fun getExampleFromPackages(request: Boolean, extension: Extension) : Supplier<IBaseResource?>? {
+    private fun getExampleFromPackages(request: Boolean, extension: Extension, create : Boolean) : Supplier<IBaseResource?>? {
         // TODO Return array of examples including documentation
         val path = (extension.getExtensionByUrl("value").value as Reference).reference
         val pathParts = path.split("/")
@@ -1042,6 +1042,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
                                     //println("Match "+ resource.idElement.idPart + " - resource.id=" + resource.id + " - "+ path + " - pathParts.get(1)="+pathParts.get(1))
                                     if (resource.id !=null && (resource.idElement.idPart.equals(pathParts.get(1)) || resource.id.equals(path))) {
                                         //println("*** Matched")
+                                        if (create) resource.id = null
                                         return Supplier {
                                             var example: IBaseResource? = resource
                                             example
@@ -1064,7 +1065,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
                 interaction.getExtensionByUrl("https://fhir.nhs.uk/StructureDefinition/Extension-NHSDigital-APIDefinition-OAS")
             if (apiExtension.hasExtension("example")) {
                 for (exampleExt in apiExtension.getExtensionsByUrl("example")) {
-                    var supplierExample = getExampleFromPackages(true, exampleExt)?.get()
+                    var supplierExample = getExampleFromPackages(true, exampleExt, (interaction.code == CapabilityStatement.TypeRestfulInteraction.CREATE))?.get()
                     var exampleOAS = Example()
                     examples.add(exampleOAS)
                     if (supplierExample != null && supplierExample !=null) {
@@ -1096,7 +1097,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
                     for (exampleExt in apiExtension.getExtensionsByUrl("example")) {
                         var exampleOAS = Example()
                         examples.add(exampleOAS)
-                        var supplierExample = getExampleFromPackages(false, exampleExt)
+                        var supplierExample = getExampleFromPackages(false, exampleExt,false)
 
                         if (supplierExample != null && supplierExample.get() !=null) {
                             var example = supplierExample.get()
@@ -1151,7 +1152,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
             val apiExtension =
                 interaction.getExtensionByUrl("https://fhir.nhs.uk/StructureDefinition/Extension-NHSDigital-APIDefinition-OAS")
             for (extension in apiExtension.getExtensionsByUrl("example")) {
-                 return getExampleFromPackages(true, extension)
+                 return getExampleFromPackages(true, extension,false)
             }
         }
         return null
