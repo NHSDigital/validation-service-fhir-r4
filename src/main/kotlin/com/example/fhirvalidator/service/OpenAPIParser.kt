@@ -1186,17 +1186,12 @@ class OpenAPIParser(private val ctx: FhirContext?,
         var resourceType2 = resourceType
         addSchemaFhirResource(theOpenApi)
 
-        if (examples.size == 1) {
-            if (examples.get(0).value == null) {
-                val generic = genericExampleSupplier(ctx,resourceType)
-                examples.get(0).value = generic.get(0).value
-            }
-            if (examples.get(0).value is List<*>) {
-                val generic = genericExampleSupplier(ctx,resourceType)
-                examples.get(0).value = generic.get(0).value
-            }
+        if (examples.size == 0) {
+           var example = Example()
+           val generic = genericExampleSupplier(ctx,resourceType)
+           example.value = generic.get(0).value
 
-            val theExampleSupplier = ctx?.newJsonParser()?.parseResource(examples.get(0).value as String)
+            val theExampleSupplier = ctx?.newJsonParser()?.parseResource(example.value as String)
 
             if (resourceType2 == null && theExampleSupplier != null)
                 resourceType2 = theExampleSupplier?.fhirType()
@@ -1207,7 +1202,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
                 )
             )
             if (theExampleSupplier != null) {
-                jsonSchema.example = examples.get(0).value
+                jsonSchema.example = example.value
             }
             retVal.addMediaType(Constants.CT_FHIR_JSON_NEW, jsonSchema)
             val xmlSchema = MediaType().schema(
@@ -1217,7 +1212,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
             )
 
             if (theExampleSupplier != null) {
-                xmlSchema.example = examples.get(0).value
+                xmlSchema.example = example.value
             }
             if (generateXML) retVal.addMediaType(Constants.CT_FHIR_XML_NEW, xmlSchema)
         } else {
