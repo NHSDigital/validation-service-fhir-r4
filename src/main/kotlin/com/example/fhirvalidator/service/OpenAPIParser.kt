@@ -739,9 +739,18 @@ class OpenAPIParser(private val ctx: FhirContext?,
             }
         } else {
             val exampleRequestBody = Parameters()
+            var parametersSchema = Schema<Any?>().type("object").title("Parameters-"+theOperationDefinition.code)
+                .required(mutableListOf("resourceType","parameter"))
+            parametersSchema.addProperties("resourceType",  Schema<String>()
+                .type("string")
+                .example("Parameters")
+                .minProperties(1))
+                parametersSchema.addProperties("parameter", ArraySchema().type("array"))
+
             for (nextSearchParam in theOperationDefinition.parameter) {
                 if (nextSearchParam.use != OperationDefinition.OperationParameterUse.OUT) {
                     val param = exampleRequestBody.addParameter()
+
                     param.name = nextSearchParam.name
                     val paramType = nextSearchParam.type
                     when (StringUtils.defaultString(paramType)) {
@@ -750,6 +759,11 @@ class OpenAPIParser(private val ctx: FhirContext?,
                                 FHIR_CONTEXT_CANONICAL.getElementDefinition(paramType)!!.newInstance() as IPrimitiveType<*>
                             type.valueAsString = "example"
                             param.value = type as Type
+                          /*  parametersArray.addProperties(nextSearchParam.name,  Schema<String>()
+                                .type("string")
+                                .example("Bundle")
+                                .minProperties(nextSearchParam.min)
+                                .description(nextSearchParam.documentation)) */
                         }
                         "integer" -> {
                             val type =
@@ -844,22 +858,19 @@ class OpenAPIParser(private val ctx: FhirContext?,
                         .type("object")
                         .description("A resource in the bundle. First entry MUST be a FHIR MessageHeader"))
                 addSchemaFhirResource(theOpenApi,bundleEntry,"Bundle-Entry")
-                var entry = Schema<Any>()
-                    .minProperties(1)
-                    .type("array")
-                    .`$ref`(
+                var entry = ArraySchema().type("array").items(ObjectSchema().`$ref`(
                         "#/components/schemas/Bundle-Entry"
-                    )
-
+                    ))
 
                 bundleSchema.addProperties("entry", entry)
                 addSchemaFhirResource(theOpenApi,bundleSchema,"Bundle-Message")
                 mediaType.schema = ObjectSchema().`$ref`(
                     "#/components/schemas/Bundle-Message"
                 )
-                } else {
+            } else {
+                addSchemaFhirResource(theOpenApi,parametersSchema,"Parameters-"+theOperationDefinition.code)
                 mediaType.schema = ObjectSchema().`$ref`(
-                    "#/components/schemas/Parameters"
+                    "#/components/schemas/Parameters-"+getProfileName(theOperationDefinition.code)
                 )
 
             }
