@@ -40,7 +40,7 @@ class ValidationConfiguration(
         return FhirInstanceValidator(CachingValidationSupport(supportChain))
     }
 
-    @Bean
+    @Bean("SupportChain")
     fun validationSupportChain(
         fhirContext: FhirContext,
         switchedTerminologyServiceValidationSupport: SwitchedTerminologyServiceValidationSupport,

@@ -1,25 +1,29 @@
 package com.example.fhirvalidator.controller
 
 import ca.uhn.fhir.context.FhirContext
+import ca.uhn.fhir.context.support.IValidationSupport
 import com.example.fhirvalidator.service.ImplementationGuideParser
 import com.example.fhirvalidator.service.OpenAPIParser
 import io.swagger.v3.core.util.Json
 import org.hl7.fhir.instance.model.api.IBaseResource
 import org.hl7.fhir.r4.model.*
 import org.hl7.fhir.utilities.npm.NpmPackage
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.web.bind.annotation.*
 
 @RestController
 class ConformanceController(
     private val fhirContext: FhirContext,
     private val npmPackages: List<NpmPackage>,
-    private val searchParameters : Bundle
+    private val searchParameters : Bundle,
+    @Qualifier("SupportChain") private val supportChain: IValidationSupport
 ) {
     var implementationGuideParser: ImplementationGuideParser? = ImplementationGuideParser(fhirContext!!)
 
     private val openapi = OpenAPIParser(
         fhirContext,
         npmPackages,
+        supportChain,
         searchParameters
     )
 
