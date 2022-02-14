@@ -739,13 +739,35 @@ class OpenAPIParser(private val ctx: FhirContext?,
             }
         } else {
             val exampleRequestBody = Parameters()
+
+            // Maybe load in the schema from core files?
             var parametersSchema = Schema<Any?>().type("object").title("Parameters-"+theOperationDefinition.code)
                 .required(mutableListOf("resourceType","parameter"))
             parametersSchema.addProperties("resourceType",  Schema<String>()
                 .type("string")
                 .example("Parameters")
                 .minProperties(1))
-                parametersSchema.addProperties("parameter", ArraySchema().type("array"))
+            var parameterSchema = Schema<Any?>().type("object").title("Parameters-"+theOperationDefinition.code)
+                .required(mutableListOf("resourceType","parameter"))
+            parametersSchema.addProperties("parameter", ArraySchema().type("array").items(Schema<Any?>().type("object")
+                .addProperties("name", Schema<String>()
+                    .minProperties(1)
+                    .maxProperties(1)
+                    .type("string"))
+                .addProperties("value(x)", Schema<Any>()
+                    .minProperties(1)
+                    .maxProperties(1))
+                .addProperties("parts",ArraySchema().type("array").items(Schema<Any?>().type("object")
+                    .addProperties("name", Schema<String>()
+                        .minProperties(1)
+                        .maxProperties(1)
+                        .type("string"))
+                    .addProperties("value(x)", Schema<Any>()
+                        .minProperties(1)
+                        .maxProperties(1)) )
+            )))
+
+
 
             for (nextSearchParam in theOperationDefinition.parameter) {
                 if (nextSearchParam.use != OperationDefinition.OperationParameterUse.OUT) {
@@ -857,10 +879,8 @@ class OpenAPIParser(private val ctx: FhirContext?,
                         .maxProperties(1)
                         .type("object")
                         .description("A resource in the bundle. First entry MUST be a FHIR MessageHeader"))
-                addSchemaFhirResource(theOpenApi,bundleEntry,"Bundle-Entry")
-                var entry = ArraySchema().type("array").items(ObjectSchema().`$ref`(
-                        "#/components/schemas/Bundle-Entry"
-                    ))
+                //addSchemaFhirResource(theOpenApi,bundleEntry,"Bundle-Entry")
+                var entry = ArraySchema().type("array").items(bundleEntry)
 
                 bundleSchema.addProperties("entry", entry)
                 addSchemaFhirResource(theOpenApi,bundleSchema,"Bundle-Message")
