@@ -429,7 +429,9 @@ class OpenAPIParser(private val ctx: FhirContext?,
     }
 
     private fun getProfile(profile: String?) : StructureDefinition? {
-        return supportChain.fetchStructureDefinition(profile) as StructureDefinition
+        val structureDefinition = supportChain.fetchStructureDefinition(profile)
+        if (structureDefinition is StructureDefinition) return structureDefinition as StructureDefinition
+        return null
     }
 
     private fun getDocumentationPath(profile : String) : String? {

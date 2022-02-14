@@ -55,6 +55,19 @@ class ConformanceController(
         return "Nowt found"
     }
 
+    @PostMapping("/\$convert",produces = ["application/json"])
+    fun postXMLFhir( @RequestBody input: String): String {
+        var inputResource : IBaseResource
+        try {
+            inputResource = fhirContext.newJsonParser().parseResource(input)
+        } catch (ex : Exception) {
+            inputResource = fhirContext.newXmlParser().parseResource(input)
+        }
+
+        return fhirContext.newJsonParser().setPrettyPrint(true).encodeResourceToString(inputResource)
+
+    }
+
 
     @GetMapping("CapabilityStatement",produces = ["application/json", "application/fhir+json"], params = ["url"])
     fun capabilityStatement(@RequestParam(name="url") url : String ): String {
