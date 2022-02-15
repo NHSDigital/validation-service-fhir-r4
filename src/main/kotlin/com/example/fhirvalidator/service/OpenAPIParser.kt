@@ -711,6 +711,8 @@ class OpenAPIParser(private val ctx: FhirContext?,
                     (exampleOperation.get())?.fhirType()
                 )
                 theOperation.responses.addApiResponse("200",response200)
+
+                addStandardResponses(theOpenApi,theOperation.responses)
             } else {
                 addFhirResourceResponse(theFhirContext, theOpenApi, theOperation, "Parameters", null)
             }
@@ -1080,6 +1082,73 @@ class OpenAPIParser(private val ctx: FhirContext?,
         }
 
         theOperation.responses.addApiResponse("200", response200)
+
+        addStandardResponses(theOpenApi,theOperation.responses)
+
+    }
+
+    private fun addStandardResponses(theOpenApi: OpenAPI,responses: ApiResponses) {
+        val response4xx = ApiResponse()
+        var example = Example()
+        example.value = getErrorOperationOutcome()
+        var exampleResponse = mutableListOf<Example>()
+        exampleResponse.add(example)
+        response4xx.content = provideContentFhirResource(
+            theOpenApi,
+            exampleResponse,
+            "OperationOutcome"
+        )
+        responses.addApiResponse("4xx", response4xx)
+
+        if (cs.restFirstRep.hasSecurity()) {
+            val response403 = ApiResponse()
+            example = Example()
+            example.value = getForbiddenOperationOutcome()
+            exampleResponse = mutableListOf<Example>()
+            exampleResponse.add(example)
+            response403.content = provideContentFhirResource(
+                theOpenApi,
+                exampleResponse,
+                "OperationOutcome"
+            )
+            responses.addApiResponse("403", response4xx)
+        }
+    }
+    private fun getSuccessOperationOutcome() : String? {
+        var operationOutcome = OperationOutcome()
+        operationOutcome.meta = Meta().setLastUpdatedElement(InstantType("2021-04-14T11:35:00+00:00"))
+        var issue = operationOutcome.addIssue()
+        issue.setSeverity(OperationOutcome.IssueSeverity.INFORMATION)
+        issue.setCode(OperationOutcome.IssueType.INFORMATIONAL)
+        return ctx?.newJsonParser()?.setPrettyPrint(true)?.encodeResourceToString(operationOutcome)
+    }
+
+    private fun getForbiddenOperationOutcome() : String? {
+        var operationOutcome = OperationOutcome()
+        operationOutcome.meta = Meta().setLastUpdatedElement(InstantType("2021-04-14T11:35:00+00:00"))
+        var issue = operationOutcome.addIssue()
+        issue.setSeverity(OperationOutcome.IssueSeverity.ERROR)
+        issue.setCode(OperationOutcome.IssueType.FORBIDDEN)
+        issue.setDetails(CodeableConcept().addCoding(
+            Coding().setSystem("https://fhir.nhs.uk/CodeSystem/Spine-ErrorOrWarningCode")
+                .setCode("ACCESS_DENIED"))
+        )
+        return ctx?.newJsonParser()?.setPrettyPrint(true)?.encodeResourceToString(operationOutcome)
+    }
+
+    private fun getErrorOperationOutcome() : String? {
+        var operationOutcome = OperationOutcome()
+        operationOutcome.meta = Meta().setLastUpdatedElement(InstantType("2021-04-14T11:35:00+00:00"))
+        var issue = operationOutcome.addIssue()
+        issue.setSeverity(OperationOutcome.IssueSeverity.ERROR)
+        issue.setCode(OperationOutcome.IssueType.VALUE)
+        issue.setDetails(CodeableConcept().addCoding(
+            Coding().setSystem("https://fhir.nhs.uk/CodeSystem/Spine-ErrorOrWarningCode")
+                .setCode("INVALID_VALUE"))
+        )
+        issue.diagnostics = "(invalid_request) firstName is missing"
+        issue.addExpression("Patient.name.given")
+        return ctx?.newJsonParser()?.setPrettyPrint(true)?.encodeResourceToString(operationOutcome)
     }
 
     private fun getMessageExample(supportedMessage : CapabilityStatement.CapabilityStatementMessagingSupportedMessageComponent) : Example? {
@@ -1284,7 +1353,10 @@ class OpenAPIParser(private val ctx: FhirContext?,
         exampleList.add(example)
         if (theResourceType == "CapabilityStatement") {
             example.value = ctx?.newJsonParser()?.encodeResourceToString(this.cs)
-        } else {
+        } else if (theResourceType == "OperationOutcome") {
+            example.value = getSuccessOperationOutcome()
+        }
+        else {
             if (theResourceType != null) {
                 val resource = theFhirContext!!.getResourceDefinition(theResourceType).newInstance()
                 example.value = ctx?.newJsonParser()?.encodeResourceToString(resource)
