@@ -119,35 +119,50 @@ class VerifyOAS(private val ctx: FhirContext?,
         val modifiers = parameters.get(0).split(":")
 
         var name = modifiers.get(0)
+        if (name.startsWith("_")) {
+            name = name.removePrefix("_")
+        }
 
         var searchParameter = getSearchParameterByUrl("http://hl7.org/fhir/SearchParameter/$resourceType-$name")
-        if (searchParameter == null) searchParameter = getSearchParameterByUrl("http://hl7.org/fhir/SearchParameter/individual-$name")
+        if (searchParameter == null)
+            searchParameter = getSearchParameterByUrl("http://hl7.org/fhir/SearchParameter/individual-$name")
+        else return searchParameter
         if (searchParameter == null) {
             searchParameter = getSearchParameterByUrl("http://hl7.org/fhir/SearchParameter/clinical-$name")
             if (searchParameter != null && !searchParameter.expression.contains(resourceType)) {
                 searchParameter = null
             }
-        }
+        } else return searchParameter
         if (searchParameter == null) {
             searchParameter = getSearchParameterByUrl("http://hl7.org/fhir/SearchParameter/conformance-$name")
             if (searchParameter != null && !searchParameter.expression.contains(resourceType)) {
                 searchParameter = null
             }
-        }
+        } else return searchParameter
         if (searchParameter == null) {
             searchParameter = getSearchParameterByUrl("http://hl7.org/fhir/SearchParameter/medications-$name")
             if (searchParameter != null && !searchParameter.expression.contains(resourceType)) {
                 searchParameter = null
             }
-        }
+        } else return searchParameter
 
+        if (searchParameter == null) {
+            searchParameter = getSearchParameterByUrl("http://hl7.org/fhir/SearchParameter/Resource-$name")
+        } else return searchParameter
+
+        if (searchParameter == null) {
+            searchParameter = getSearchParameterByUrl("http://hl7.org/fhir/SearchParameter/DomainResource-$name")
+        } else return searchParameter
+
+
+        /*
         if (searchParameter == null && name.startsWith("_")) {
             searchParameter = SearchParameter()
             searchParameter?.code = name.replace("_","")
             searchParameter?.description = "Special search parameter, see [FHIR Search](http://www.hl7.org/fhir/search.html)"
             searchParameter?.expression = ""
             searchParameter?.type = Enumerations.SearchParamType.SPECIAL
-        }
+        } */
         return searchParameter
     }
 

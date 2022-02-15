@@ -1536,6 +1536,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
 
         var name = modifiers.get(0)
 
+
         if (nextSearchParam.hasType()) {
             when (nextSearchParam.type) {
                 Enumerations.SearchParamType.TOKEN -> {
@@ -1579,8 +1580,17 @@ class OpenAPIParser(private val ctx: FhirContext?,
                     searchParameter = null
                 }
             }
+
+            name = name.removePrefix("_")
+            if (searchParameter == null) {
+                searchParameter = getSearchParameter("http://hl7.org/fhir/SearchParameter/Resource-"+ name)
+            }
+            if (searchParameter == null) {
+                searchParameter = getSearchParameter("http://hl7.org/fhir/SearchParameter/DomainResource-"+ name)
+            }
         } else searchParameter = getSearchParameter(nextSearchParam.definition)
 
+        /*
         if (searchParameter == null && name.startsWith("_")) {
             searchParameter = SearchParameter()
             searchParameter?.code = name.replace("_","")
@@ -1588,6 +1598,8 @@ class OpenAPIParser(private val ctx: FhirContext?,
             searchParameter?.expression = ""
             searchParameter?.type = Enumerations.SearchParamType.SPECIAL
         }
+
+         */
 
         var code : String? = searchParameter?.code
         var expression : String = searchParameter?.expression.toString()
