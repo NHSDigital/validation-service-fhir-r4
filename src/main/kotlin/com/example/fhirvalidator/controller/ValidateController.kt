@@ -1,27 +1,38 @@
 package com.example.fhirvalidator.controller
 
 import ca.uhn.fhir.context.FhirContext
+import ca.uhn.fhir.context.support.IValidationSupport
 import ca.uhn.fhir.parser.DataFormatException
 import ca.uhn.fhir.validation.FhirValidator
 import ca.uhn.fhir.validation.ValidationOptions
 import com.example.fhirvalidator.service.CapabilityStatementApplier
 import com.example.fhirvalidator.service.MessageDefinitionApplier
+import com.example.fhirvalidator.service.VerifyOAS
 import com.example.fhirvalidator.util.createOperationOutcome
+import io.swagger.v3.parser.OpenAPIV3Parser
 import mu.KLogging
 import org.hl7.fhir.instance.model.api.IBaseResource
 import org.hl7.fhir.r4.model.Bundle
 import org.hl7.fhir.r4.model.OperationOutcome
 import org.hl7.fhir.r4.model.ResourceType
+import org.hl7.fhir.utilities.npm.NpmPackage
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.web.bind.annotation.*
+
 
 @RestController
 class ValidateController(
     private val fhirContext: FhirContext,
     private val validator: FhirValidator,
     private val messageDefinitionApplier: MessageDefinitionApplier,
-    private val capabilityStatementApplier: CapabilityStatementApplier
+    private val capabilityStatementApplier: CapabilityStatementApplier,
+    @Qualifier("SupportChain") private val supportChain: IValidationSupport,
+    private val searchParameters : Bundle,
+    private val npmPackages: List<NpmPackage>?
 ) {
     companion object : KLogging()
+
+    private val verifyOAS = VerifyOAS(fhirContext,validator, npmPackages, supportChain,searchParameters)
 
     @PostMapping("/\$validate", produces = ["application/json", "application/fhir+json","application/xml", "application/fhir+xml"])
     fun validate(
@@ -33,6 +44,18 @@ class ValidateController(
         val result = parseAndValidateResource(input, profile)
         requestId?.let { logger.info("finished processing message $it") }
         return fhirContext.newJsonParser().encodeResourceToString(result)
+    }
+
+    @PostMapping("/\$verifyOAS", produces = ["application/json", "application/x-yaml"])
+    fun validate(
+        @RequestBody input: String,
+        @RequestParam(required = false) profile: String?
+    ): String {
+        val result = OpenAPIV3Parser().readContents(input)
+
+        val results = verifyOAS.validate(result.openAPI)
+
+        return  fhirContext.newJsonParser().encodeResourceToString(createOperationOutcome(results))
     }
 
     fun parseAndValidateResource(input: String, profile: String?): OperationOutcome {
