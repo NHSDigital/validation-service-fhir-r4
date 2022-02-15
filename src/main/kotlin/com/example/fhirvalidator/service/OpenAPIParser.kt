@@ -1111,7 +1111,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
                 exampleResponse,
                 "OperationOutcome"
             )
-            responses.addApiResponse("403", response4xx)
+            responses.addApiResponse("403", response403)
         }
     }
     private fun getSuccessOperationOutcome() : String? {
