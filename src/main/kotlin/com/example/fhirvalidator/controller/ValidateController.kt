@@ -34,7 +34,7 @@ class ValidateController(
 ) {
     companion object : KLogging()
 
-    private val verifyOAS = VerifyOAS(fhirContext, supportChain,searchParameters)
+    private val verifyOAS = VerifyOAS(fhirContext, supportChain,searchParameters,validator,messageDefinitionApplier,capabilityStatementApplier)
 
     @PostMapping("/\$validate", produces = ["application/json", "application/fhir+json","application/xml", "application/fhir+xml"])
     fun validate(
@@ -55,16 +55,14 @@ class ValidateController(
     ): String {
         var openAPI : OpenAPI? = null
         if (url != null) {
-            openAPI =
-                OpenAPIV3Parser().read(url)
+            val parseOptions = ParseOptions()
+            parseOptions.isResolve = true // implicit
+          //  parseOptions.isResolveFully = true
+            openAPI = OpenAPIV3Parser().readLocation(url,null,parseOptions).openAPI
         }
         else {
             if (input.isPresent) {
-                val parseOptions = ParseOptions()
-                parseOptions.isResolve = true // implicit
-                parseOptions.isResolveFully = true
-
-                openAPI = OpenAPIV3Parser().readLocation(input.get(),null,parseOptions).openAPI
+                openAPI = OpenAPIV3Parser().readContents(input.get()).openAPI
             } else {
                 return  fhirContext.newJsonParser().encodeResourceToString(OperationOutcome()
                     .addIssue(OperationOutcome.OperationOutcomeIssueComponent()

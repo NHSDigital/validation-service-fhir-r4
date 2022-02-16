@@ -1,24 +1,32 @@
 package com.example.fhirvalidator.service
 
+//import io.swagger.models.parameters.QueryParameter
 import ca.uhn.fhir.context.FhirContext
 import ca.uhn.fhir.context.support.IValidationSupport
+import ca.uhn.fhir.parser.DataFormatException
 import ca.uhn.fhir.validation.FhirValidator
-//import io.swagger.models.parameters.QueryParameter
+import ca.uhn.fhir.validation.ValidationOptions
+import com.fasterxml.jackson.databind.JsonNode
+import com.fasterxml.jackson.databind.ObjectMapper
 import io.swagger.v3.oas.models.OpenAPI
 import io.swagger.v3.oas.models.Operation
 import io.swagger.v3.oas.models.examples.Example
 import io.swagger.v3.oas.models.media.MediaType
 import io.swagger.v3.oas.models.parameters.QueryParameter
+import org.hl7.fhir.instance.model.api.IBaseResource
 import org.hl7.fhir.r4.model.*
-import org.hl7.fhir.utilities.npm.NpmPackage
+
 
 class VerifyOAS(private val ctx: FhirContext?,
                 private val supportChain: IValidationSupport,
-                private val searchParameters : Bundle)
+                private val searchParameters : Bundle,
+                private val fhirValidator: FhirValidator,
+                private val messageDefinitionApplier: MessageDefinitionApplier,
+                private val capabilityStatementApplier: CapabilityStatementApplier)
 {
 
-    var implementationGuideParser: ImplementationGuideParser? = ImplementationGuideParser(ctx!!)
-
+   // var implementationGuideParser: ImplementationGuideParser? = ImplementationGuideParser(ctx!!)
+    val objectMapper = ObjectMapper()
 
     public fun validate(openAPI : OpenAPI) : List<OperationOutcome.OperationOutcomeIssueComponent> {
         // check all examples validate
@@ -43,7 +51,8 @@ class VerifyOAS(private val ctx: FhirContext?,
                     val operationIssue = addOperationIssue(outcomes)
                     operationIssue.severity = OperationOutcome.IssueSeverity.ERROR
                     operationIssue.code = OperationOutcome.IssueType.CODEINVALID
-                    operationIssue.diagnostics = "Unable to find resource type of: "+resourceType
+                    operationIssue.diagnostics = "Unable to find FHIR Resource type of: "+resourceType
+                    operationIssue.location.add(StringType(apiPaths.key ))
                     //operationIssue.
                 }
             }
@@ -54,6 +63,7 @@ class VerifyOAS(private val ctx: FhirContext?,
                     operationIssue.severity = OperationOutcome.IssueSeverity.ERROR
                     operationIssue.code = OperationOutcome.IssueType.CODEINVALID
                     operationIssue.diagnostics = "Unable to find FHIR operation for: "+operation
+                    operationIssue.location.add(StringType(apiPaths.key ))
                 }
             }
 
@@ -72,19 +82,20 @@ class VerifyOAS(private val ctx: FhirContext?,
                             operationIssue.severity = OperationOutcome.IssueSeverity.ERROR
                             operationIssue.code = OperationOutcome.IssueType.CODEINVALID
                             operationIssue.diagnostics = "Unable to find FHIR SearchParameter of for: "+apiParameter.name
+                            operationIssue.location.add(StringType(apiPaths.key + "/get/" + apiParameter.name))
                         }
                     }
                 }
             }
 
             // check all examples validate
-            if (apiPaths.value.get != null) checkOperations(apiPaths.key + "/get",apiPaths.value.get)
-            if (apiPaths.value.post != null) checkOperations(apiPaths.key + "/post", apiPaths.value.post)
+            if (apiPaths.value.get != null) checkOperations(outcomes,apiPaths.key + "/get",apiPaths.value.get)
+            if (apiPaths.value.post != null) checkOperations(outcomes,apiPaths.key + "/post", apiPaths.value.post)
         }
         if (openAPI.components != null) {
             if (openAPI.components.examples != null) {
                 for (example in openAPI.components.examples) {
-                    checkExample("component/"+ example.key, example.value)
+                    checkExample(outcomes, "component/"+ example.key, example.value)
                 }
             }
         }
@@ -102,12 +113,12 @@ class VerifyOAS(private val ctx: FhirContext?,
         return operation
     }
 
-    private fun checkOperations(path : String, operation: Operation) {
+    private fun checkOperations(outcomes: MutableList<OperationOutcome.OperationOutcomeIssueComponent>,path : String, operation: Operation) {
         if (operation.requestBody != null) {
             if (operation.requestBody.content !=null) {
                 for (stuff in operation.requestBody.content.entries) {
                  //   println(stuff.key)
-                    checkMediaType(path + "/requestBody", stuff.value)
+                    checkMediaType(outcomes,path + "/requestBody", stuff.value)
                 }
             }
         }
@@ -116,7 +127,7 @@ class VerifyOAS(private val ctx: FhirContext?,
                 if (response.value.content != null) {
                     for (stuff in response.value.content.entries) {
                       //  println(stuff.key)
-                        checkMediaType(path + "/responses",stuff.value)
+                        checkMediaType(outcomes,path + "/responses",stuff.value)
                     }
                 }
 
@@ -124,25 +135,52 @@ class VerifyOAS(private val ctx: FhirContext?,
         }
     }
 
-    private fun checkMediaType(path : String, mediaType : MediaType) {
+    private fun checkMediaType(outcomes: MutableList<OperationOutcome.OperationOutcomeIssueComponent>,path : String, mediaType : MediaType) {
         if (mediaType.example != null) {
-            validateExample(path + "/example", mediaType.example)
+            validateExample(outcomes,path + "/example", mediaType.example)
         }
         if (mediaType.examples != null) {
-            println(path + " - examples - "+mediaType.examples.size)
+           // println(path + " - examples - "+mediaType.examples.size)
             for (example in mediaType.examples) {
-                checkExample(path + "/" + example.key, example.value)
+                checkExample(outcomes,path + "/" + example.key, example.value)
             }
         }
     }
 
-    private fun checkExample(path : String,example : Example) {
-        if (example.value != null) validateExample(path,example.value)
+    private fun checkExample(outcomes: MutableList<OperationOutcome.OperationOutcomeIssueComponent>,path : String,example : Example) {
+        if (example.value != null) validateExample(outcomes,path,example.value)
     }
 
-    private fun validateExample(path : String, resource : Any) {
-        println("path - "+ path)
-        println(resource)
+    private fun validateExample(outcomes: MutableList<OperationOutcome.OperationOutcomeIssueComponent>,path : String, resource : Any) {
+        if (resource is JsonNode) {
+            var inputResource : IBaseResource? = null
+
+            try {
+                inputResource = ctx?.newJsonParser()!!?.parseResource(objectMapper.writeValueAsString(resource))
+            } catch (ex : DataFormatException) {
+                try {
+                    if (!ex.message?.contains("was: '<'")!!) throw ex
+                    inputResource = ctx?.newXmlParser()!!?.parseResource(objectMapper.writeValueAsString(resource))
+                } catch (ex : DataFormatException) {
+                    val issue = addOperationIssue(outcomes)
+                    issue.diagnostics = ex.message
+                    issue.severity = OperationOutcome.IssueSeverity.ERROR
+                    issue.code = OperationOutcome.IssueType.CODEINVALID
+                    issue.location.add(StringType(path))
+                    return
+                }
+            }
+            if (inputResource == null) return
+            val resources = getResourcesToValidate(inputResource)
+            val operationOutcomeList = resources.map { validateResource(it, null) }
+            val issueList = operationOutcomeList.filterNotNull().flatMap { it.issue }
+            for (issue in issueList) {
+                if (issue.code != OperationOutcome.IssueType.INFORMATIONAL) {
+                    outcomes.add(issue)
+                    issue.location.add(StringType("OAS: "+path))
+                }
+            }
+        }
     }
 
 
@@ -235,5 +273,32 @@ class VerifyOAS(private val ctx: FhirContext?,
             }
         }
         return null
+    }
+
+    // TODO refactor to remove duplication
+
+    fun validateResource(resource: IBaseResource, profile: String?): OperationOutcome? {
+        if (profile != null) return fhirValidator.validateWithResult(resource, ValidationOptions().addProfile(profile)).toOperationOutcome() as? OperationOutcome
+        capabilityStatementApplier.applyCapabilityStatementProfiles(resource)
+        val messageDefinitionErrors = messageDefinitionApplier.applyMessageDefinition(resource)
+        if (messageDefinitionErrors != null) {
+            return messageDefinitionErrors
+        }
+        return fhirValidator.validateWithResult(resource).toOperationOutcome() as? OperationOutcome
+    }
+
+    fun getResourcesToValidate(inputResource: IBaseResource?): List<IBaseResource> {
+        if (inputResource == null) {
+            return emptyList()
+        }
+
+        if (inputResource is Bundle && inputResource.type == Bundle.BundleType.SEARCHSET) {
+            val bundleResources = inputResource.entry.map { it.resource }
+            if (bundleResources.all { it.resourceType == ResourceType.Bundle }) {
+                return bundleResources
+            }
+        }
+
+        return listOf(inputResource)
     }
 }
