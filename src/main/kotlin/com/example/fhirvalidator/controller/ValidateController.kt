@@ -30,8 +30,7 @@ class ValidateController(
     private val messageDefinitionApplier: MessageDefinitionApplier,
     private val capabilityStatementApplier: CapabilityStatementApplier,
     @Qualifier("SupportChain") private val supportChain: IValidationSupport,
-    private val searchParameters : Bundle,
-    private val npmPackages: List<NpmPackage>?
+    private val searchParameters : Bundle
 ) {
     companion object : KLogging()
 
