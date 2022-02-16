@@ -32,7 +32,7 @@ class ValidateController(
 ) {
     companion object : KLogging()
 
-    private val verifyOAS = VerifyOAS(fhirContext,validator, npmPackages, supportChain,searchParameters)
+    private val verifyOAS = VerifyOAS(fhirContext, supportChain,searchParameters)
 
     @PostMapping("/\$validate", produces = ["application/json", "application/fhir+json","application/xml", "application/fhir+xml"])
     fun validate(

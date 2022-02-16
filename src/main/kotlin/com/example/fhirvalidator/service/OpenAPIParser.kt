@@ -447,6 +447,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
                 }
             }
         }
+
         return "https://simplifier.net/guide/nhsdigital/home";
     }
 
@@ -549,18 +550,14 @@ class OpenAPIParser(private val ctx: FhirContext?,
     ) {
         val operationDefinition = AtomicReference<OperationDefinition?>()
         //val definitionId = IdType(theOperation.definition)
-        for (npmPackage in npmPackages!!) {
-            for (resource in implementationGuideParser!!.getResourcesOfTypeFromPackage(
-                npmPackage,
-                OperationDefinition::class.java
-            )) {
 
-                if (resource.url == theOperation.definition) {
+            for (resource in supportChain.fetchAllConformanceResources()!!) {
+                if (resource is OperationDefinition && resource.url == theOperation.definition) {
                     operationDefinition.set(resource)
                     break
                 }
             }
-        }
+
         if (operationDefinition.get() == null) {
             val operationDef = OperationDefinition()
             operationDef.description = "**NOT HL7 FHIR Conformant** - No definition found for custom operation"
@@ -1158,43 +1155,42 @@ class OpenAPIParser(private val ctx: FhirContext?,
 
         if (supportedMessage.hasDefinition()) {
             supportedDocumentation += " \n\n MessageDefinition.url = **"+ supportedMessage.definition+"** \n"
-            for (npmPackage in npmPackages!!) {
-                if (!npmPackage.name().equals("hl7.fhir.r4.core")) {
-                    for (resource in implementationGuideParser!!.getResourcesOfTypeFromPackage(
-                        npmPackage,
-                        MessageDefinition::class.java
-                    )) {
-                        if (resource.url == supportedMessage.definition) {
-                            if (resource.hasDescription()) {
-                                example.summary = resource.description
-                            }
-                            if (resource.hasPurpose()) {
-                                supportedDocumentation += "\n ### Purpose" + resource.purpose
-                            }
-                            if (resource.hasEventCoding()) {
-                                supportedDocumentation += " \n\n MessageDefinition.eventCoding = **" + resource.eventCoding.code + "** \n"
-                            }
-                            if (resource.hasFocus()) {
-                                supportedDocumentation += "\n\n | Resource | Profile | Min | Max | \n"
-                                supportedDocumentation += "|----------|---------|-----|-----| \n"
-                                for (foci in resource.focus) {
-                                    var min = foci.min
-                                    var max = foci.max
-                                    var resource = foci.code
-                                    var profile = foci.profile
-                                    if (profile==null) { profile="" }
-                                    else {
-                                        profile = getDocumentationPath(profile)
-                                    }
-                                    var idStr = "Not specified"
-                                    idStr = getProfileName(foci.profile)
-                                    supportedDocumentation += "| [$resource](https://www.hl7.org/fhir/$resource.html) | [$idStr]($profile) | $min | $max | \n"
+
+            for (resource in supportChain.fetchAllConformanceResources()!!)
+                if (resource is MessageDefinition) {
+                    if (resource.url == supportedMessage.definition) {
+                        if (resource.hasDescription()) {
+                            example.summary = resource.description
+                        }
+                        if (resource.hasPurpose()) {
+                            supportedDocumentation += "\n ### Purpose" + resource.purpose
+                        }
+                        if (resource.hasEventCoding()) {
+                            supportedDocumentation += " \n\n MessageDefinition.eventCoding = **" + resource.eventCoding.code + "** \n"
+                        }
+                        if (resource.hasFocus()) {
+                            supportedDocumentation += "\n\n | Resource | Profile | Min | Max | \n"
+                            supportedDocumentation += "|----------|---------|-----|-----| \n"
+                            for (foci in resource.focus) {
+                                var min = foci.min
+                                var max = foci.max
+                                var resource = foci.code
+                                var profile = foci.profile
+                                if (profile == null) {
+                                    profile = ""
+                                } else {
+                                    profile = getDocumentationPath(profile)
                                 }
+                                var idStr = "Not specified"
+                                idStr = getProfileName(foci.profile)
+                                supportedDocumentation += "| [$resource](https://www.hl7.org/fhir/$resource.html) | [$idStr]($profile) | $min | $max | \n"
                             }
                         }
                     }
                 }
-            }
+
+
+
             supportedDocumentation += "\n"
         }
 
@@ -1502,18 +1498,24 @@ class OpenAPIParser(private val ctx: FhirContext?,
     }
 
     fun getSearchParameter(url : String) : SearchParameter? {
-        for (npmPackage in npmPackages!!) {
-            if (!npmPackage.name().equals("hl7.fhir.r4.core")) {
-                for (resource in implementationGuideParser!!.getResourcesOfTypeFromPackage(
-                    npmPackage,
-                    SearchParameter::class.java
-                )) {
-                    if (resource.url.equals(url)) {
-                        return resource
-                    }
-                }
+        for (resource in implementationGuideParser!!.getResourcesOfType(
+            npmPackages,
+            SearchParameter::class.java
+        )) {
+            if (resource.url.equals(url)) {
+                return resource
             }
         }
+
+        for (resource in implementationGuideParser!!.getResourcesOfType(
+            npmPackages,
+            SearchParameter::class.java
+        )) {
+            if (resource.url.equals(url)) {
+                return resource
+            }
+        }
+
         for (entry in searchParameters.entry) {
             if (entry.resource is SearchParameter) {
                 if ((entry.resource as SearchParameter).url.equals(url)) {

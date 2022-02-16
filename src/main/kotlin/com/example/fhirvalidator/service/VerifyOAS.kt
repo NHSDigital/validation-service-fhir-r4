@@ -10,8 +10,6 @@ import org.hl7.fhir.r4.model.*
 import org.hl7.fhir.utilities.npm.NpmPackage
 
 class VerifyOAS(private val ctx: FhirContext?,
-                private val fhirValidator: FhirValidator,
-                private val npmPackages: List<NpmPackage>?,
                 private val supportChain: IValidationSupport,
                 private val searchParameters : Bundle)
 {
@@ -98,15 +96,10 @@ class VerifyOAS(private val ctx: FhirContext?,
 
     fun getOperationDefinition(operationCode : String) : OperationDefinition? {
         var operationCode= operationCode.removePrefix("$")
-        for (npmPackage in npmPackages!!) {
-            if (!npmPackage.name().equals("hl7.fhir.r4.core")) {
-                for (resource in implementationGuideParser!!.getResourcesOfTypeFromPackage(
-                    npmPackage,
-                    OperationDefinition::class.java
-                )) {
-                    if (resource.code.equals(operationCode)) {
-                        return resource
-                    }
+        for (resource in supportChain.fetchAllConformanceResources()!!) {
+            if (resource is OperationDefinition) {
+                if (resource.code.equals(operationCode)) {
+                    return resource
                 }
             }
         }
@@ -167,18 +160,14 @@ class VerifyOAS(private val ctx: FhirContext?,
     }
 
     fun getSearchParameterByUrl(url : String) : SearchParameter? {
-        for (npmPackage in npmPackages!!) {
-            if (!npmPackage.name().equals("hl7.fhir.r4.core")) {
-                for (resource in implementationGuideParser!!.getResourcesOfTypeFromPackage(
-                    npmPackage,
-                    SearchParameter::class.java
-                )) {
-                    if (resource.url.equals(url)) {
-                        return resource
-                    }
+        for (resource in supportChain.fetchAllConformanceResources()!!) {
+            if (resource is SearchParameter) {
+                if (resource.url.equals(url)) {
+                    return resource
                 }
             }
         }
+
         for (entry in searchParameters.entry) {
             if (entry.resource is SearchParameter) {
                 if ((entry.resource as SearchParameter).url.equals(url)) {

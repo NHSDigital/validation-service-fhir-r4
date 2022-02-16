@@ -13,12 +13,17 @@ import com.example.fhirvalidator.validationSupport.SwitchedTerminologyServiceVal
 import mu.KLogging
 import org.hl7.fhir.common.hapi.validation.support.*
 import org.hl7.fhir.common.hapi.validation.validator.FhirInstanceValidator
+import org.hl7.fhir.r4.model.Bundle
 import org.hl7.fhir.r4.model.StructureDefinition
 import org.hl7.fhir.utilities.npm.NpmPackage
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager
+import java.io.InputStream
+import java.io.InputStreamReader
+import java.net.URL
+import java.nio.charset.Charset
 import java.util.*
 import java.util.function.Predicate
 
@@ -39,6 +44,7 @@ class ValidationConfiguration(
     fun instanceValidator(supportChain: ValidationSupportChain): FhirInstanceValidator {
         return FhirInstanceValidator(CachingValidationSupport(supportChain))
     }
+
 
     @Bean("SupportChain")
     fun validationSupportChain(

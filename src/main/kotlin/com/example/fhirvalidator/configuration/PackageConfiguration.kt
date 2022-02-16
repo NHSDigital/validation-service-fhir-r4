@@ -1,6 +1,7 @@
 package com.example.fhirvalidator.configuration
 
 import ca.uhn.fhir.context.FhirContext
+import ca.uhn.fhir.context.support.DefaultProfileValidationSupport
 import com.example.fhirvalidator.model.SimplifierPackage
 import com.fasterxml.jackson.databind.ObjectMapper
 import mu.KLogging
@@ -21,6 +22,19 @@ import kotlin.streams.toList
 class PackageConfiguration(val objectMapper: ObjectMapper) {
     companion object : KLogging()
 
+
+
+    @Bean
+    fun getPackages(): List<NpmPackage> {
+        val inputStream = ClassPathResource("manifest.json").inputStream
+        val packages = objectMapper.readValue(inputStream, Array<SimplifierPackage>::class.java)
+        return Arrays.stream(packages)
+            .map { "${it.packageName}-${it.version}.tgz" }
+            .map { ClassPathResource(it).inputStream }
+            .map { NpmPackage.fromPackage(it) }
+            .toList()
+    }
+
     @Bean
     fun getCoreSearchParamters(ctx: FhirContext) : Bundle? {
 
@@ -35,16 +49,4 @@ class PackageConfiguration(val objectMapper: ObjectMapper) {
             return null
         }
     }
-
-    @Bean
-    fun getPackages(): List<NpmPackage> {
-        val inputStream = ClassPathResource("manifest.json").inputStream
-        val packages = objectMapper.readValue(inputStream, Array<SimplifierPackage>::class.java)
-        return Arrays.stream(packages)
-            .map { "${it.packageName}-${it.version}.tgz" }
-            .map { ClassPathResource(it).inputStream }
-            .map { NpmPackage.fromPackage(it) }
-            .toList()
-    }
-
 }
