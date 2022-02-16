@@ -9,7 +9,9 @@ import com.example.fhirvalidator.service.CapabilityStatementApplier
 import com.example.fhirvalidator.service.MessageDefinitionApplier
 import com.example.fhirvalidator.service.VerifyOAS
 import com.example.fhirvalidator.util.createOperationOutcome
+import io.swagger.v3.oas.models.OpenAPI
 import io.swagger.v3.parser.OpenAPIV3Parser
+import io.swagger.v3.parser.core.models.ParseOptions
 import mu.KLogging
 import org.hl7.fhir.instance.model.api.IBaseResource
 import org.hl7.fhir.r4.model.Bundle
@@ -18,6 +20,7 @@ import org.hl7.fhir.r4.model.ResourceType
 import org.hl7.fhir.utilities.npm.NpmPackage
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.web.bind.annotation.*
+import java.util.*
 
 
 @RestController
@@ -48,14 +51,36 @@ class ValidateController(
 
     @PostMapping("/\$verifyOAS", produces = ["application/json", "application/x-yaml"])
     fun validate(
-        @RequestBody input: String,
-        @RequestParam(required = false) profile: String?
+        @RequestBody input: Optional<String>,
+        @RequestParam(required = false) url: String?
     ): String {
-        val result = OpenAPIV3Parser().readContents(input)
+        var openAPI : OpenAPI? = null
+        if (url != null) {
+            openAPI =
+                OpenAPIV3Parser().read(url)
+        }
+        else {
+            if (input.isPresent) {
+                val parseOptions = ParseOptions()
+                parseOptions.isResolve = true // implicit
+                parseOptions.isResolveFully = true
 
-        val results = verifyOAS.validate(result.openAPI)
+                openAPI = OpenAPIV3Parser().readLocation(input.get(),null,parseOptions).openAPI
+            } else {
+                return  fhirContext.newJsonParser().encodeResourceToString(OperationOutcome()
+                    .addIssue(OperationOutcome.OperationOutcomeIssueComponent()
+                    .setSeverity(OperationOutcome.IssueSeverity.FATAL)
+                        .setDiagnostics("If url is not provided, the OAS must be present in the payload")))
+            }
+        }
 
-        return  fhirContext.newJsonParser().encodeResourceToString(createOperationOutcome(results))
+        if (openAPI !=null) {
+            val results = verifyOAS.validate(openAPI)
+            return  fhirContext.newJsonParser().encodeResourceToString(createOperationOutcome(results))
+        }
+
+        return  fhirContext.newJsonParser().encodeResourceToString(OperationOutcome().addIssue(OperationOutcome.OperationOutcomeIssueComponent()
+            .setSeverity(OperationOutcome.IssueSeverity.FATAL).setDiagnostics("Unable to process OAS")))
     }
 
     fun parseAndValidateResource(input: String, profile: String?): OperationOutcome {
