@@ -5,6 +5,9 @@ import ca.uhn.fhir.context.support.IValidationSupport
 import ca.uhn.fhir.validation.FhirValidator
 //import io.swagger.models.parameters.QueryParameter
 import io.swagger.v3.oas.models.OpenAPI
+import io.swagger.v3.oas.models.Operation
+import io.swagger.v3.oas.models.examples.Example
+import io.swagger.v3.oas.models.media.MediaType
 import io.swagger.v3.oas.models.parameters.QueryParameter
 import org.hl7.fhir.r4.model.*
 import org.hl7.fhir.utilities.npm.NpmPackage
@@ -22,11 +25,7 @@ class VerifyOAS(private val ctx: FhirContext?,
         // check all paths are correct
         var outcomes = mutableListOf<OperationOutcome.OperationOutcomeIssueComponent>()
         for (apiPaths in openAPI.paths) {
-            val operationIssue = OperationOutcome.OperationOutcomeIssueComponent()
-            operationIssue.location.add(StringType(apiPaths.key))
-            operationIssue.code = OperationOutcome.IssueType.INFORMATIONAL
-            operationIssue.severity = OperationOutcome.IssueSeverity.INFORMATION
-            outcomes.add(operationIssue)
+
             var path = apiPaths.key.removePrefix("/FHIR/R4")
 
             // check all paths are correct
@@ -41,6 +40,7 @@ class VerifyOAS(private val ctx: FhirContext?,
             if (!resourceType.startsWith("$") && !resourceType.equals("metadata")) {
                 val codeSystem = supportChain.fetchCodeSystem("http://hl7.org/fhir/resource-types")
                 if (codeSystem is CodeSystem && !inCodeSystem(codeSystem,resourceType)) {
+                    val operationIssue = addOperationIssue(outcomes)
                     operationIssue.severity = OperationOutcome.IssueSeverity.ERROR
                     operationIssue.code = OperationOutcome.IssueType.CODEINVALID
                     operationIssue.diagnostics = "Unable to find resource type of: "+resourceType
@@ -50,6 +50,7 @@ class VerifyOAS(private val ctx: FhirContext?,
             if (operation.isNotEmpty() && operation.startsWith("$")) {
                 val operationDefinition = getOperationDefinition(operation)
                 if (operationDefinition == null) {
+                    val operationIssue = addOperationIssue(outcomes)
                     operationIssue.severity = OperationOutcome.IssueSeverity.ERROR
                     operationIssue.code = OperationOutcome.IssueType.CODEINVALID
                     operationIssue.diagnostics = "Unable to find FHIR operation for: "+operation
@@ -63,16 +64,11 @@ class VerifyOAS(private val ctx: FhirContext?,
 
                     if (apiParameter is QueryParameter) {
                         val apiParameter = apiParameter as QueryParameter
-                        val operationIssue = OperationOutcome.OperationOutcomeIssueComponent()
-
-                        operationIssue.location.add(StringType(apiPaths.key + "/get/" + apiParameter.name))
-                        operationIssue.code = OperationOutcome.IssueType.INFORMATIONAL
-                        operationIssue.severity = OperationOutcome.IssueSeverity.INFORMATION
-                        outcomes.add(operationIssue)
                         //println(apiParameter.name)
 
                         val searchParameter = getSearchParameter(resourceType,apiParameter.name)
                         if (searchParameter == null) {
+                            var operationIssue = addOperationIssue(outcomes)
                             operationIssue.severity = OperationOutcome.IssueSeverity.ERROR
                             operationIssue.code = OperationOutcome.IssueType.CODEINVALID
                             operationIssue.diagnostics = "Unable to find FHIR SearchParameter of for: "+apiParameter.name
@@ -82,10 +78,73 @@ class VerifyOAS(private val ctx: FhirContext?,
             }
 
             // check all examples validate
-
+            if (apiPaths.value.get != null) checkOperations(apiPaths.key + "/get",apiPaths.value.get)
+            if (apiPaths.value.post != null) checkOperations(apiPaths.key + "/post", apiPaths.value.post)
+        }
+        if (openAPI.components != null) {
+            if (openAPI.components.examples != null) {
+                for (example in openAPI.components.examples) {
+                    checkExample("component/"+ example.key, example.value)
+                }
+            }
+        }
+        if (outcomes.size==0) {
+            val operationIssue = addOperationIssue(outcomes)
+            operationIssue.code = OperationOutcome.IssueType.INFORMATIONAL
+            operationIssue.severity = OperationOutcome.IssueSeverity.INFORMATION
         }
         return outcomes
     }
+
+    private fun addOperationIssue(outcomes: MutableList<OperationOutcome.OperationOutcomeIssueComponent>): OperationOutcome.OperationOutcomeIssueComponent {
+        val operation = OperationOutcome.OperationOutcomeIssueComponent()
+        outcomes.add(operation)
+        return operation
+    }
+
+    private fun checkOperations(path : String, operation: Operation) {
+        if (operation.requestBody != null) {
+            if (operation.requestBody.content !=null) {
+                for (stuff in operation.requestBody.content.entries) {
+                 //   println(stuff.key)
+                    checkMediaType(path + "/requestBody", stuff.value)
+                }
+            }
+        }
+        if (operation.responses != null) {
+            for (response in operation.responses.entries) {
+                if (response.value.content != null) {
+                    for (stuff in response.value.content.entries) {
+                      //  println(stuff.key)
+                        checkMediaType(path + "/responses",stuff.value)
+                    }
+                }
+
+            }
+        }
+    }
+
+    private fun checkMediaType(path : String, mediaType : MediaType) {
+        if (mediaType.example != null) {
+            validateExample(path + "/example", mediaType.example)
+        }
+        if (mediaType.examples != null) {
+            println(path + " - examples - "+mediaType.examples.size)
+            for (example in mediaType.examples) {
+                checkExample(path + "/" + example.key, example.value)
+            }
+        }
+    }
+
+    private fun checkExample(path : String,example : Example) {
+        if (example.value != null) validateExample(path,example.value)
+    }
+
+    private fun validateExample(path : String, resource : Any) {
+        println("path - "+ path)
+        println(resource)
+    }
+
 
     private fun inCodeSystem(codeSystem: CodeSystem, code : String) : Boolean {
         for (codes in codeSystem.concept) {
