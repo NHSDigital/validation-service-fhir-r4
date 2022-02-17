@@ -964,26 +964,26 @@ class OpenAPIParser(private val ctx: FhirContext?,
             pathItem = PathItem()
             thePaths.addPathItem(thePath, pathItem)
         }
-        return when (theMethod) {
+        when (theMethod) {
             PathItem.HttpMethod.POST -> {
                 assert(pathItem!!.post == null) { "Have duplicate POST at path: $thePath" }
-                pathItem.post(Operation()).post
+                return pathItem.post(Operation()).post
             }
             PathItem.HttpMethod.GET -> {
                 assert(pathItem!!.get == null) { "Have duplicate GET at path: $thePath" }
-                pathItem[Operation()].get
+                return pathItem[Operation()].get
             }
             PathItem.HttpMethod.PUT -> {
                 assert(pathItem!!.put == null)
-                pathItem.put(Operation()).put
+                return pathItem.put(Operation()).put
             }
             PathItem.HttpMethod.PATCH -> {
                 assert(pathItem!!.patch == null)
-                pathItem.patch(Operation()).patch
+                return pathItem.patch(Operation()).patch
             }
             PathItem.HttpMethod.DELETE -> {
                 assert(pathItem!!.delete == null)
-                pathItem.delete(Operation()).delete
+                return pathItem.delete(Operation()).delete
             }
             PathItem.HttpMethod.HEAD, PathItem.HttpMethod.OPTIONS, PathItem.HttpMethod.TRACE -> throw IllegalStateException()
             else -> throw IllegalStateException()

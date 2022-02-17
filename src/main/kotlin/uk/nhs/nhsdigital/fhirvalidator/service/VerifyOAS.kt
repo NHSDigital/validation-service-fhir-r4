@@ -52,7 +52,7 @@ class VerifyOAS(private val ctx: FhirContext?,
                     operationIssue.severity = OperationOutcome.IssueSeverity.ERROR
                     operationIssue.code = OperationOutcome.IssueType.CODEINVALID
                     operationIssue.diagnostics = "Unable to find FHIR Resource type of: "+resourceType
-                    operationIssue.location.add(StringType(apiPaths.key ))
+                    operationIssue.location.add(StringType("OAS: "+apiPaths.key ))
                     //operationIssue.
                 }
             }
@@ -63,7 +63,7 @@ class VerifyOAS(private val ctx: FhirContext?,
                     operationIssue.severity = OperationOutcome.IssueSeverity.ERROR
                     operationIssue.code = OperationOutcome.IssueType.CODEINVALID
                     operationIssue.diagnostics = "Unable to find FHIR operation for: "+operation
-                    operationIssue.location.add(StringType(apiPaths.key ))
+                    operationIssue.location.add(StringType("OAS: "+apiPaths.key ))
                 }
             }
 
@@ -82,7 +82,21 @@ class VerifyOAS(private val ctx: FhirContext?,
                             operationIssue.severity = OperationOutcome.IssueSeverity.ERROR
                             operationIssue.code = OperationOutcome.IssueType.CODEINVALID
                             operationIssue.diagnostics = "Unable to find FHIR SearchParameter of for: "+apiParameter.name
-                            operationIssue.location.add(StringType(apiPaths.key + "/get/" + apiParameter.name))
+                            operationIssue.location.add(StringType("OAS: "+apiPaths.key + "/get/" + apiParameter.name))
+                        } else {
+                            if (apiParameter.schema != null) {
+                            when(searchParameter.type) {
+                                Enumerations.SearchParamType.STRING, Enumerations.SearchParamType.TOKEN, Enumerations.SearchParamType.REFERENCE -> {
+                                    if (!apiParameter.schema.type.equals("string")) {
+                                        var operationIssue = addOperationIssue(outcomes)
+                                        operationIssue.severity = OperationOutcome.IssueSeverity.ERROR
+                                        operationIssue.code = OperationOutcome.IssueType.CODEINVALID
+                                        operationIssue.diagnostics = "Parameter schema type for : "+apiParameter.name + " should be a string (FHIR "+searchParameter.type+")"
+                                        operationIssue.location.add(StringType("OAS: "+apiPaths.key + "/get/" + apiParameter.name+"/schema/type"))
+                                    }
+                                }
+                            }
+                            }
                         }
                     }
                 }
@@ -91,6 +105,7 @@ class VerifyOAS(private val ctx: FhirContext?,
             // check all examples validate
             if (apiPaths.value.get != null) checkOperations(outcomes,apiPaths.key + "/get",apiPaths.value.get)
             if (apiPaths.value.post != null) checkOperations(outcomes,apiPaths.key + "/post", apiPaths.value.post)
+            if (apiPaths.value.put != null) checkOperations(outcomes,apiPaths.key + "/put", apiPaths.value.put)
         }
         if (openAPI.components != null) {
             if (openAPI.components.examples != null) {
@@ -118,7 +133,7 @@ class VerifyOAS(private val ctx: FhirContext?,
             if (operation.requestBody.content !=null) {
                 for (stuff in operation.requestBody.content.entries) {
                  //   println(stuff.key)
-                    checkMediaType(outcomes,path + "/requestBody", stuff.value)
+                    checkMediaType(outcomes,path + "/requestBody/"+stuff.key, stuff.value)
                 }
             }
         }
@@ -127,7 +142,7 @@ class VerifyOAS(private val ctx: FhirContext?,
                 if (response.value.content != null) {
                     for (stuff in response.value.content.entries) {
                       //  println(stuff.key)
-                        checkMediaType(outcomes,path + "/responses",stuff.value)
+                        checkMediaType(outcomes,path + "/responses/"+stuff.key,stuff.value)
                     }
                 }
 
@@ -148,20 +163,34 @@ class VerifyOAS(private val ctx: FhirContext?,
     }
 
     private fun checkExample(outcomes: MutableList<OperationOutcome.OperationOutcomeIssueComponent>,path : String,example : Example) {
-        if (example.value != null) validateExample(outcomes,path,example.value)
+        if (example.value != null) {
+            validateExample(outcomes,path,example.value)
+        }
     }
 
     private fun validateExample(outcomes: MutableList<OperationOutcome.OperationOutcomeIssueComponent>,path : String, resource : Any) {
+        var inputResource : IBaseResource? = null
         if (resource is JsonNode) {
-            var inputResource : IBaseResource? = null
 
             try {
                 inputResource = ctx?.newJsonParser()!!?.parseResource(objectMapper.writeValueAsString(resource))
-            } catch (ex : DataFormatException) {
+            } catch (ex: DataFormatException) {
+                val issue = addOperationIssue(outcomes)
+                issue.diagnostics = ex.message
+                issue.severity = OperationOutcome.IssueSeverity.ERROR
+                issue.code = OperationOutcome.IssueType.CODEINVALID
+                issue.location.add(StringType(path))
+                return
+            }
+        }
+        if (resource is String) {
+            try {
+                inputResource = ctx?.newJsonParser()!!?.parseResource(resource)
+            } catch (ex: DataFormatException) {
                 try {
                     if (!ex.message?.contains("was: '<'")!!) throw ex
-                    inputResource = ctx?.newXmlParser()!!?.parseResource(objectMapper.writeValueAsString(resource))
-                } catch (ex : DataFormatException) {
+                    inputResource = ctx?.newXmlParser()!!?.parseResource(resource)
+                } catch (ex: DataFormatException) {
                     val issue = addOperationIssue(outcomes)
                     issue.diagnostics = ex.message
                     issue.severity = OperationOutcome.IssueSeverity.ERROR
@@ -170,17 +199,28 @@ class VerifyOAS(private val ctx: FhirContext?,
                     return
                 }
             }
-            if (inputResource == null) return
-            val resources = getResourcesToValidate(inputResource)
-            val operationOutcomeList = resources.map { validateResource(it, null) }
-            val issueList = operationOutcomeList.filterNotNull().flatMap { it.issue }
-            for (issue in issueList) {
-                if (issue.code != OperationOutcome.IssueType.INFORMATIONAL) {
-                    outcomes.add(issue)
-                    issue.location.add(StringType("OAS: "+path))
-                }
+        }
+
+        if (inputResource == null) {
+            val issue = addOperationIssue(outcomes)
+            issue.diagnostics = "Unrecognised format for example: "+resource.javaClass.name
+            issue.severity = OperationOutcome.IssueSeverity.ERROR
+            issue.code = OperationOutcome.IssueType.CODEINVALID
+            issue.location.add(StringType(path))
+            return
+            return
+        }
+
+        val resources = getResourcesToValidate(inputResource)
+        val operationOutcomeList = resources.map { validateResource(it, null) }
+        val issueList = operationOutcomeList.filterNotNull().flatMap { it.issue }
+        for (issue in issueList) {
+            if (issue.code != OperationOutcome.IssueType.INFORMATIONAL) {
+                outcomes.add(issue)
+                issue.location.add(StringType("OAS: "+path))
             }
         }
+
     }
 
 
