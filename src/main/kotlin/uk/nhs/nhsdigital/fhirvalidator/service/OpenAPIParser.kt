@@ -171,7 +171,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
             val resourceTag = Tag()
             resourceTag.name = resourceType
 
-            addFhirResourceSchema(openApi, resourceType, nextResource.profile)
+            //addFhirResourceSchema(openApi, resourceType, nextResource.profile)
 
             if (nextResource.hasProfile()) {
                 val profile=nextResource.profile
@@ -320,7 +320,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
                         }
                         addResourceIdParameter(operation)
                         addResourceAPIMParameter(operation)
-                        addFhirResourceSchema(openApi,"JSONPATCH",null)
+                        addJSONSchema(openApi,"JSONPATCH")
                         addPatchResourceRequestBody(openApi, operation, FHIR_CONTEXT_CANONICAL, patchExampleSupplier(resourceType), resourceType)
                         addFhirResourceResponse(ctx, openApi, operation, "OperationOutcome",resftfulIntraction)
                     }
@@ -395,33 +395,22 @@ class OpenAPIParser(private val ctx: FhirContext?,
         }
         return openApi
     }
-    private fun addFhirResourceSchema(openApi: OpenAPI, resourceType: String?, profile: String?) {
+    private fun addJSONSchema(openApi: OpenAPI, resourceType: String?) {
         // Add schema
-        ensureComponentsSchemasPopulated(openApi)
+
         if (!openApi.components.schemas.containsKey(resourceType)) {
             if (resourceType == "JSONPATCH") {
+                ensureComponentsSchemasPopulated(openApi)
                 val schema = ObjectSchema()
                 schema.description = "See [JSON Patch](http://jsonpatch.com/)"
                 openApi.components.addSchemas(resourceType, schema)
                 return
-            }
-            val schema = ObjectSchema()
-            if (profile != null) {
-                val idStr = getProfileName(profile)
-                val documentation = getDocumentationPath(profile)
-                schema.description = "See [$idStr]($documentation) for the FHIR Profile on resource [$resourceType](https://www.hl7.org/fhir/$resourceType.html). For HL7 FHIR R4 Schema see [HL7 FHIR Downloads](https://www.hl7.org/fhir/downloads.html)"
 
-            } else {
-                schema.description = "See [HL7 FHIR $resourceType](https://www.hl7.org/fhir/$resourceType.html). For HL7 FHIR R4 Schema see [HL7 FHIR Downloads](https://www.hl7.org/fhir/downloads.html)"
             }
-            // This doesn't appear to be used. Consider removing
-            schema.externalDocs = ExternalDocumentation()
-            schema.externalDocs.description = resourceType
-           // schema.`$ref` = "https://hl7.org/fhir/R4/fhir.schema.json#/definitions/$resourceType"
-            schema.externalDocs.url = "https://www.hl7.org/fhir/$resourceType.html"
-            openApi.components.addSchemas(resourceType, schema)
         }
     }
+
+
 
     private fun getBaseProfile(profile: String) :StructureDefinition? {
         var profileDef = getProfile(profile)
@@ -527,21 +516,6 @@ class OpenAPIParser(private val ctx: FhirContext?,
     }
 
 
-    private fun addSchemaFhirResource(openApi: OpenAPI, schema : Schema<Any?>, schemaName : String) {
-        ensureComponentsSchemasPopulated(openApi)
-        if (!openApi.components.schemas.containsKey(schemaName)) {
-            openApi.components.addSchemas(schemaName,schema)
-        }
-    }
-
-    private fun ensureComponentsSchemasPopulated(theOpenApi: OpenAPI) {
-        if (theOpenApi.components == null) {
-            theOpenApi.components = Components()
-        }
-        if (theOpenApi.components.schemas == null) {
-            theOpenApi.components.schemas = LinkedHashMap()
-        }
-    }
 
 
     private fun addFhirOperation(
@@ -887,12 +861,12 @@ class OpenAPIParser(private val ctx: FhirContext?,
                 var entry = ArraySchema().type("array").items(bundleEntry)
 
                 bundleSchema.addProperties("entry", entry)
-                addSchemaFhirResource(theOpenApi,bundleSchema,"Bundle-Message")
+                //addSchemaFhirResource(theOpenApi,bundleSchema,"Bundle-Message")
                 mediaType.schema = ObjectSchema().`$ref`(
                     "#/components/schemas/Bundle-Message"
                 )
             } else {
-                addSchemaFhirResource(theOpenApi,parametersSchema,"Parameters-"+theOperationDefinition.code)
+                //addSchemaFhirResource(theOpenApi,parametersSchema,"Parameters-"+theOperationDefinition.code)
                 mediaType.schema = ObjectSchema().`$ref`(
                     "#/components/schemas/Parameters-"+getProfileName(theOperationDefinition.code)
                 )
@@ -1383,34 +1357,28 @@ class OpenAPIParser(private val ctx: FhirContext?,
 
             if (resourceType2 == null && theExampleSupplier != null)
                 resourceType2 = theExampleSupplier?.fhirType()
-            if (resourceType2 != null) addFhirResourceSchema(theOpenApi, resourceType2, null)
-            val jsonSchema = MediaType().schema(
-                ObjectSchema().`$ref`(
-                    "#/components/schemas/" + resourceType2
-                )
-            )
-            if (theExampleSupplier != null) {
-                jsonSchema.example = example.value
-            }
-            retVal.addMediaType(Constants.CT_FHIR_JSON_NEW, jsonSchema)
-            val xmlSchema = MediaType().schema(
-                ObjectSchema().`$ref`(
-                    "#/components/schemas/" + resourceType2
-                )
-            )
+           // if (resourceType2 != null) addJSONSchema(theOpenApi, resourceType2)
+            val jsonSchema = resourceType2?.let { getMediaType(theOpenApi, it) }
 
             if (theExampleSupplier != null) {
-                xmlSchema.example = example.value
+                if (jsonSchema != null) {
+                    jsonSchema.example = example.value
+                }
+            }
+            retVal.addMediaType(Constants.CT_FHIR_JSON_NEW, jsonSchema)
+            val xmlSchema = resourceType2?.let { getMediaType(theOpenApi, it) }
+
+            if (theExampleSupplier != null) {
+                if (xmlSchema != null) {
+                    xmlSchema.example = example.value
+                }
             }
             if (generateXML) retVal.addMediaType(Constants.CT_FHIR_XML_NEW, xmlSchema)
         } else {
-            val jsonSchema = MediaType().schema(
-                ObjectSchema().`$ref`(
-                    "#/components/schemas/" + resourceType2
-                )
-            )
+            val jsonSchema = getMediaType(theOpenApi,resourceType2)
+
             // Ensure schema is added
-            if (resourceType2 != null) addFhirResourceSchema(theOpenApi, resourceType2, null)
+            //if (resourceType2 != null) addJSONSchema(theOpenApi, resourceType2)
             retVal.addMediaType(Constants.CT_FHIR_JSON_NEW, jsonSchema)
             jsonSchema.examples = mutableMapOf<String,Example>()
             for (example in examples) {
@@ -1484,7 +1452,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
         parameter.style = Parameter.StyleEnum.SIMPLE
         theOperation.addParametersItem(parameter)
     }
-
+/*
     protected fun getIndexTemplate(): ClassLoaderTemplateResource? {
         return ClassLoaderTemplateResource(
             myResourcePathToClasspath["/swagger-ui/index.html"],
@@ -1499,7 +1467,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
     fun getBannerImage(): String? {
         return myBannerImage
     }
-
+*/
     fun getSearchParameter(url : String) : SearchParameter? {
         for (resource in implementationGuideParser!!.getResourcesOfType(
             npmPackages,
@@ -1623,7 +1591,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
         var type = searchParameter?.type?.display
         var description = ""
         if (searchParameter?.description != null) {
-            var desc = searchParameter?.description
+            var desc = searchParameter.description
             if (desc.split("*").size>1) {
                 val exps = desc.split("*")
                 for (exp in exps) {
@@ -1670,9 +1638,9 @@ class OpenAPIParser(private val ctx: FhirContext?,
                 description += "\n\n Caution: This does not appear to be a valid search parameter. Chained search paramters **MUST** always be on reference types Please check Hl7 FHIR conformance."
             } else {
                 val secondNames= parameters.get(1).split(":")
-                var resourceType: String?
+                val resourceType: String?
                 if (secondNames.size>1) resourceType = secondNames.get(1) else resourceType = "Resource"
-                var newSearchParam = CapabilityStatement.CapabilityStatementRestResourceSearchParamComponent()
+                val newSearchParam = CapabilityStatement.CapabilityStatementRestResourceSearchParamComponent()
                 newSearchParam.name = secondNames.get(0)
                 // Add back in remaining chained parameters
                 for (i in 3..parameters.size) {
@@ -1690,5 +1658,50 @@ class OpenAPIParser(private val ctx: FhirContext?,
         if (tableReplace) description = description.replace("|","&#124;")
         return description
     }
+
+    private fun getMediaType(openApi: OpenAPI, resourceType: String?) : MediaType {
+        val mediaType = MediaType().schema(ObjectSchema().`$ref`(
+            "#/components/schemas/$resourceType"
+            //"https://hl7.org/fhir/R4/fhir.schema.json#/definitions/$resourceType"
+        ))
+        addFhirResourceSchema(openApi,resourceType)
+        return mediaType
+    }
+
+    private fun addSchemaFhirResource(openApi: OpenAPI, schema : Schema<Any?>, schemaName : String?) {
+        ensureComponentsSchemasPopulated(openApi)
+        if (!openApi.components.schemas.containsKey(schemaName)) {
+            openApi.components.addSchemas(schemaName,schema)
+        }
+    }
+
+
+    private fun ensureComponentsSchemasPopulated(theOpenApi: OpenAPI) {
+        if (theOpenApi.components == null) {
+            theOpenApi.components = Components()
+        }
+        if (theOpenApi.components.schemas == null) {
+            theOpenApi.components.schemas = LinkedHashMap()
+        }
+    }
+
+    private fun addFhirResourceSchema(openApi: OpenAPI, resourceType: String?) {
+        // Add schema
+        ensureComponentsSchemasPopulated(openApi)
+        if (!openApi.components.schemas.containsKey(resourceType)) {
+
+            val schema = ObjectSchema()
+
+            schema.description = "See [HL7 FHIR $resourceType](https://www.hl7.org/fhir/$resourceType.html). For JSON schema see [HL7 FHIR JSON Schema](https://hl7.org/fhir/R4/fhir.schema.json)"
+
+            // This doesn't appear to be used. Consider removing
+            schema.externalDocs = ExternalDocumentation()
+            schema.externalDocs.description = resourceType
+
+            schema.externalDocs.url = "https://www.hl7.org/fhir/$resourceType.html"
+            openApi.components.addSchemas(resourceType, schema)
+        }
+    }
+
 
 }
