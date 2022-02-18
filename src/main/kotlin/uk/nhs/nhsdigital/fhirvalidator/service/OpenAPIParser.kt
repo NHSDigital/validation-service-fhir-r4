@@ -22,6 +22,8 @@ import org.hl7.fhir.r4.model.*
 import org.hl7.fhir.utilities.npm.NpmPackage
 import org.json.JSONArray
 import org.json.JSONObject
+import org.springframework.beans.factory.annotation.Qualifier
+import org.springframework.stereotype.Service
 import org.thymeleaf.templateresource.ClassLoaderTemplateResource
 import java.math.BigDecimal
 import java.net.URI
@@ -30,10 +32,10 @@ import java.util.concurrent.atomic.AtomicReference
 import java.util.function.Supplier
 import java.util.stream.Collectors
 
-
+@Service
 class OpenAPIParser(private val ctx: FhirContext?,
                     private val npmPackages: List<NpmPackage>?,
-                    private val supportChain: IValidationSupport,
+                    @Qualifier("SupportChain") private val supportChain: IValidationSupport,
                     private val searchParameters : Bundle) {
 
 
@@ -1542,21 +1544,24 @@ class OpenAPIParser(private val ctx: FhirContext?,
         if (nextSearchParam.hasType()) {
             when (nextSearchParam.type) {
                 Enumerations.SearchParamType.TOKEN -> {
-                    parameter.schema = StringSchema()
+                    parameter.schema = StringSchema().type("token")
                     parameter.schema.example = "[system][code]"
                 }
                 Enumerations.SearchParamType.REFERENCE -> {
-                    parameter.schema = StringSchema()
+                    parameter.schema = StringSchema().type("reference")
                     parameter.schema.example = "[type]/[id] or [id] or [uri]"
                 }
                 Enumerations.SearchParamType.DATE -> {
-                    parameter.schema = StringSchema()
+                    parameter.schema = StringSchema().type("date")
                     parameter.description = "See FHIR documentation for more details."
                     parameter.schema.example = "eq2013-01-14"
                 }
                 Enumerations.SearchParamType.STRING -> {
-                    parameter.schema = StringSchema()
+                    parameter.schema = StringSchema().type("string")
                     parameter.schema.example = "LS15"
+                }
+                else -> {
+                    parameter.schema = StringSchema().type(nextSearchParam.type.toCode())
                 }
             }
         }

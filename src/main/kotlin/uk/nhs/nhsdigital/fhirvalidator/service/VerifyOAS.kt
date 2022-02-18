@@ -15,10 +15,12 @@ import io.swagger.v3.oas.models.media.MediaType
 import io.swagger.v3.oas.models.parameters.QueryParameter
 import org.hl7.fhir.instance.model.api.IBaseResource
 import org.hl7.fhir.r4.model.*
+import org.springframework.beans.factory.annotation.Qualifier
+import org.springframework.stereotype.Service
 
-
+@Service
 class VerifyOAS(private val ctx: FhirContext?,
-                private val supportChain: IValidationSupport,
+                @Qualifier("SupportChain") private val supportChain: IValidationSupport,
                 private val searchParameters : Bundle,
                 private val fhirValidator: FhirValidator,
                 private val messageDefinitionApplier: MessageDefinitionApplier,
@@ -85,17 +87,35 @@ class VerifyOAS(private val ctx: FhirContext?,
                             operationIssue.location.add(StringType("OAS: "+apiPaths.key + "/get/" + apiParameter.name))
                         } else {
                             if (apiParameter.schema != null) {
-                            when(searchParameter.type) {
-                                Enumerations.SearchParamType.STRING, Enumerations.SearchParamType.TOKEN, Enumerations.SearchParamType.REFERENCE -> {
-                                    if (!apiParameter.schema.type.equals("string")) {
-                                        var operationIssue = addOperationIssue(outcomes)
-                                        operationIssue.severity = OperationOutcome.IssueSeverity.ERROR
-                                        operationIssue.code = OperationOutcome.IssueType.CODEINVALID
-                                        operationIssue.diagnostics = "Parameter schema type for : "+apiParameter.name + " should be a string (FHIR "+searchParameter.type+")"
-                                        operationIssue.location.add(StringType("OAS: "+apiPaths.key + "/get/" + apiParameter.name+"/schema/type"))
+                                // check schema for paramter is correct
+                                if (!searchParameter.type.toCode().equals(apiParameter.schema.type)) {
+                                    var operationIssue = addOperationIssue(outcomes)
+                                    operationIssue.severity = OperationOutcome.IssueSeverity.WARNING
+                                    operationIssue.code = OperationOutcome.IssueType.CODEINVALID
+                                    operationIssue.diagnostics = "Query parameter type for : "+apiParameter.name + " should be "+searchParameter.type.toCode()+" (FHIR) is "+apiParameter.schema.type
+                                    operationIssue.location.add(StringType("OAS: "+apiPaths.key + "/get/" + apiParameter.name+"/schema/type"))
+
+                                }
+                                when(searchParameter.type) {
+                                    Enumerations.SearchParamType.STRING, Enumerations.SearchParamType.TOKEN, Enumerations.SearchParamType.REFERENCE -> {
+                                        if (!apiParameter.schema.type.equals("string")) {
+                                            var operationIssue = addOperationIssue(outcomes)
+                                            operationIssue.severity = OperationOutcome.IssueSeverity.ERROR
+                                            operationIssue.code = OperationOutcome.IssueType.CODEINVALID
+                                            operationIssue.diagnostics = "Parameter schema type for : "+apiParameter.name + " should be a string/(FHIR Search: "+searchParameter.type.toCode()+")"
+                                            operationIssue.location.add(StringType("OAS: "+apiPaths.key + "/get/" + apiParameter.name+"/schema/type"))
+                                        }
+                                    }
+                                    Enumerations.SearchParamType.NUMBER -> {
+                                        if (!apiParameter.schema.type.equals("string") and !apiParameter.schema.type.equals("integer")) {
+                                            var operationIssue = addOperationIssue(outcomes)
+                                            operationIssue.severity = OperationOutcome.IssueSeverity.ERROR
+                                            operationIssue.code = OperationOutcome.IssueType.CODEINVALID
+                                            operationIssue.diagnostics = "Parameter schema type for : "+apiParameter.name + " should be a string or integer (FHIR Search: "+searchParameter.type.toCode()+")"
+                                            operationIssue.location.add(StringType("OAS: "+apiPaths.key + "/get/" + apiParameter.name+"/schema/type"))
+                                        }
                                     }
                                 }
-                            }
                             }
                         }
                     }

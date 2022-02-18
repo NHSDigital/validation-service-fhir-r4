@@ -29,12 +29,11 @@ class ValidateController(
     private val validator: FhirValidator,
     private val messageDefinitionApplier: MessageDefinitionApplier,
     private val capabilityStatementApplier: CapabilityStatementApplier,
-    @Qualifier("SupportChain") private val supportChain: IValidationSupport,
-    private val searchParameters : Bundle
+    private val verifyOAS:VerifyOAS
+
 ) {
     companion object : KLogging()
 
-    private val verifyOAS = VerifyOAS(fhirContext, supportChain,searchParameters,validator,messageDefinitionApplier,capabilityStatementApplier)
 
     @PostMapping("/\$validate", produces = ["application/json", "application/fhir+json","application/xml", "application/fhir+xml"])
     fun validate(

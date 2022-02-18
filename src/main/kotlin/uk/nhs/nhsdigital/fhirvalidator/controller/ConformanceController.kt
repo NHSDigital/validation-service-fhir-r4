@@ -14,18 +14,10 @@ import org.springframework.web.bind.annotation.*
 @RestController
 class ConformanceController(
     private val fhirContext: FhirContext,
+    private val oasParser : OpenAPIParser,
     private val npmPackages: List<NpmPackage>,
-    private val searchParameters : Bundle,
-    @Qualifier("SupportChain") private val supportChain: IValidationSupport
 ) {
     var implementationGuideParser: ImplementationGuideParser? = ImplementationGuideParser(fhirContext!!)
-
-    private val openapi = OpenAPIParser(
-        fhirContext,
-        npmPackages,
-        supportChain,
-        searchParameters
-    )
 
     @GetMapping("metadata",produces = ["application/json", "application/fhir+json"])
     fun metadata(): String {
@@ -37,7 +29,7 @@ class ConformanceController(
     fun openapi(): String {
         val cs = getCapabilityStatement()
         //return Yaml.pretty(openapi.generateOpenApi(cs))
-        return Json.pretty(openapi.generateOpenApi(cs));
+        return Json.pretty(oasParser.generateOpenApi(cs));
     }
 
     @PostMapping("/\$openapi",produces = ["application/json"])
@@ -50,7 +42,7 @@ class ConformanceController(
         }
         if (inputResource is CapabilityStatement) {
             val cs : CapabilityStatement = inputResource
-            return Json.pretty(openapi.generateOpenApi(cs));
+            return Json.pretty(oasParser.generateOpenApi(cs));
         }
         return "Nowt found"
     }
@@ -133,10 +125,10 @@ class ConformanceController(
     fun searchParameter(@RequestParam(name="url") url : String ): String {
         val bundle = Bundle();
         bundle.type = Bundle.BundleType.SEARCHSET;
-        val searchParameter = openapi.getSearchParameter(url)
+        val searchParameter =  oasParser.getSearchParameter(url)
         if (searchParameter != null) bundle.entry.add(Bundle.BundleEntryComponent().setResource(searchParameter))
 
-        return fhirContext.newJsonParser().encodeResourceToString(bundle);
+        return fhirContext.newJsonParser().encodeResourceToString(bundle)
     }
 
     @GetMapping("StructureDefinition",produces = ["application/json", "application/fhir+json"])
