@@ -417,6 +417,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
             // This doesn't appear to be used. Consider removing
             schema.externalDocs = ExternalDocumentation()
             schema.externalDocs.description = resourceType
+           // schema.`$ref` = "https://hl7.org/fhir/R4/fhir.schema.json#/definitions/$resourceType"
             schema.externalDocs.url = "https://www.hl7.org/fhir/$resourceType.html"
             openApi.components.addSchemas(resourceType, schema)
         }
@@ -1541,30 +1542,6 @@ class OpenAPIParser(private val ctx: FhirContext?,
         var name = modifiers.get(0)
 
 
-        if (nextSearchParam.hasType()) {
-            when (nextSearchParam.type) {
-                Enumerations.SearchParamType.TOKEN -> {
-                    parameter.schema = StringSchema().type("token")
-                    parameter.schema.example = "[system][code]"
-                }
-                Enumerations.SearchParamType.REFERENCE -> {
-                    parameter.schema = StringSchema().type("reference")
-                    parameter.schema.example = "[type]/[id] or [id] or [uri]"
-                }
-                Enumerations.SearchParamType.DATE -> {
-                    parameter.schema = StringSchema().type("date")
-                    parameter.description = "See FHIR documentation for more details."
-                    parameter.schema.example = "eq2013-01-14"
-                }
-                Enumerations.SearchParamType.STRING -> {
-                    parameter.schema = StringSchema().type("string")
-                    parameter.schema.example = "LS15"
-                }
-                else -> {
-                    parameter.schema = StringSchema().type(nextSearchParam.type.toCode())
-                }
-            }
-        }
 
         if (!nextSearchParam.hasDefinition()) {
             searchParameter = getSearchParameter("http://hl7.org/fhir/SearchParameter/$resourceType-"+ name)
@@ -1607,6 +1584,31 @@ class OpenAPIParser(private val ctx: FhirContext?,
         }
 
          */
+
+        if (searchParameter != null) {
+            when (searchParameter.type) {
+                Enumerations.SearchParamType.TOKEN -> {
+                    parameter.schema = StringSchema().format("token")
+                    parameter.schema.example = "[system][code]"
+                }
+                Enumerations.SearchParamType.REFERENCE -> {
+                    parameter.schema = StringSchema().format("reference")
+                    parameter.schema.example = "[type]/[id] or [id] or [uri]"
+                }
+                Enumerations.SearchParamType.DATE -> {
+                    parameter.schema = StringSchema().format("date")
+                    parameter.description = "See FHIR documentation for more details."
+                    parameter.schema.example = "eq2013-01-14"
+                }
+                Enumerations.SearchParamType.STRING -> {
+                    parameter.schema = StringSchema().type("string")
+                    parameter.schema.example = "LS15"
+                }
+                else -> {
+                    parameter.schema = StringSchema().format(nextSearchParam.type.toCode())
+                }
+            }
+        }
 
         var code : String? = searchParameter?.code
         var expression : String = searchParameter?.expression.toString()

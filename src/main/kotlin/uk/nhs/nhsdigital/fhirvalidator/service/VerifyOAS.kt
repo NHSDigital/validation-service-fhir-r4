@@ -81,15 +81,20 @@ class VerifyOAS(private val ctx: FhirContext?,
                         } else {
                             if (apiParameter.schema != null) {
                                 // check schema for paramter is correct
-                                if (!searchParameter.type.toCode().equals(apiParameter.schema.type)) {
-                                    var operationIssue = addOperationIssue(outcomes,OperationOutcome.IssueType.CODEINVALID, OperationOutcome.IssueSeverity.ERROR,"Query parameter type for : "+apiParameter.name + " should be "+searchParameter.type.toCode()+" (FHIR) is "+apiParameter.schema.type)
+                                if (apiParameter.schema.format != null && !searchParameter.type.toCode().equals(apiParameter.schema.format)) {
+                                    var operationIssue = addOperationIssue(outcomes,OperationOutcome.IssueType.CODEINVALID, OperationOutcome.IssueSeverity.ERROR,"Query parameter format for : "+apiParameter.name + " should be "+searchParameter.type.toCode()+" (FHIR) is "+apiParameter.schema.format)
 
                                     operationIssue.location.add(StringType("OAS: "+apiPaths.key + "/get/" + apiParameter.name+"/schema/type"))
 
                                 }
-                                // Maybe remove as FHIR type is probably enough
+                                if (apiParameter.schema.format == null) {
+                                    var operationIssue = addOperationIssue(outcomes,OperationOutcome.IssueType.CODEINVALID, OperationOutcome.IssueSeverity.ERROR,"Query parameter format for : "+apiParameter.name + " is missing. Should be " + searchParameter.type.toCode())
+
+                                    operationIssue.location.add(StringType("OAS: "+apiPaths.key + "/get/" + apiParameter.name+"/schema/type"))
+                                }
+                                // Check fhir type
                                 when(searchParameter.type) {
-                                    Enumerations.SearchParamType.STRING, Enumerations.SearchParamType.TOKEN, Enumerations.SearchParamType.REFERENCE -> {
+                                    Enumerations.SearchParamType.STRING, Enumerations.SearchParamType.TOKEN, Enumerations.SearchParamType.DATE,Enumerations.SearchParamType.REFERENCE -> {
                                         if (!apiParameter.schema.type.equals("string")) {
                                             var operationIssue = addOperationIssue(outcomes,OperationOutcome.IssueType.CODEINVALID, OperationOutcome.IssueSeverity.ERROR,"Parameter schema type for : "+apiParameter.name + " should be a string/(FHIR Search: "+searchParameter.type.toCode()+")")
 
@@ -264,33 +269,35 @@ class VerifyOAS(private val ctx: FhirContext?,
         var searchParameter = getSearchParameterByUrl("http://hl7.org/fhir/SearchParameter/$resourceType-$name")
         if (searchParameter == null)
             searchParameter = getSearchParameterByUrl("http://hl7.org/fhir/SearchParameter/individual-$name")
-        else return searchParameter
+
         if (searchParameter == null) {
             searchParameter = getSearchParameterByUrl("http://hl7.org/fhir/SearchParameter/clinical-$name")
             if (searchParameter != null && !searchParameter.expression.contains(resourceType)) {
                 searchParameter = null
             }
-        } else return searchParameter
+        }
         if (searchParameter == null) {
             searchParameter = getSearchParameterByUrl("http://hl7.org/fhir/SearchParameter/conformance-$name")
             if (searchParameter != null && !searchParameter.expression.contains(resourceType)) {
                 searchParameter = null
             }
-        } else return searchParameter
+        }
         if (searchParameter == null) {
             searchParameter = getSearchParameterByUrl("http://hl7.org/fhir/SearchParameter/medications-$name")
             if (searchParameter != null && !searchParameter.expression.contains(resourceType)) {
                 searchParameter = null
             }
-        } else return searchParameter
+        }
 
         if (searchParameter == null) {
             searchParameter = getSearchParameterByUrl("http://hl7.org/fhir/SearchParameter/Resource-$name")
-        } else return searchParameter
+        }
 
         if (searchParameter == null) {
             searchParameter = getSearchParameterByUrl("http://hl7.org/fhir/SearchParameter/DomainResource-$name")
-        } else return searchParameter
+        }
+
+        if (searchParameter == null) return null
 
         if (modifiers.size>1 && searchParameter != null) {
             val modifier = modifiers.get(1)
@@ -302,7 +309,7 @@ class VerifyOAS(private val ctx: FhirContext?,
                 searchParameter.expression += ".identifier | "+ searchParameter.expression +".where(resolve() is Resource).identifier"
             }
         }
-        if (parameters.size>0) {
+        if (parameters.size>1) {
             if (searchParameter?.type != Enumerations.SearchParamType.REFERENCE) {
                // maybe throw error?
             } else {
