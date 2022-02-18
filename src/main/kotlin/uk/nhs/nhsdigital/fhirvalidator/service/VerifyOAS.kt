@@ -140,18 +140,25 @@ class VerifyOAS(private val ctx: FhirContext?,
     private fun checkOperations(outcomes: MutableList<OperationOutcome.OperationOutcomeIssueComponent>,path : String, operation: Operation) {
         if (operation.requestBody != null) {
             if (operation.requestBody.content !=null) {
-                for (stuff in operation.requestBody.content.entries) {
-                 //   println(stuff.key)
-                    checkMediaType(outcomes,path + "/requestBody/"+stuff.key, stuff.value)
+                for (mediaType in operation.requestBody.content.entries) {
+                    if (!(mediaType.key in arrayOf("application/fhir+json","application/fhir+xml"))) {
+                        val issue = addOperationIssue(outcomes, OperationOutcome.IssueType.VALUE, OperationOutcome.IssueSeverity.ERROR, "Invalid media type of "+mediaType.key)
+                        issue.location.add(StringType(path + "/responses/"+mediaType.key))
+                    }
+                    checkMediaType(outcomes,path + "/requestBody/" + mediaType.key, mediaType.value)
                 }
             }
         }
         if (operation.responses != null) {
             for (response in operation.responses.entries) {
                 if (response.value.content != null) {
-                    for (stuff in response.value.content.entries) {
-                      //  println(stuff.key)
-                        checkMediaType(outcomes,path + "/responses/"+stuff.key,stuff.value)
+
+                    for (mediaType in response.value.content.entries) {
+                        if (!(mediaType.key in arrayOf("application/fhir+json","application/fhir+xml"))) {
+                                val issue = addOperationIssue(outcomes, OperationOutcome.IssueType.VALUE, OperationOutcome.IssueSeverity.ERROR, "Invalid media type of "+mediaType.key)
+                                    issue.location.add(StringType(path + "/responses/"+mediaType.key))
+                        }
+                        checkMediaType(outcomes,path + "/responses/"+mediaType.key, mediaType.value)
                     }
                 }
 
