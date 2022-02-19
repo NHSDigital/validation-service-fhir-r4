@@ -177,7 +177,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
                 val profile=nextResource.profile
                 val idStr = getProfileName(profile)
                 val documentation = getDocumentationPath(profile)
-                resourceTag.description = "Resource (schema): [FHIR $resourceType](https://www.hl7.org/fhir/$resourceType.html)"
+                resourceTag.description = "" //""Resource (schema): [FHIR $resourceType](https://www.hl7.org/fhir/$resourceType.html)"
 
                 var profileDef = getBaseProfile(profile)
 
@@ -1418,7 +1418,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
                         "\n" +
                         "Required in all environments except sandbox."
             parameter.example = "Bearer g1112R_ccQ1Ebbb4gtHBP1aaaNM"
-            parameter.schema = Schema<Any?>().type("string").minimum(BigDecimal(1))
+            parameter.schema = Schema<Any?>().type("string").minimum(BigDecimal(1)).pattern("^Bearer\\ [[:ascii:]]+$")
             parameter.style = Parameter.StyleEnum.SIMPLE
             theOperation.addParametersItem(parameter)
 
@@ -1429,7 +1429,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
         parameter.setIn("header")
         parameter.description = "The user role ID (URID) for the current session. Also known as a user role profile ID (URPID)."
         parameter.example = "555254240100"
-        parameter.schema = Schema<Any?>().type("string").minimum(BigDecimal(1))
+        parameter.schema = Schema<Any?>().type("string").minimum(BigDecimal(1)).pattern("^[0-9]+$")
         parameter.style = Parameter.StyleEnum.SIMPLE
         theOperation.addParametersItem(parameter)
 
@@ -1439,7 +1439,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
         parameter.setIn("header")
         parameter.description = "A globally unique identifier (GUID) for the request, which we use to de-duplicate repeated requests and to trace the request if you contact our helpdesk"
         parameter.example = "60E0B220-8136-4CA5-AE46-1D97EF59D068"
-        parameter.schema = Schema<Any?>().type("string").minimum(BigDecimal(1))
+        parameter.schema = Schema<Any?>().type("string").minimum(BigDecimal(1)).pattern("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
         parameter.style = Parameter.StyleEnum.SIMPLE
         theOperation.addParametersItem(parameter)
 
@@ -1510,7 +1510,6 @@ class OpenAPIParser(private val ctx: FhirContext?,
         var name = modifiers.get(0)
 
 
-
         if (!nextSearchParam.hasDefinition()) {
             searchParameter = getSearchParameter("http://hl7.org/fhir/SearchParameter/$resourceType-"+ name)
             if (searchParameter == null) searchParameter = getSearchParameter("http://hl7.org/fhir/SearchParameter/individual-"+ name)
@@ -1542,16 +1541,63 @@ class OpenAPIParser(private val ctx: FhirContext?,
             }
         } else searchParameter = getSearchParameter(nextSearchParam.definition)
 
-        /*
-        if (searchParameter == null && name.startsWith("_")) {
-            searchParameter = SearchParameter()
-            searchParameter?.code = name.replace("_","")
-            searchParameter?.description = "Special search parameter, see [FHIR Search](http://www.hl7.org/fhir/search.html)"
-            searchParameter?.expression = ""
-            searchParameter?.type = Enumerations.SearchParamType.SPECIAL
+
+        // Create local copy as we are changing the definition
+
+        searchParameter = searchParameter?.copy()
+
+        // Filter expression to get resource focused expression
+
+        var expression : String = searchParameter?.expression.toString()
+        if (expression.split("|").size>1) {
+            val exps = expression.split("|")
+            for (exp in exps) {
+                if (exp.replace(" ","").startsWith(resourceType)) {
+                    if (searchParameter != null) {
+                        searchParameter.expression = exp.removeSuffix(" ")
+                    }
+                }
+            }
         }
 
-         */
+        // Filter description to get resource focus description
+
+        var description = ""
+        if (searchParameter?.description != null) {
+            var desc = searchParameter.description
+            if (desc.split("*").size>1) {
+                val exps = desc.split("*")
+                for (exp in exps) {
+                    if (exp.replace(" [","").startsWith(resourceType)) {
+                        desc = exp
+                    }
+                }
+                searchParameter.description = desc
+            }
+        }
+
+
+        // Check for identifer and swap definition
+        if (modifiers.size>1 && searchParameter != null) {
+            val modifier = modifiers.get(1)
+            // Don't alter original
+
+            if (modifier == "identifier") {
+                searchParameter.code += ":" + modifier
+                searchParameter.type = Enumerations.SearchParamType.TOKEN
+                searchParameter.expression += ".identifier | "+ searchParameter.expression +".where(resolve() is Resource).identifier"
+            }
+        }
+
+
+        var type = searchParameter?.type?.display
+        expression = searchParameter?.expression.toString()
+
+        // Removed unsafe charaters
+        if (searchParameter != null) {
+            description = escapeMarkdown(description, false)
+            expression = expression.replace("|","&#124;")
+        }
 
         if (searchParameter != null) {
             when (searchParameter.type) {
@@ -1578,31 +1624,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
             }
         }
 
-        var code : String? = searchParameter?.code
-        var expression : String = searchParameter?.expression.toString()
-        if (expression.split("|").size>1) {
-            val exps = expression.split("|")
-            for (exp in exps) {
-                if (exp.replace(" ","").startsWith(resourceType)) {
-                    expression = exp
-                }
-            }
-        }
-        var type = searchParameter?.type?.display
-        var description = ""
-        if (searchParameter?.description != null) {
-            var desc = searchParameter.description
-            if (desc.split("*").size>1) {
-                val exps = desc.split("*")
-                for (exp in exps) {
-                    if (exp.replace(" [","").startsWith(resourceType)) {
-                        desc = exp
-                    }
-                }
-            }
-            description += "\n\n "+desc
-        }
-
+/*
         if (modifiers.size>1 && searchParameter != null) {
             val modifier = modifiers.get(1)
             code += ":" + modifier
@@ -1612,12 +1634,9 @@ class OpenAPIParser(private val ctx: FhirContext?,
                 type = "token"
                 expression += ".identifier | "+ expression +".where(resolve() is Resource).identifier"
             }
-        }
+        }*/
 
-        if (searchParameter != null) {
-            description = escapeMarkdown(description, false)
-            expression = expression.replace("|","&#124;")
-        }
+
 
         if (parameters.size>1) {
             description += "\n\n Chained search parameter. Please see [chained](http://www.hl7.org/fhir/search.html#chaining)"
@@ -1692,7 +1711,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
 
             val schema = ObjectSchema()
 
-            schema.description = "See [HL7 FHIR $resourceType](https://www.hl7.org/fhir/$resourceType.html). For JSON schema see [HL7 FHIR JSON Schema](https://hl7.org/fhir/R4/fhir.schema.json)"
+            schema.description = "HL7 FHIR Schema [$resourceType](https://hl7.org/fhir/R4/fhir.schema.json#/definitions/$resourceType)."+ ". HL7 FHIR Documentation [$resourceType](\"https://www.hl7.org/fhir/$resourceType.html\")"
 
             // This doesn't appear to be used. Consider removing
             schema.externalDocs = ExternalDocumentation()
