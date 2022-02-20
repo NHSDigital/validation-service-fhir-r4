@@ -1657,15 +1657,23 @@ class OpenAPIParser(private val ctx: FhirContext?,
                 description += "\n\n Caution: This does not appear to be a valid search parameter. Chained search paramters **MUST** always be on reference types Please check Hl7 FHIR conformance."
             } else {
                 val secondNames= parameters.get(1).split(":")
-                val resourceType: String?
-                if (secondNames.size>1) resourceType = secondNames.get(1) else resourceType = "Resource"
+                var resourceType: String?
+                if (secondNames.size>1) resourceType = secondNames.get(1) else {
+                    // A bit coarse
+                    resourceType = "Resource"
+                    if (searchParameter.hasTarget() ) {
+                        for (resource in searchParameter.target) {
+                            if (!resource.code.equals("Group")) resourceType=resource.code
+                        }
+                    }
+                }
                 val newSearchParam = CapabilityStatement.CapabilityStatementRestResourceSearchParamComponent()
                 newSearchParam.name = secondNames.get(0)
                 // Add back in remaining chained parameters
                 for (i in 3..parameters.size) {
                     newSearchParam.name += "."+parameters.get(i)
                 }
-                description += getSearchParameterDocumentation(newSearchParam,resourceType, parameter)
+                description += resourceType?.let { getSearchParameterDocumentation(newSearchParam, it, parameter) }
             }
         }
         return description

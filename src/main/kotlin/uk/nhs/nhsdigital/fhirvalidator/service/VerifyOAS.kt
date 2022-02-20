@@ -82,13 +82,13 @@ class VerifyOAS(private val ctx: FhirContext?,
                             if (apiParameter.schema != null) {
                                 // check schema for paramter is correct
                                 if (apiParameter.schema.format != null && !searchParameter.type.toCode().equals(apiParameter.schema.format)) {
-                                    var operationIssue = addOperationIssue(outcomes,OperationOutcome.IssueType.CODEINVALID, OperationOutcome.IssueSeverity.ERROR,"Query parameter format for : "+apiParameter.name + " should be "+searchParameter.type.toCode()+" (FHIR) is "+apiParameter.schema.format)
+                                    var operationIssue = addOperationIssue(outcomes,OperationOutcome.IssueType.CODEINVALID, OperationOutcome.IssueSeverity.WARNING,"Query parameter format for: "+apiParameter.name + " should be "+searchParameter.type.toCode()+" (FHIR) is "+apiParameter.schema.format)
 
                                     operationIssue.location.add(StringType("OAS: "+apiPaths.key + "/get/" + apiParameter.name+"/schema/type"))
 
                                 }
                                 if (apiParameter.schema.format == null) {
-                                    var operationIssue = addOperationIssue(outcomes,OperationOutcome.IssueType.CODEINVALID, OperationOutcome.IssueSeverity.ERROR,"Query parameter format for : "+apiParameter.name + " is missing. Should be " + searchParameter.type.toCode())
+                                    var operationIssue = addOperationIssue(outcomes,OperationOutcome.IssueType.CODEINVALID, OperationOutcome.IssueSeverity.WARNING,"Query parameter format for: "+apiParameter.name + " is missing. Should be " + searchParameter.type.toCode())
 
                                     operationIssue.location.add(StringType("OAS: "+apiPaths.key + "/get/" + apiParameter.name+"/schema/type"))
                                 }
@@ -315,14 +315,23 @@ class VerifyOAS(private val ctx: FhirContext?,
             } else {
                 val secondNames= parameters.get(1).split(":")
                 var resourceType: String?
-                if (secondNames.size>1) resourceType = secondNames.get(1) else resourceType = "Resource"
-
+                if (secondNames.size>1) resourceType = secondNames.get(1)
+                else {
+                    // A bit coarse
+                    resourceType = "Resource"
+                    if (searchParameter.hasTarget() ) {
+                        for (resource in searchParameter.target) {
+                            if (!resource.code.equals("Group")) resourceType=resource.code
+                        }
+                    }
+                }
                 var newSearchParamName = secondNames.get(0)
                 // Add back in remaining chained parameters
                 for (i in 3..parameters.size) {
                     newSearchParamName += "."+parameters.get(i)
                 }
-                return getSearchParameter(resourceType, newSearchParamName)
+
+                return resourceType?.let { getSearchParameter(it, newSearchParamName) }
             }
         }
 
