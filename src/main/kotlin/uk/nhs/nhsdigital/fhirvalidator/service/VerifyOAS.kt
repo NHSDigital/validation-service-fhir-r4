@@ -73,7 +73,7 @@ class VerifyOAS(private val ctx: FhirContext?,
                         val apiParameter = apiParameter as QueryParameter
                         //println(apiParameter.name)
 
-                        val searchParameter = getSearchParameter(resourceType,apiParameter.name)
+                        val searchParameter = getSearchParameter(outcomes, path, resourceType,apiParameter.name)
                         if (searchParameter == null) {
                             var operationIssue = addOperationIssue(outcomes,OperationOutcome.IssueType.CODEINVALID, OperationOutcome.IssueSeverity.ERROR, "Unable to find FHIR SearchParameter of for: "+apiParameter.name)
 
@@ -221,7 +221,7 @@ class VerifyOAS(private val ctx: FhirContext?,
 
             issue.location.add(StringType(path))
             return
-            return
+
         }
 
         val resources = getResourcesToValidate(inputResource)
@@ -256,7 +256,7 @@ class VerifyOAS(private val ctx: FhirContext?,
         return null
     }
 
-    fun getSearchParameter(resourceType: String, name : String) : SearchParameter? {
+    fun getSearchParameter(outcomes : MutableList<OperationOutcome.OperationOutcomeIssueComponent> , path : String, resourceType: String, name : String) : SearchParameter? {
         val parameters = name.split(".")
 
         val modifiers = parameters.get(0).split(":")
@@ -315,7 +315,16 @@ class VerifyOAS(private val ctx: FhirContext?,
             } else {
                 val secondNames= parameters.get(1).split(":")
                 var resourceType: String?
-                if (secondNames.size>1) resourceType = secondNames.get(1)
+                if (secondNames.size>1) {
+                    resourceType = secondNames.get(1)
+                    if (searchParameter.hasTarget() ) {
+                        var found = false
+                        for (resource in searchParameter.target) {
+                            if (!resource.code.equals(resourceType)) found= true
+                        }
+                        if (!found) addOperationIssue(outcomes,OperationOutcome.IssueType.CODEINVALID, OperationOutcome.IssueSeverity.ERROR,resourceType + " is not a valid target for this search paramter.")
+                    }
+                }
                 else {
                     // A bit coarse
                     resourceType = "Resource"
@@ -331,7 +340,7 @@ class VerifyOAS(private val ctx: FhirContext?,
                     newSearchParamName += "."+parameters.get(i)
                 }
 
-                return resourceType?.let { getSearchParameter(it, newSearchParamName) }
+                return resourceType?.let { getSearchParameter(outcomes, path, it, newSearchParamName) }
             }
         }
 

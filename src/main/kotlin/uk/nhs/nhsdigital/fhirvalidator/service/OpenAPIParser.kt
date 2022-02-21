@@ -225,7 +225,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
                             operation.description += "\n\n"+ resftfulIntraction.documentation
                         }
                         if (nextResource.hasExtension("http://hl7.org/fhir/StructureDefinition/capabilitystatement-search-parameter-combination")) {
-                            var comboDoc = "\n\n **Required Parameters** \n\n One of the following paramters(s) is **required** \n\n" +
+                            var comboDoc = "\n\n **Required Parameters** \n\n One of the following search paramter combinations is **required** \n\n" +
                                     "| Required | Optional | \n"
                             comboDoc += "|----------|---------| \n"
 
@@ -833,7 +833,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
                     .type("string")
                     .example("Bundle")
                     //.enum(mutableListOf<String>("message"))
-                    .description("Indicates the purpose of this bundle - how it is intended to be used. Fixed value: message"))
+                    .description("The type of FHIR resource"))
                     .addEnumItemObject("Bundle")
 
                 bundleSchema.addProperties("type", Schema<String>()
@@ -857,11 +857,11 @@ class OpenAPIParser(private val ctx: FhirContext?,
                         .maxProperties(1)
                         .type("object")
                         .description("A resource in the bundle. First entry MUST be a FHIR MessageHeader"))
-                //addSchemaFhirResource(theOpenApi,bundleEntry,"Bundle-Entry")
+                addSchemaFhirResource(theOpenApi,bundleEntry,"Bundle-Entry")
                 var entry = ArraySchema().type("array").items(bundleEntry)
 
                 bundleSchema.addProperties("entry", entry)
-                //addSchemaFhirResource(theOpenApi,bundleSchema,"Bundle-Message")
+                addSchemaFhirResource(theOpenApi,bundleSchema,"Bundle-Message")
                 mediaType.schema = ObjectSchema().`$ref`(
                     "#/components/schemas/Bundle-Message"
                 )
@@ -1143,7 +1143,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
                             supportedDocumentation += "\n ### Purpose" + resource.purpose
                         }
                         if (resource.hasEventCoding()) {
-                            supportedDocumentation += " \n\n MessageDefinition.eventCoding = **" + resource.eventCoding.code + "** \n"
+                            supportedDocumentation += " \n\n The first Bundle.entry **MUST** be a FHIR MessageHeader with \n MessageHeader.eventCoding = **" + resource.eventCoding.code + "** \n"
                         }
                         if (resource.hasFocus()) {
                             supportedDocumentation += "\n\n | Resource | Profile | Min | Max | \n"
@@ -1163,6 +1163,8 @@ class OpenAPIParser(private val ctx: FhirContext?,
                                 supportedDocumentation += "| [$resource](https://www.hl7.org/fhir/$resource.html) | [$idStr]($profile) | $min | $max | \n"
                             }
                         }
+                        // only process this loop once
+                        break
                     }
                 }
 
@@ -1585,7 +1587,12 @@ class OpenAPIParser(private val ctx: FhirContext?,
             if (modifier == "identifier") {
                 searchParameter.code += ":" + modifier
                 searchParameter.type = Enumerations.SearchParamType.TOKEN
-                searchParameter.expression += ".identifier | "+ searchParameter.expression +".where(resolve() is Resource).identifier"
+                val chain = searchParameter.expression.split(".")
+                var expression = ""
+                // May fail if a complex chain is use ... but maybe that should not be allowed due to complexity
+                for (chainItem in chain) if (!chainItem.startsWith("where(resolve()")) expression = chainItem + "."
+                expression += "identifier"
+                searchParameter.expression = expression
             }
         }
 
