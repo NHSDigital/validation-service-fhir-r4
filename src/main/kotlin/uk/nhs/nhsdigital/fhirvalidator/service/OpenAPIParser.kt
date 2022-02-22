@@ -1591,8 +1591,9 @@ class OpenAPIParser(private val ctx: FhirContext?,
                 val chain = searchParameter.expression.split(".")
                 var expression = ""
                 // May fail if a complex chain is use ... but maybe that should not be allowed due to complexity
-                for (chainItem in chain) if (!chainItem.startsWith("where(resolve()")) expression = chainItem + "."
-                expression += "identifier"
+                for (chainItem in chain) if (!chainItem.startsWith("where(resolve()")) expression += chainItem + "."
+                if (!expression.endsWith("identifier.")) expression += "identifier"
+                expression = expression.removeSuffix(".")
                 searchParameter.expression = expression
             }
         }
@@ -1666,7 +1667,8 @@ class OpenAPIParser(private val ctx: FhirContext?,
             } else {
                 val secondNames= parameters.get(1).split(":")
                 var resourceType: String?
-                if (secondNames.size>1) resourceType = secondNames.get(1) else {
+                if (secondNames.size>1) resourceType = secondNames.get(1)
+                else {
                     // A bit coarse
                     resourceType = "Resource"
                     if (searchParameter.hasTarget() ) {
