@@ -868,7 +868,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
             } else {
                 //addSchemaFhirResource(theOpenApi,parametersSchema,"Parameters-"+theOperationDefinition.code)
                 mediaType.schema = ObjectSchema().`$ref`(
-                    "#/components/schemas/Parameters-"+getProfileName(theOperationDefinition.code)
+                    "#/components/schemas/Parameters"
                 )
 
             }
@@ -1262,7 +1262,8 @@ class OpenAPIParser(private val ctx: FhirContext?,
 
                         if (supplierExample != null && supplierExample.get() !=null) {
                             var example = supplierExample.get()
-                            if (interaction.code == CapabilityStatement.TypeRestfulInteraction.SEARCHTYPE) {
+                            // Allow autogeneration of searchset bundles from resource examples
+                            if (interaction.code == CapabilityStatement.TypeRestfulInteraction.SEARCHTYPE && !(supplierExample.get() is Bundle)) {
                                 val bundle = Bundle()
                                 bundle.type = Bundle.BundleType.SEARCHSET
                                 bundle.addLink(
@@ -1294,10 +1295,10 @@ class OpenAPIParser(private val ctx: FhirContext?,
                                 )
                             }
                             if (exampleExt.hasExtension("summary")) {
-                                exampleOAS.summary = (exampleExt.getExtensionString("summary") as MarkdownType).value
+                                exampleOAS.summary = (exampleExt.getExtensionString("summary") as String)
                             }
                             if (exampleExt.hasExtension("description")) {
-                                exampleOAS.description = (exampleExt.getExtensionString("description") as MarkdownType).value
+                                exampleOAS.description = escapeMarkdown((exampleExt.getExtensionString("description") as String),true)
                             }
                             exampleOAS.value = ctx?.newJsonParser()?.encodeResourceToString(example)
 
