@@ -90,15 +90,22 @@ class OpenAPIParser(private val ctx: FhirContext?,
                 }
                 openApi.info.description += docDescription
             }
+            openApi.info.extensions = mutableMapOf<String,Any>()
+            var igs =  mutableMapOf<String,Any>()
             if (apiDefinition.hasExtension("implementationGuide")) {
                 var igDescription = "\n\n | FHIR Implementation Guide | Version |\n |-----|-----|\n"
                 apiDefinition.extension.forEach{
+
                     if (it.url.equals("implementationGuide")) {
+
                         val name = it.getExtensionByUrl("name").value as StringType
                         var url = "https://simplifier.net/guide/NHSDigital/Home"
                         var version = ""
                         if (it.hasExtension("version")) {
                             version = (it.getExtensionByUrl("version").value as StringType).value
+                            igs.put((it.getExtensionByUrl("name").value as StringType).value,(it.getExtensionByUrl("version").value as StringType).value)
+                        } else {
+                            igs.put((it.getExtensionByUrl("name").value as StringType).value,"")
                         }
                         if (name.value.startsWith("uk.nhsdigital.medicines")) url = "https://simplifier.net/guide/nhsdigital-medicines/home"
                         if (name.value.startsWith("ukcore.")) url = "https://simplifier.net/guide/hl7fhirukcorer4release1/home"
@@ -108,6 +115,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
                 }
                 openApi.info.description += igDescription
             }
+            openApi.info.extensions.put("x-HL7-FHIR-NpmPackages",igs)
 
         }
         openApi.externalDocs = ExternalDocumentation()
