@@ -91,9 +91,9 @@ class OpenAPIParser(private val ctx: FhirContext?,
                         var version = ""
                         if (it.hasExtension("version")) {
                             version = (it.getExtensionByUrl("version").value as StringType).value
-                            igs.put((it.getExtensionByUrl("name").value as StringType).value,(it.getExtensionByUrl("version").value as StringType).value)
+                            igs[(it.getExtensionByUrl("name").value as StringType).value] = (it.getExtensionByUrl("version").value as StringType).value
                         } else {
-                            igs.put((it.getExtensionByUrl("name").value as StringType).value,"")
+                            igs[(it.getExtensionByUrl("name").value as StringType).value] = ""
                         }
                         if (name.value.startsWith("uk.nhsdigital.medicines")) url = "https://simplifier.net/guide/nhsdigital-medicines/home"
                         if (name.value.startsWith("ukcore.")) url = "https://simplifier.net/guide/hl7fhirukcorer4release1/home"
@@ -103,7 +103,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
                 }
                 openApi.info.description += igDescription
             }
-            openApi.info.extensions.put("x-HL7-FHIR-NpmPackages",igs)
+            openApi.info.extensions["x-HL7-FHIR-NpmPackages"] = igs
 
         }
         openApi.externalDocs = ExternalDocumentation()
@@ -449,14 +449,14 @@ class OpenAPIParser(private val ctx: FhirContext?,
     }
     private fun getProfileName(profile : String) : String {
         val uri = URI(profile)
-        val path: String = uri.getPath()
+        val path: String = uri.path
         return path.substring(path.lastIndexOf('/') + 1)
     }
 
     private fun getDocumentationPathNpm(profile : String, npmPackage : NpmPackage) : String {
         val idStr = getProfileName(profile)
-        val profileUrl = getProfileUrl(idStr,npmPackage.name())
-        return profileUrl
+        return getProfileUrl(idStr,npmPackage.name())
+
     }
 
     private fun patchExampleSupplier(resourceType: String?): String {
@@ -472,11 +472,9 @@ class OpenAPIParser(private val ctx: FhirContext?,
                 .put("path", "/whenPrepared")
                 .put("value", JSONArray().put("2022-02-08T00:00:00+00:00"))
 
-            val jsonString: String = JSONObject()
+            return JSONObject()
                 .put("patches", JSONArray().put(patch1).put(patch2))
                 .toString()
-
-            return jsonString
 
         }
         if (resourceType.equals("MedicationRequest")) {
@@ -485,11 +483,9 @@ class OpenAPIParser(private val ctx: FhirContext?,
                 .put("path", "/status")
                 .put("value", "cancelled")
 
-            val jsonString: String = JSONObject()
+            return JSONObject()
                 .put("patches", JSONArray().put(patch1))
                 .toString()
-
-            return jsonString
 
         }
         val patch1 = JSONObject()
@@ -502,11 +498,9 @@ class OpenAPIParser(private val ctx: FhirContext?,
             .put("path", "/foo2")
             .put("value", JSONArray().put("barbar"))
 
-        val jsonString: String = JSONObject()
+        return JSONObject()
             .put("patches", JSONArray().put(patch1).put(patch2))
             .toString()
-
-        return jsonString
     }
 
 
@@ -918,7 +912,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
                 for (supportedMessage in messaging.supportedMessage) {
                     val idStr = getProfileName(supportedMessage.definition)
                     supportedDocumentation += "* $idStr \n"
-                    mediaType.examples.put(idStr, getMessageExample(supportedMessage))
+                    mediaType.examples[idStr] = getMessageExample(supportedMessage)
                 }
             }
             theOperation.description += supportedDocumentation
@@ -1064,7 +1058,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
             val response403 = ApiResponse()
             example = Example()
             example.value = getForbiddenOperationOutcome()
-            exampleResponse = mutableListOf<Example>()
+            exampleResponse = mutableListOf()
             exampleResponse.add(example)
             response403.content = provideContentFhirResource(
                 theOpenApi,
@@ -1078,8 +1072,8 @@ class OpenAPIParser(private val ctx: FhirContext?,
         val operationOutcome = OperationOutcome()
         operationOutcome.meta = Meta().setLastUpdatedElement(InstantType("2021-04-14T11:35:00+00:00"))
         val issue = operationOutcome.addIssue()
-        issue.setSeverity(OperationOutcome.IssueSeverity.INFORMATION)
-        issue.setCode(OperationOutcome.IssueType.INFORMATIONAL)
+        issue.severity = OperationOutcome.IssueSeverity.INFORMATION
+        issue.code = OperationOutcome.IssueType.INFORMATIONAL
         return ctx?.newJsonParser()?.setPrettyPrint(true)?.encodeResourceToString(operationOutcome)
     }
 
@@ -1087,12 +1081,11 @@ class OpenAPIParser(private val ctx: FhirContext?,
         val operationOutcome = OperationOutcome()
         operationOutcome.meta = Meta().setLastUpdatedElement(InstantType("2021-04-14T11:35:00+00:00"))
         val issue = operationOutcome.addIssue()
-        issue.setSeverity(OperationOutcome.IssueSeverity.ERROR)
-        issue.setCode(OperationOutcome.IssueType.FORBIDDEN)
-        issue.setDetails(CodeableConcept().addCoding(
+        issue.severity = OperationOutcome.IssueSeverity.ERROR
+        issue.code = OperationOutcome.IssueType.FORBIDDEN
+        issue.details = CodeableConcept().addCoding(
             Coding().setSystem("https://fhir.nhs.uk/CodeSystem/Spine-ErrorOrWarningCode")
                 .setCode("ACCESS_DENIED"))
-        )
         return ctx?.newJsonParser()?.setPrettyPrint(true)?.encodeResourceToString(operationOutcome)
     }
 
@@ -1100,12 +1093,11 @@ class OpenAPIParser(private val ctx: FhirContext?,
         val operationOutcome = OperationOutcome()
         operationOutcome.meta = Meta().setLastUpdatedElement(InstantType("2021-04-14T11:35:00+00:00"))
         val issue = operationOutcome.addIssue()
-        issue.setSeverity(OperationOutcome.IssueSeverity.ERROR)
-        issue.setCode(OperationOutcome.IssueType.VALUE)
-        issue.setDetails(CodeableConcept().addCoding(
+        issue.severity = OperationOutcome.IssueSeverity.ERROR
+        issue.code = OperationOutcome.IssueType.VALUE
+        issue.details = CodeableConcept().addCoding(
             Coding().setSystem("https://fhir.nhs.uk/CodeSystem/Spine-ErrorOrWarningCode")
                 .setCode("INVALID_VALUE"))
-        )
         issue.diagnostics = "(invalid_request) firstName is missing"
         issue.addExpression("Patient.name.given")
         return ctx?.newJsonParser()?.setPrettyPrint(true)?.encodeResourceToString(operationOutcome)
@@ -1215,8 +1207,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
                     val exampleOAS = Example()
                     examples.add(exampleOAS)
                     if (supplierExample != null) {
-                        val example = supplierExample
-                        exampleOAS.value = ctx?.newJsonParser()?.encodeResourceToString(example)
+                        exampleOAS.value = ctx?.newJsonParser()?.encodeResourceToString(supplierExample)
                     }
                     if (exampleExt.hasExtension("summary")) {
                         exampleOAS.summary = (exampleExt.getExtensionString("summary") as String)
@@ -1248,7 +1239,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
                         if (supplierExample != null && supplierExample.get() !=null) {
                             var example = supplierExample.get()
                             // Allow autogeneration of searchset bundles from resource examples
-                            if (interaction.code == CapabilityStatement.TypeRestfulInteraction.SEARCHTYPE && !(supplierExample.get() is Bundle)) {
+                            if (interaction.code == CapabilityStatement.TypeRestfulInteraction.SEARCHTYPE && supplierExample.get() !is Bundle) {
                                 val bundle = Bundle()
                                 bundle.type = Bundle.BundleType.SEARCHSET
                                 bundle.addLink(
@@ -1336,7 +1327,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
         var resourceType2 = resourceType
         //addSchemaFhirResource(theOpenApi)
 
-        if (examples.size == 0) {
+        if (examples.isEmpty()) {
            val example = Example()
            val generic = genericExampleSupplier(ctx,resourceType)
            example.value = generic.get(0).value
@@ -1376,7 +1367,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
                     example.value = generic.get(0).value
                 }
                 if (key == null) key = "example"
-                   jsonSchema.examples.put(key,example)
+                jsonSchema.examples[key] = example
             }
         }
         return retVal
@@ -1485,7 +1476,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
         return null
     }
     private fun getSearchParameterDocumentation(nextSearchParam: CapabilityStatement.CapabilityStatementRestResourceSearchParamComponent,
-                                                resourceType: String,
+                                                originalResourceType: String,
                                                 parameter: Parameter) : String
     {
         var searchParameter : SearchParameter?
@@ -1499,23 +1490,23 @@ class OpenAPIParser(private val ctx: FhirContext?,
 
 
         if (!nextSearchParam.hasDefinition()) {
-            searchParameter = getSearchParameter("http://hl7.org/fhir/SearchParameter/$resourceType-"+ name)
+            searchParameter = getSearchParameter("http://hl7.org/fhir/SearchParameter/$originalResourceType-"+ name)
             if (searchParameter == null) searchParameter = getSearchParameter("http://hl7.org/fhir/SearchParameter/individual-"+ name)
             if (searchParameter == null) {
                 searchParameter = getSearchParameter("http://hl7.org/fhir/SearchParameter/clinical-"+ name)
-                if (searchParameter != null && !searchParameter.expression.contains(resourceType)) {
+                if (searchParameter != null && !searchParameter.expression.contains(originalResourceType)) {
                     searchParameter = null
                 }
             }
             if (searchParameter == null) {
                 searchParameter = getSearchParameter("http://hl7.org/fhir/SearchParameter/conformance-"+ name)
-                if (searchParameter != null && !searchParameter.expression.contains(resourceType)) {
+                if (searchParameter != null && !searchParameter.expression.contains(originalResourceType)) {
                     searchParameter = null
                 }
             }
             if (searchParameter == null) {
                 searchParameter = getSearchParameter("http://hl7.org/fhir/SearchParameter/medications-"+ name)
-                if (searchParameter != null && !searchParameter.expression.contains(resourceType)) {
+                if (searchParameter != null && !searchParameter.expression.contains(originalResourceType)) {
                     searchParameter = null
                 }
             }
@@ -1540,7 +1531,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
         if (expression.split("|").size>1) {
             val exps = expression.split("|")
             for (exp in exps) {
-                if (exp.replace(" ","").startsWith(resourceType)) {
+                if (exp.replace(" ","").startsWith(originalResourceType)) {
                     if (searchParameter != null) {
                         searchParameter.expression = exp.removeSuffix(" ")
                     }
@@ -1556,7 +1547,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
             if (desc.split("*").size>1) {
                 val exps = desc.split("*")
                 for (exp in exps) {
-                    if (exp.replace(" [","").startsWith(resourceType)) {
+                    if (exp.replace(" [","").startsWith(originalResourceType)) {
                         desc = exp
                     }
                 }
