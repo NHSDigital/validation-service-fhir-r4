@@ -17,7 +17,7 @@ class ConformanceController(
     private val oasParser : OpenAPIParser,
     private val npmPackages: List<NpmPackage>,
 ) {
-    var implementationGuideParser: ImplementationGuideParser? = ImplementationGuideParser(fhirContext!!)
+    var implementationGuideParser: ImplementationGuideParser? = ImplementationGuideParser(fhirContext)
 
     @GetMapping("metadata",produces = ["application/json", "application/fhir+json"])
     fun metadata(): String {
@@ -65,7 +65,7 @@ class ConformanceController(
     fun capabilityStatement(@RequestParam(name="url") url : String ): String {
         val bundle = Bundle();
         bundle.type = Bundle.BundleType.SEARCHSET;
-        for (npmPackage in npmPackages!!) {
+        for (npmPackage in npmPackages) {
             if (!npmPackage.name().equals("hl7.fhir.r4.core")) {
                 for (resource in implementationGuideParser!!.getResourcesOfTypeFromPackage(
                     npmPackage,
@@ -85,7 +85,7 @@ class ConformanceController(
     fun messageDefinition(@RequestParam(name="url") url : String ): String {
         val bundle = Bundle();
         bundle.type = Bundle.BundleType.SEARCHSET;
-        for (npmPackage in npmPackages!!) {
+        for (npmPackage in npmPackages) {
             if (!npmPackage.name().equals("hl7.fhir.r4.core")) {
                 for (resource in implementationGuideParser!!.getResourcesOfTypeFromPackage(
                     npmPackage,
@@ -105,7 +105,7 @@ class ConformanceController(
     fun operationDefinition(@RequestParam(name="url") url : String ): String {
         val bundle = Bundle();
         bundle.type = Bundle.BundleType.SEARCHSET;
-        for (npmPackage in npmPackages!!) {
+        for (npmPackage in npmPackages) {
             if (!npmPackage.name().equals("hl7.fhir.r4.core")) {
                 for (resource in implementationGuideParser!!.getResourcesOfTypeFromPackage(
                     npmPackage,
@@ -136,7 +136,7 @@ class ConformanceController(
         val bundle = Bundle();
         bundle.type = Bundle.BundleType.SEARCHSET;
 
-        for (npmPackage in npmPackages!!) {
+        for (npmPackage in npmPackages) {
             if (!npmPackage.name().equals("hl7.fhir.r4.core")) {
                 for (resource in implementationGuideParser!!.getResourcesOfTypeFromPackage(
                     npmPackage,
@@ -246,13 +246,13 @@ class ConformanceController(
         )
 
 
-        for (npmPackage in npmPackages!!) {
+        for (npmPackage in npmPackages) {
             if (!npmPackage.name().equals("hl7.fhir.r4.core")) {
-                for (resource in implementationGuideParser!!.getResourcesOfTypeFromPackage(
+                for (resourceIG in implementationGuideParser!!.getResourcesOfTypeFromPackage(
                     npmPackage,
                     CapabilityStatement::class.java
                 )) {
-                    for (restComponent in resource.rest) {
+                    for (restComponent in resourceIG.rest) {
                         for (component in restComponent.resource) {
 
                             if (component.hasProfile()) {
@@ -272,13 +272,13 @@ class ConformanceController(
                 val message = CapabilityStatement.CapabilityStatementMessagingComponent()
 
                 message.documentation = npmPackage.name()
-                for (resource in implementationGuideParser!!.getResourcesOfTypeFromPackage(
+                for (resourceIG in implementationGuideParser!!.getResourcesOfTypeFromPackage(
                     npmPackage,
                     MessageDefinition::class.java
                 )) {
-                    if (resource.hasUrl()) {
+                    if (resourceIG.hasUrl()) {
                         val messageDefinition = CapabilityStatement.CapabilityStatementMessagingSupportedMessageComponent()
-                        .setDefinition(resource.url)
+                        .setDefinition(resourceIG.url)
 
                         message.supportedMessage.add(messageDefinition)
                     }

@@ -30,10 +30,10 @@ class VerifyOAS(private val ctx: FhirContext?,
    // var implementationGuideParser: ImplementationGuideParser? = ImplementationGuideParser(ctx!!)
     val objectMapper = ObjectMapper()
 
-    public fun validate(openAPI : OpenAPI) : List<OperationOutcome.OperationOutcomeIssueComponent> {
+    fun validate(openAPI : OpenAPI) : List<OperationOutcome.OperationOutcomeIssueComponent> {
         // check all examples validate
         // check all paths are correct
-        var outcomes = mutableListOf<OperationOutcome.OperationOutcomeIssueComponent>()
+        val outcomes = mutableListOf<OperationOutcome.OperationOutcomeIssueComponent>()
         for (apiPaths in openAPI.paths) {
 
             var path = apiPaths.key.removePrefix("/FHIR/R4")
@@ -70,25 +70,25 @@ class VerifyOAS(private val ctx: FhirContext?,
                 for (apiParameter in apiPaths.value.get.parameters) {
 
                     if (apiParameter is QueryParameter) {
-                        val apiParameter = apiParameter as QueryParameter
+                        val apiParameter = apiParameter
                         //println(apiParameter.name)
 
                         val searchParameter = getSearchParameter(outcomes, path, resourceType,apiParameter.name)
                         if (searchParameter == null) {
-                            var operationIssue = addOperationIssue(outcomes,OperationOutcome.IssueType.CODEINVALID, OperationOutcome.IssueSeverity.ERROR, "Unable to find FHIR SearchParameter of for: "+apiParameter.name)
+                            val operationIssue = addOperationIssue(outcomes,OperationOutcome.IssueType.CODEINVALID, OperationOutcome.IssueSeverity.ERROR, "Unable to find FHIR SearchParameter of for: "+apiParameter.name)
 
                             operationIssue.location.add(StringType("OAS: "+apiPaths.key + "/get/" + apiParameter.name))
                         } else {
                             if (apiParameter.schema != null) {
                                 // check schema for paramter is correct
                                 if (apiParameter.schema.format != null && !searchParameter.type.toCode().equals(apiParameter.schema.format)) {
-                                    var operationIssue = addOperationIssue(outcomes,OperationOutcome.IssueType.CODEINVALID, OperationOutcome.IssueSeverity.WARNING,"Query parameter format for: "+apiParameter.name + " should be "+searchParameter.type.toCode()+" (FHIR) is "+apiParameter.schema.format)
+                                    val operationIssue = addOperationIssue(outcomes,OperationOutcome.IssueType.CODEINVALID, OperationOutcome.IssueSeverity.WARNING,"Query parameter format for: "+apiParameter.name + " should be "+searchParameter.type.toCode()+" (FHIR) is "+apiParameter.schema.format)
 
                                     operationIssue.location.add(StringType("OAS: "+apiPaths.key + "/get/" + apiParameter.name+"/schema/type"))
 
                                 }
                                 if (apiParameter.schema.format == null) {
-                                    var operationIssue = addOperationIssue(outcomes,OperationOutcome.IssueType.CODEINVALID, OperationOutcome.IssueSeverity.WARNING,"Query parameter format for: "+apiParameter.name + " is missing. Should be " + searchParameter.type.toCode())
+                                    val operationIssue = addOperationIssue(outcomes,OperationOutcome.IssueType.CODEINVALID, OperationOutcome.IssueSeverity.WARNING,"Query parameter format for: "+apiParameter.name + " is missing. Should be " + searchParameter.type.toCode())
 
                                     operationIssue.location.add(StringType("OAS: "+apiPaths.key + "/get/" + apiParameter.name+"/schema/type"))
                                 }
@@ -108,6 +108,7 @@ class VerifyOAS(private val ctx: FhirContext?,
                                             operationIssue.location.add(StringType("OAS: "+apiPaths.key + "/get/" + apiParameter.name+"/schema/type"))
                                         }
                                     }
+                                    else -> {}
                                 }
                             }
                         }
@@ -194,7 +195,7 @@ class VerifyOAS(private val ctx: FhirContext?,
         if (resource is JsonNode) {
 
             try {
-                inputResource = ctx?.newJsonParser()!!?.parseResource(objectMapper.writeValueAsString(resource))
+                inputResource = ctx?.newJsonParser()!!.parseResource(objectMapper.writeValueAsString(resource))
             } catch (ex: DataFormatException) {
                 val issue = addOperationIssue(outcomes,OperationOutcome.IssueType.CODEINVALID, OperationOutcome.IssueSeverity.ERROR, ex.message)
                 issue.location.add(StringType(path))
@@ -203,11 +204,11 @@ class VerifyOAS(private val ctx: FhirContext?,
         }
         if (resource is String) {
             try {
-                inputResource = ctx?.newJsonParser()!!?.parseResource(resource)
+                inputResource = ctx?.newJsonParser()?.parseResource(resource)
             } catch (ex: DataFormatException) {
                 try {
                     if (!ex.message?.contains("was: '<'")!!) throw ex
-                    inputResource = ctx?.newXmlParser()!!?.parseResource(resource)
+                    inputResource = ctx?.newXmlParser()!!.parseResource(resource)
                 } catch (ex: DataFormatException) {
                     val issue = addOperationIssue(outcomes,OperationOutcome.IssueType.CODEINVALID, OperationOutcome.IssueSeverity.ERROR,ex.message)
                     issue.location.add(StringType(path))
@@ -239,16 +240,16 @@ class VerifyOAS(private val ctx: FhirContext?,
 
     private fun inCodeSystem(codeSystem: CodeSystem, code : String) : Boolean {
         for (codes in codeSystem.concept) {
-            if (codes.hasCode() && codes.code.equals(code)) return true;
+            if (codes.hasCode() && codes.code.equals(code)) return true
         }
         return false
     }
 
     fun getOperationDefinition(operationCode : String) : OperationDefinition? {
-        var operationCode= operationCode.removePrefix("$")
+        val operation= operationCode.removePrefix("$")
         for (resource in supportChain.fetchAllConformanceResources()!!) {
             if (resource is OperationDefinition) {
-                if (resource.code.equals(operationCode)) {
+                if (resource.code.equals(operation)) {
                     return resource
                 }
             }
@@ -299,7 +300,7 @@ class VerifyOAS(private val ctx: FhirContext?,
 
         if (searchParameter == null) return null
 
-        if (modifiers.size>1 && searchParameter != null) {
+        if (modifiers.size>1) {
             val modifier = modifiers.get(1)
             // Don't alter original
             searchParameter = searchParameter.copy()

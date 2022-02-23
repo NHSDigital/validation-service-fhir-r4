@@ -24,10 +24,8 @@ import org.json.JSONArray
 import org.json.JSONObject
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
-import org.thymeleaf.templateresource.ClassLoaderTemplateResource
 import java.math.BigDecimal
 import java.net.URI
-import java.nio.charset.StandardCharsets
 import java.util.concurrent.atomic.AtomicReference
 import java.util.function.Supplier
 import java.util.stream.Collectors
@@ -42,24 +40,14 @@ class OpenAPIParser(private val ctx: FhirContext?,
     val PAGE_SYSTEM = "System Level Operations"
     val FHIR_CONTEXT_CANONICAL = FhirContext.forR4()
 
-    private var generateXML = false;
+    private var generateXML = false
     private var cs: CapabilityStatement = CapabilityStatement()
     private val exampleServer = "http://example.org/"
     private val exampleServerPrefix = "FHIR/R4/"
 
-    private val myResourcePathToClasspath: Map<String, String> = HashMap()
-
-    private var myBannerImage: String? = null
-
     var implementationGuideParser: ImplementationGuideParser? = ImplementationGuideParser(ctx!!)
 
-    fun removeTrailingSlash(theUrl: String?): String? {
-        var theUrl = theUrl
-        while (theUrl != null && theUrl.endsWith("/")) {
-            theUrl = theUrl.substring(0, theUrl.length - 1)
-        }
-        return theUrl
-    }
+
 
 
     fun generateOpenApi(_cs: CapabilityStatement): OpenAPI? {
@@ -91,7 +79,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
                 openApi.info.description += docDescription
             }
             openApi.info.extensions = mutableMapOf<String,Any>()
-            var igs =  mutableMapOf<String,Any>()
+            val igs =  mutableMapOf<String,Any>()
             if (apiDefinition.hasExtension("implementationGuide")) {
                 var igDescription = "\n\n | FHIR Implementation Guide | Version |\n |-----|-----|\n"
                 apiDefinition.extension.forEach{
@@ -219,8 +207,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
 
 
             for (resftfulIntraction in nextResource.interaction) {
-                var requestExample = getRequestExample(resftfulIntraction)
-                if (requestExample == null) requestExample = genericExampleSupplier(ctx, resourceType)
+                val requestExample = getRequestExample(resftfulIntraction)
 
                 when (resftfulIntraction.code) {
                     // Search
@@ -328,8 +315,8 @@ class OpenAPIParser(private val ctx: FhirContext?,
                         }
                         addResourceIdParameter(operation)
                         addResourceAPIMParameter(operation)
-                        addJSONSchema(openApi,"JSONPATCH")
-                        addPatchResourceRequestBody(openApi, operation, FHIR_CONTEXT_CANONICAL, patchExampleSupplier(resourceType), resourceType)
+                        addJSONSchema(openApi)
+                        addPatchResourceRequestBody(operation, patchExampleSupplier(resourceType))
                         addFhirResourceResponse(ctx, openApi, operation, "OperationOutcome",resftfulIntraction)
                     }
 
@@ -347,6 +334,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
                         addFhirResourceResponse(ctx, openApi, operation, "OperationOutcome",resftfulIntraction)
                     }
 
+                    else -> {}
                 }
             }
 
@@ -403,18 +391,16 @@ class OpenAPIParser(private val ctx: FhirContext?,
         }
         return openApi
     }
-    private fun addJSONSchema(openApi: OpenAPI, resourceType: String?) {
+    private fun addJSONSchema(openApi: OpenAPI) {
         // Add schema
 
-        if (!openApi.components.schemas.containsKey(resourceType)) {
-            if (resourceType == "JSONPATCH") {
+        if (!openApi.components.schemas.containsKey("JSONPATCH")) {
+
                 ensureComponentsSchemasPopulated(openApi)
                 val schema = ObjectSchema()
                 schema.description = "See [JSON Patch](http://jsonpatch.com/)"
-                openApi.components.addSchemas(resourceType, schema)
+                openApi.components.addSchemas("JSONPATCH", schema)
                 return
-
-            }
         }
     }
 
@@ -430,11 +416,11 @@ class OpenAPIParser(private val ctx: FhirContext?,
 
     private fun getProfile(profile: String?) : StructureDefinition? {
         val structureDefinition = supportChain.fetchStructureDefinition(profile)
-        if (structureDefinition is StructureDefinition) return structureDefinition as StructureDefinition
+        if (structureDefinition is StructureDefinition) return structureDefinition
         return null
     }
 
-    private fun getDocumentationPath(profile : String) : String? {
+    private fun getDocumentationPath(profile : String) : String {
         for (npmPackage in npmPackages!!) {
             if (!npmPackage.name().equals("hl7.fhir.r4.core")) {
                 for (resource in implementationGuideParser!!.getResourcesOfTypeFromPackage(
@@ -448,7 +434,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
             }
         }
 
-        return "https://simplifier.net/guide/nhsdigital/home";
+        return "https://simplifier.net/guide/nhsdigital/home"
     }
 
     private fun getProfileUrl(idStr : String, packageName : String) : String {
@@ -459,7 +445,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
             return "https://simplifier.net/guide/NHSDigital/Home/FHIRAssets/AllAssets/Profiles/" + idStr + ".guide.md"
         if (packageName.contains("ukcore"))
             return "https://simplifier.net/guide/HL7FHIRUKCoreR4Release1/Home/ProfilesandExtensions/Profile" + idStr
-        return "https://simplifier.net/guide/nhsdigital/home";
+        return "https://simplifier.net/guide/nhsdigital/home"
     }
     private fun getProfileName(profile : String) : String {
         val uri = URI(profile)
@@ -467,13 +453,13 @@ class OpenAPIParser(private val ctx: FhirContext?,
         return path.substring(path.lastIndexOf('/') + 1)
     }
 
-    private fun getDocumentationPathNpm(profile : String, npmPackage : NpmPackage) : String? {
+    private fun getDocumentationPathNpm(profile : String, npmPackage : NpmPackage) : String {
         val idStr = getProfileName(profile)
         val profileUrl = getProfileUrl(idStr,npmPackage.name())
-        return profileUrl;
+        return profileUrl
     }
 
-    private fun patchExampleSupplier(resourceType: String?): String? {
+    private fun patchExampleSupplier(resourceType: String?): String {
 
         if (resourceType.equals("MedicationDispense")) {
             val patch1 = JSONObject()
@@ -727,14 +713,13 @@ class OpenAPIParser(private val ctx: FhirContext?,
             val exampleRequestBody = Parameters()
 
             // Maybe load in the schema from core files?
-            var parametersSchema = Schema<Any?>().type("object").title("Parameters-"+theOperationDefinition.code)
+            val parametersSchema = Schema<Any?>().type("object").title("Parameters-"+theOperationDefinition.code)
                 .required(mutableListOf("resourceType","parameter"))
+
             parametersSchema.addProperties("resourceType",  Schema<String>()
                 .type("string")
                 .example("Parameters")
                 .minProperties(1))
-            var parameterSchema = Schema<Any?>().type("object").title("Parameters-"+theOperationDefinition.code)
-                .required(mutableListOf("resourceType","parameter"))
             parametersSchema.addProperties("parameter", ArraySchema().type("array").items(Schema<Any?>().type("object")
                 .addProperties("name", Schema<String>()
                     .minProperties(1)
@@ -835,7 +820,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
             // TODO add in correct schema
             if (theOperationDefinition.url.equals("http://hl7.org/fhir/OperationDefinition/MessageHeader-process-message")
                 || theOperationDefinition.url.equals("https://fhir.nhs.uk/OperationDefinition/MessageHeader-process-message")) {
-                    var bundleSchema = Schema<Any?>().type("object").title("Bundle-Message")
+                    val bundleSchema = Schema<Any?>().type("object").title("Bundle-Message")
                         .required(mutableListOf("resourceType","type","entry"))
                 bundleSchema.addProperties("resourceType", Schema<String>()
                     .type("string")
@@ -851,7 +836,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
                         .description("Indicates the purpose of this bundle - how it is intended to be used. Fixed value: message"))
                         .addEnumItemObject("message")
 
-                var bundleEntry = Schema<Any>().type("object")
+                val bundleEntry = Schema<Any>().type("object")
                     .description("A container for a collection of resources")
                     .addProperties("fullUrl", Schema<String>()
                     .minProperties(1)
@@ -866,7 +851,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
                         .type("object")
                         .description("A resource in the bundle. First entry MUST be a FHIR MessageHeader"))
                 addSchemaFhirResource(theOpenApi,bundleEntry,"Bundle-Entry")
-                var entry = ArraySchema().type("array").items(bundleEntry)
+                val entry = ArraySchema().type("array").items(bundleEntry)
 
                 bundleSchema.addProperties("entry", entry)
                 addSchemaFhirResource(theOpenApi,bundleSchema,"Bundle-Message")
@@ -977,11 +962,8 @@ class OpenAPIParser(private val ctx: FhirContext?,
 
 
     private fun addPatchResourceRequestBody(
-        theOpenApi: OpenAPI,
         theOperation: Operation,
-        theExampleFhirContext: FhirContext?,
-        theExampleSupplier: String?,
-        theResourceType: String?
+        theExampleSupplier: String?
     ) {
         val requestBody = RequestBody()
         requestBody.content = Content()
@@ -1030,8 +1012,9 @@ class OpenAPIParser(private val ctx: FhirContext?,
         val response200 = ApiResponse()
         response200.description = "Success"
         if (resftfulIntraction != null) {
-            var exampleResponse = getResponseExample(resftfulIntraction)
+            val exampleResponse = getResponseExample(resftfulIntraction)
 
+            /*
             if (exampleResponse == null && theResourceType != null) {
                 val example = Example()
                 example.value = ctx?.newJsonParser()?.parseResource("{ \"resourceType\" : \"" + theResourceType + "\" }")
@@ -1039,20 +1022,15 @@ class OpenAPIParser(private val ctx: FhirContext?,
                 exampleResponse.add(example)
             }
 
-            if (resftfulIntraction == null && theResourceType!=null && theResourceType == "CapabilityStatement") {
-                val example = Example()
-                example.value = ctx?.newJsonParser()?.encodeResourceToString(cs)
-                exampleResponse = mutableListOf<Example>()
-                exampleResponse.add(example)
-            }
+             */
 
-            if (exampleResponse != null) {
-                response200.content = provideContentFhirResource(
-                    theOpenApi,
-                    exampleResponse,
-                    theResourceType
-                )
-            }
+
+            response200.content = provideContentFhirResource(
+                theOpenApi,
+                exampleResponse,
+                theResourceType
+            )
+
         }
         if (response200.content == null) {
 
@@ -1097,18 +1075,18 @@ class OpenAPIParser(private val ctx: FhirContext?,
         }
     }
     private fun getSuccessOperationOutcome() : String? {
-        var operationOutcome = OperationOutcome()
+        val operationOutcome = OperationOutcome()
         operationOutcome.meta = Meta().setLastUpdatedElement(InstantType("2021-04-14T11:35:00+00:00"))
-        var issue = operationOutcome.addIssue()
+        val issue = operationOutcome.addIssue()
         issue.setSeverity(OperationOutcome.IssueSeverity.INFORMATION)
         issue.setCode(OperationOutcome.IssueType.INFORMATIONAL)
         return ctx?.newJsonParser()?.setPrettyPrint(true)?.encodeResourceToString(operationOutcome)
     }
 
     private fun getForbiddenOperationOutcome() : String? {
-        var operationOutcome = OperationOutcome()
+        val operationOutcome = OperationOutcome()
         operationOutcome.meta = Meta().setLastUpdatedElement(InstantType("2021-04-14T11:35:00+00:00"))
-        var issue = operationOutcome.addIssue()
+        val issue = operationOutcome.addIssue()
         issue.setSeverity(OperationOutcome.IssueSeverity.ERROR)
         issue.setCode(OperationOutcome.IssueType.FORBIDDEN)
         issue.setDetails(CodeableConcept().addCoding(
@@ -1119,9 +1097,9 @@ class OpenAPIParser(private val ctx: FhirContext?,
     }
 
     private fun getErrorOperationOutcome() : String? {
-        var operationOutcome = OperationOutcome()
+        val operationOutcome = OperationOutcome()
         operationOutcome.meta = Meta().setLastUpdatedElement(InstantType("2021-04-14T11:35:00+00:00"))
-        var issue = operationOutcome.addIssue()
+        val issue = operationOutcome.addIssue()
         issue.setSeverity(OperationOutcome.IssueSeverity.ERROR)
         issue.setCode(OperationOutcome.IssueType.VALUE)
         issue.setDetails(CodeableConcept().addCoding(
@@ -1133,41 +1111,40 @@ class OpenAPIParser(private val ctx: FhirContext?,
         return ctx?.newJsonParser()?.setPrettyPrint(true)?.encodeResourceToString(operationOutcome)
     }
 
-    private fun getMessageExample(supportedMessage : CapabilityStatement.CapabilityStatementMessagingSupportedMessageComponent) : Example? {
+    private fun getMessageExample(supportedMessage : CapabilityStatement.CapabilityStatementMessagingSupportedMessageComponent) : Example {
 
         var supportedDocumentation = ""
-        var example = Example()
+        val example = Example()
 
         if (supportedMessage.hasDefinition()) {
             supportedDocumentation += " \n\n MessageDefinition.url = **"+ supportedMessage.definition+"** \n"
 
-            for (resource in supportChain.fetchAllConformanceResources()!!)
-                if (resource is MessageDefinition) {
-                    if (resource.url == supportedMessage.definition) {
-                        if (resource.hasDescription()) {
-                            example.summary = resource.description
+            for (resourceChain in supportChain.fetchAllConformanceResources()!!)
+                if (resourceChain is MessageDefinition) {
+                    if (resourceChain.url == supportedMessage.definition) {
+                        if (resourceChain.hasDescription()) {
+                            example.summary = resourceChain.description
                         }
-                        if (resource.hasPurpose()) {
-                            supportedDocumentation += "\n ### Purpose" + resource.purpose
+                        if (resourceChain.hasPurpose()) {
+                            supportedDocumentation += "\n ### Purpose" + resourceChain.purpose
                         }
-                        if (resource.hasEventCoding()) {
-                            supportedDocumentation += " \n\n The first Bundle.entry **MUST** be a FHIR MessageHeader with \n MessageHeader.eventCoding = **" + resource.eventCoding.code + "** \n"
+                        if (resourceChain.hasEventCoding()) {
+                            supportedDocumentation += " \n\n The first Bundle.entry **MUST** be a FHIR MessageHeader with \n MessageHeader.eventCoding = **" + resourceChain.eventCoding.code + "** \n"
                         }
-                        if (resource.hasFocus()) {
+                        if (resourceChain.hasFocus()) {
                             supportedDocumentation += "\n\n | Resource | Profile | Min | Max | \n"
                             supportedDocumentation += "|----------|---------|-----|-----| \n"
-                            for (foci in resource.focus) {
-                                var min = foci.min
-                                var max = foci.max
-                                var resource = foci.code
+                            for (foci in resourceChain.focus) {
+                                val min = foci.min
+                                val max = foci.max
+                                val resource = foci.code
                                 var profile = foci.profile
                                 if (profile == null) {
                                     profile = ""
                                 } else {
                                     profile = getDocumentationPath(profile)
                                 }
-                                var idStr = "Not specified"
-                                idStr = getProfileName(foci.profile)
+                                val idStr = getProfileName(foci.profile)
                                 supportedDocumentation += "| [$resource](https://www.hl7.org/fhir/$resource.html) | [$idStr]($profile) | $min | $max | \n"
                             }
                         }
@@ -1213,7 +1190,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
                                         //println("*** Matched")
                                         if (create) resource.id = null
                                         return Supplier {
-                                            var example: IBaseResource? = resource
+                                            val example: IBaseResource = resource
                                             example
                                         }
                                     }
@@ -1228,17 +1205,17 @@ class OpenAPIParser(private val ctx: FhirContext?,
     }
     private fun getRequestExample(interaction : CapabilityStatement.ResourceInteractionComponent) : List<Example>{
         //
-        var examples = mutableListOf<Example>()
+        val examples = mutableListOf<Example>()
         if (interaction.hasExtension("https://fhir.nhs.uk/StructureDefinition/Extension-NHSDigital-APIDefinition-OAS")) {
             val apiExtension =
                 interaction.getExtensionByUrl("https://fhir.nhs.uk/StructureDefinition/Extension-NHSDigital-APIDefinition-OAS")
             if (apiExtension.hasExtension("example")) {
                 for (exampleExt in apiExtension.getExtensionsByUrl("example")) {
-                    var supplierExample = getExampleFromPackages(true, exampleExt, (interaction.code == CapabilityStatement.TypeRestfulInteraction.CREATE))?.get()
-                    var exampleOAS = Example()
+                    val supplierExample = getExampleFromPackages(true, exampleExt, (interaction.code == CapabilityStatement.TypeRestfulInteraction.CREATE))?.get()
+                    val exampleOAS = Example()
                     examples.add(exampleOAS)
-                    if (supplierExample != null && supplierExample !=null) {
-                        var example = supplierExample
+                    if (supplierExample != null) {
+                        val example = supplierExample
                         exampleOAS.value = ctx?.newJsonParser()?.encodeResourceToString(example)
                     }
                     if (exampleExt.hasExtension("summary")) {
@@ -1256,7 +1233,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
 
     private fun getResponseExample(interaction : CapabilityStatement.ResourceInteractionComponent) : List<Example> {
 
-        var examples = mutableListOf<Example>()
+        val examples = mutableListOf<Example>()
 
         if (interaction.hasExtension("https://fhir.nhs.uk/StructureDefinition/Extension-NHSDigital-APIDefinition-OAS")) {
                 val apiExtension = interaction.getExtensionByUrl("https://fhir.nhs.uk/StructureDefinition/Extension-NHSDigital-APIDefinition-OAS")
@@ -1264,9 +1241,9 @@ class OpenAPIParser(private val ctx: FhirContext?,
                 if (apiExtension.hasExtension("example")) {
 
                     for (exampleExt in apiExtension.getExtensionsByUrl("example")) {
-                        var exampleOAS = Example()
+                        val exampleOAS = Example()
                         examples.add(exampleOAS)
-                        var supplierExample = getExampleFromPackages(false, exampleExt,false)
+                        val supplierExample = getExampleFromPackages(false, exampleExt,false)
 
                         if (supplierExample != null && supplierExample.get() !=null) {
                             var example = supplierExample.get()
@@ -1282,11 +1259,11 @@ class OpenAPIParser(private val ctx: FhirContext?,
                                 bundle.addLink(
                                     Bundle.BundleLinkComponent()
                                         .setRelation("next")
-                                        .setUrl(exampleServer + exampleServerPrefix + (example as Resource)?.resourceType + "?parameterExample=123&page=2")
+                                        .setUrl(exampleServer + exampleServerPrefix + (example).resourceType + "?parameterExample=123&page=2")
                                 )
                                 bundle.entry.add(
-                                    Bundle.BundleEntryComponent().setResource(example as Resource)
-                                        .setFullUrl(exampleServer + exampleServerPrefix + (example as Resource).resourceType + "/" + (supplierExample.get() as Resource).id)
+                                    Bundle.BundleEntryComponent().setResource(example)
+                                        .setFullUrl(exampleServer + exampleServerPrefix + (example).resourceType + "/" + (supplierExample.get() as Resource).id)
                                 )
                                 bundle.total = 1
                                 example = bundle
@@ -1322,7 +1299,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
             val apiExtension =
                 interaction.getExtensionByUrl("https://fhir.nhs.uk/StructureDefinition/Extension-NHSDigital-APIDefinition-OAS")
             for (extension in apiExtension.getExtensionsByUrl("example")) {
-                 return getExampleFromPackages(true, extension,false)
+                 return getExampleFromPackages(request, extension,false)
             }
         }
         return null
@@ -1333,7 +1310,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
         theResourceType: String?
     ): List<Example> {
         val exampleList = mutableListOf<Example>()
-        var example = Example()
+        val example = Example()
         exampleList.add(example)
         if (theResourceType == "CapabilityStatement") {
             example.value = ctx?.newJsonParser()?.encodeResourceToString(this.cs)
@@ -1354,20 +1331,20 @@ class OpenAPIParser(private val ctx: FhirContext?,
         theOpenApi: OpenAPI,
         examples: List<Example>,
         resourceType: String?
-    ): Content? {
+    ): Content {
         val retVal = Content()
         var resourceType2 = resourceType
         //addSchemaFhirResource(theOpenApi)
 
         if (examples.size == 0) {
-           var example = Example()
+           val example = Example()
            val generic = genericExampleSupplier(ctx,resourceType)
            example.value = generic.get(0).value
 
             val theExampleSupplier = ctx?.newJsonParser()?.parseResource(example.value as String)
 
             if (resourceType2 == null && theExampleSupplier != null)
-                resourceType2 = theExampleSupplier?.fhirType()
+                resourceType2 = theExampleSupplier.fhirType()
            // if (resourceType2 != null) addJSONSchema(theOpenApi, resourceType2)
             val jsonSchema = resourceType2?.let { getMediaType(theOpenApi, it) }
 
@@ -1597,17 +1574,17 @@ class OpenAPIParser(private val ctx: FhirContext?,
                 searchParameter.code += ":" + modifier
                 searchParameter.type = Enumerations.SearchParamType.TOKEN
                 val chain = searchParameter.expression.split(".")
-                var expression = ""
+                var expressionStr = ""
                 // May fail if a complex chain is use ... but maybe that should not be allowed due to complexity
-                for (chainItem in chain) if (!chainItem.startsWith("where(resolve()")) expression += chainItem + "."
-                if (!expression.endsWith("identifier.")) expression += "identifier"
-                expression = expression.removeSuffix(".")
-                searchParameter.expression = expression
+                for (chainItem in chain) if (!chainItem.startsWith("where(resolve()")) expressionStr += chainItem + "."
+                if (!expressionStr.endsWith("identifier.")) expressionStr += "identifier"
+                expressionStr = expressionStr.removeSuffix(".")
+                searchParameter.expression = expressionStr
             }
         }
 
 
-        var type = searchParameter?.type?.display
+        val type = searchParameter?.type?.display
         expression = searchParameter?.expression.toString()
 
         // Removed unsafe charaters
