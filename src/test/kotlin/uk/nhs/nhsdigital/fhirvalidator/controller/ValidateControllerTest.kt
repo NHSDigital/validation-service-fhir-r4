@@ -14,6 +14,7 @@ import org.mockito.InjectMocks
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.springframework.beans.factory.annotation.Qualifier
+import uk.nhs.nhsdigital.fhirvalidator.service.VerifyOAS
 
 @ExtendWith(MockitoExtension::class)
 internal class ValidateControllerTest {
@@ -34,6 +35,9 @@ internal class ValidateControllerTest {
 
     @Mock
     lateinit var mockSearchParameters : Bundle
+
+    @Mock
+    lateinit var verifyOAS: VerifyOAS
 
     @InjectMocks
     lateinit var testValidateController: ValidateController
