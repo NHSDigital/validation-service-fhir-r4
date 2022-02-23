@@ -8,16 +8,16 @@
         <version>2.3.1.RELEASE</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
-    <groupId>com.example</groupId>
+    <groupId>uk.nhs.nhsdigital</groupId>
     <artifactId>fhir-validator</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>5.7.0-SNAPSHOT</version>
     <name>fhir-validator</name>
-    <description>Demo project for Spring Boot</description>
+    <description>HAPI FHIR Validator using Spring Boot</description>
 
     <properties>
         <java.version>1.8</java.version>
         <kotlin.version>1.5.31</kotlin.version>
-        <fhir.version>5.4.2</fhir.version>
+        <fhir.version>5.7.0</fhir.version>
         <swagger_version>2.1.12</swagger_version>
         <parser_version>2.0.30</parser_version>
     </properties>
