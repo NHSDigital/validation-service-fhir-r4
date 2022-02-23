@@ -1571,6 +1571,9 @@ class OpenAPIParser(private val ctx: FhirContext?,
                 if (!expressionStr.endsWith("identifier.")) expressionStr += "identifier"
                 expressionStr = expressionStr.removeSuffix(".")
                 searchParameter.expression = expressionStr
+            } else {
+                // Assume resource
+                searchParameter.expression += ".where(resolve() is $modifier)"
             }
         }
 
@@ -1609,52 +1612,33 @@ class OpenAPIParser(private val ctx: FhirContext?,
             }
         }
 
-/*
-        if (modifiers.size>1 && searchParameter != null) {
-            val modifier = modifiers.get(1)
-            code += ":" + modifier
-            name += ":" + modifier
-            if (modifier == "identifier") {
-                code += ":" + modifier
-                type = "token"
-                expression += ".identifier | "+ expression +".where(resolve() is Resource).identifier"
-            }
-        }*/
-
-
-
         if (parameters.size>1) {
             description += "\n\n Chained search parameter. Please see [chained](http://www.hl7.org/fhir/search.html#chaining)"
-            if (searchParameter == null) {
-                description += "\n\n Caution: **$name** does not appear to be a valid search parameter. **Please check HL7 FHIR conformance.**"
-            } else {
-                description += "\n\n | Name |  Expression | \n |--------|--------| \n | $name |  $expression | \n"
-            }
-        } else {
-            if (searchParameter != null) {
-                description += "\n\n | Type |  Expression | \n |--------|--------| \n | [" + type?.lowercase() + " ](https://www.hl7.org/fhir/search.html#" + type?.lowercase() + ")|  $expression | \n"
-            } else {
-                description += "\n\n Caution: This does not appear to be a valid search parameter. **Please check HL7 FHIR conformance.**"
-            }
         }
+
+        if (searchParameter != null) {
+            description += "\n\n | Name | Type |  Expression | \n |--------|--------|--------| \n | $name | [" + type?.lowercase() + " ](https://www.hl7.org/fhir/search.html#" + type?.lowercase() + ")|  $expression | \n"
+        } else {
+            description += "\n\n Caution: This does not appear to be a valid search parameter. **Please check HL7 FHIR conformance.**"
+        }
+
         if (parameters.size>1) {
             if (searchParameter?.type != Enumerations.SearchParamType.REFERENCE) {
                 description += "\n\n Caution: This does not appear to be a valid search parameter. Chained search paramters **MUST** always be on reference types Please check Hl7 FHIR conformance."
             } else {
-                val secondNames= parameters.get(1).split(":")
+                //val secondNames= parameters.get(1).split(":")
                 var resourceType: String?
-                if (secondNames.size>1) resourceType = secondNames.get(1)
-                else {
-                    // A bit coarse
-                    resourceType = "Resource"
-                    if (searchParameter.hasTarget() ) {
-                        for (resource in searchParameter.target) {
-                            if (!resource.code.equals("Group")) resourceType=resource.code
-                        }
+
+                // A bit coarse
+                resourceType = "Resource"
+                if (searchParameter.hasTarget() ) {
+                    for (resource in searchParameter.target) {
+                        if (!resource.code.equals("Group")) resourceType=resource.code
                     }
                 }
+
                 val newSearchParam = CapabilityStatement.CapabilityStatementRestResourceSearchParamComponent()
-                newSearchParam.name = secondNames.get(0)
+                newSearchParam.name = parameters.get(1)
                 // Add back in remaining chained parameters
                 for (i in 3..parameters.size) {
                     newSearchParam.name += "."+parameters.get(i)

@@ -312,28 +312,18 @@ class VerifyOAS(private val ctx: FhirContext?,
             if (searchParameter?.type != Enumerations.SearchParamType.REFERENCE) {
                // maybe throw error?
             } else {
-                val secondNames= parameters.get(1).split(":")
+
                 var resourceType: String?
-                if (secondNames.size>1) {
-                    resourceType = secondNames.get(1)
-                    if (searchParameter.hasTarget() ) {
-                        var found = false
-                        for (resource in searchParameter.target) {
-                            if (!resource.code.equals(resourceType)) found= true
-                        }
-                        if (!found) addOperationIssue(outcomes,OperationOutcome.IssueType.CODEINVALID, OperationOutcome.IssueSeverity.ERROR,resourceType + " is not a valid target for this search paramter.")
+
+                // A bit coarse
+                resourceType = "Resource"
+                if (searchParameter.hasTarget() ) {
+                    for (resource in searchParameter.target) {
+                        if (!resource.code.equals("Group")) resourceType=resource.code
                     }
                 }
-                else {
-                    // A bit coarse
-                    resourceType = "Resource"
-                    if (searchParameter.hasTarget() ) {
-                        for (resource in searchParameter.target) {
-                            if (!resource.code.equals("Group")) resourceType=resource.code
-                        }
-                    }
-                }
-                var newSearchParamName = secondNames.get(0)
+
+                var newSearchParamName = parameters.get(1)
                 // Add back in remaining chained parameters
                 for (i in 3..parameters.size) {
                     newSearchParamName += "."+parameters.get(i)
