@@ -10,12 +10,14 @@ import org.hl7.fhir.r4.model.*
 import org.hl7.fhir.utilities.npm.NpmPackage
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.web.bind.annotation.*
+import uk.nhs.nhsdigital.fhirvalidator.service.SearchParameterSupport
 
 @RestController
 class ConformanceController(
     private val fhirContext: FhirContext,
     private val oasParser : OpenAPIParser,
     private val npmPackages: List<NpmPackage>,
+    private val searchParameterSupport : SearchParameterSupport
 ) {
     var implementationGuideParser: ImplementationGuideParser? = ImplementationGuideParser(fhirContext)
 
@@ -125,7 +127,7 @@ class ConformanceController(
     fun searchParameter(@RequestParam(name="url") url : String ): String {
         val bundle = Bundle();
         bundle.type = Bundle.BundleType.SEARCHSET;
-        val searchParameter =  oasParser.getSearchParameter(url)
+        val searchParameter =  searchParameterSupport.getSearchParameterByUrl(url)
         if (searchParameter != null) bundle.entry.add(Bundle.BundleEntryComponent().setResource(searchParameter))
 
         return fhirContext.newJsonParser().encodeResourceToString(bundle)

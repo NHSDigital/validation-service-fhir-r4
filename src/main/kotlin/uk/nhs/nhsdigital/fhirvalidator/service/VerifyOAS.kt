@@ -21,7 +21,7 @@ import org.springframework.stereotype.Service
 @Service
 class VerifyOAS(private val ctx: FhirContext?,
                 @Qualifier("SupportChain") private val supportChain: IValidationSupport,
-                private val searchParameters : Bundle,
+                private val searchParameterSupport : SearchParameterSupport,
                 private val fhirValidator: FhirValidator,
                 private val messageDefinitionApplier: MessageDefinitionApplier,
                 private val capabilityStatementApplier: CapabilityStatementApplier)
@@ -34,6 +34,11 @@ class VerifyOAS(private val ctx: FhirContext?,
         // check all examples validate
         // check all paths are correct
         val outcomes = mutableListOf<OperationOutcome.OperationOutcomeIssueComponent>()
+
+        if (openAPI.info.extensions == null || openAPI.info.extensions.get("x-HL7-FHIR-NpmPackages") == null) {
+            addOperationIssue(outcomes,OperationOutcome.IssueType.BUSINESSRULE, OperationOutcome.IssueSeverity.WARNING, "No FHIR package extension found")
+                .location.add(StringType("OAS: info.extensions.x-HL7-FHIR-NpmPackages"))
+        }
         for (apiPaths in openAPI.paths) {
 
             var path = apiPaths.key.removePrefix("/FHIR/R4")
@@ -258,56 +263,8 @@ class VerifyOAS(private val ctx: FhirContext?,
     fun getSearchParameter(outcomes : MutableList<OperationOutcome.OperationOutcomeIssueComponent> , path : String, originalResourceType: String, originalName : String) : SearchParameter? {
         val parameters = originalName.split(".")
 
-        val modifiers = parameters.get(0).split(":")
+        val searchParameter = searchParameterSupport.getSearchParameter(originalResourceType,originalName)
 
-        var name = modifiers.get(0)
-        if (name.startsWith("_")) {
-            name = name.removePrefix("_")
-        }
-
-        var searchParameter = getSearchParameterByUrl("http://hl7.org/fhir/SearchParameter/$originalResourceType-$name")
-        if (searchParameter == null)
-            searchParameter = getSearchParameterByUrl("http://hl7.org/fhir/SearchParameter/individual-$name")
-
-        if (searchParameter == null) {
-            searchParameter = getSearchParameterByUrl("http://hl7.org/fhir/SearchParameter/clinical-$name")
-            if (searchParameter != null && !searchParameter.expression.contains(originalResourceType)) {
-                searchParameter = null
-            }
-        }
-        if (searchParameter == null) {
-            searchParameter = getSearchParameterByUrl("http://hl7.org/fhir/SearchParameter/conformance-$name")
-            if (searchParameter != null && !searchParameter.expression.contains(originalResourceType)) {
-                searchParameter = null
-            }
-        }
-        if (searchParameter == null) {
-            searchParameter = getSearchParameterByUrl("http://hl7.org/fhir/SearchParameter/medications-$name")
-            if (searchParameter != null && !searchParameter.expression.contains(originalResourceType)) {
-                searchParameter = null
-            }
-        }
-
-        if (searchParameter == null) {
-            searchParameter = getSearchParameterByUrl("http://hl7.org/fhir/SearchParameter/Resource-$name")
-        }
-
-        if (searchParameter == null) {
-            searchParameter = getSearchParameterByUrl("http://hl7.org/fhir/SearchParameter/DomainResource-$name")
-        }
-
-        if (searchParameter == null) return null
-
-        if (modifiers.size>1) {
-            val modifier = modifiers.get(1)
-            // Don't alter original
-            searchParameter = searchParameter.copy()
-            if (modifier == "identifier") {
-                searchParameter.code += ":" + modifier
-                searchParameter.type = Enumerations.SearchParamType.TOKEN
-                searchParameter.expression += ".identifier | "+ searchParameter.expression +".where(resolve() is Resource).identifier"
-            }
-        }
         if (parameters.size>1) {
             if (searchParameter?.type != Enumerations.SearchParamType.REFERENCE) {
                // maybe throw error?
@@ -336,29 +293,6 @@ class VerifyOAS(private val ctx: FhirContext?,
         return searchParameter
     }
 
-    fun getSearchParameterByUrl(url : String) : SearchParameter? {
-
-
-
-        var searchParameter: SearchParameter? = null
-        for (resource in supportChain.fetchAllConformanceResources()!!) {
-            if (resource is SearchParameter) {
-                if (resource.url.equals(url)) {
-                    searchParameter = resource
-                }
-            }
-        }
-
-        for (entry in searchParameters.entry) {
-            if (entry.resource is SearchParameter) {
-                if ((entry.resource as SearchParameter).url.equals(url)) {
-                    searchParameter = entry.resource as SearchParameter
-                }
-            }
-        }
-
-        return searchParameter
-    }
 
     // TODO refactor to remove duplication
 

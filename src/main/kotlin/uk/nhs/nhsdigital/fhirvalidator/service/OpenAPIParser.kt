@@ -34,7 +34,7 @@ import java.util.stream.Collectors
 class OpenAPIParser(private val ctx: FhirContext?,
                     private val npmPackages: List<NpmPackage>?,
                     @Qualifier("SupportChain") private val supportChain: IValidationSupport,
-                    private val searchParameters : Bundle) {
+                    private val searchParameterSupport : SearchParameterSupport) {
 
 
     val PAGE_SYSTEM = "System Level Operations"
@@ -1447,34 +1447,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
         return myBannerImage
     }
 */
-    fun getSearchParameter(url : String) : SearchParameter? {
-        for (resource in implementationGuideParser!!.getResourcesOfType(
-            npmPackages,
-            SearchParameter::class.java
-        )) {
-            if (resource.url.equals(url)) {
-                return resource
-            }
-        }
 
-        for (resource in implementationGuideParser!!.getResourcesOfType(
-            npmPackages,
-            SearchParameter::class.java
-        )) {
-            if (resource.url.equals(url)) {
-                return resource
-            }
-        }
-
-        for (entry in searchParameters.entry) {
-            if (entry.resource is SearchParameter) {
-                if ((entry.resource as SearchParameter).url.equals(url)) {
-                    return entry.resource as SearchParameter
-                }
-            }
-        }
-        return null
-    }
     private fun getSearchParameterDocumentation(nextSearchParam: CapabilityStatement.CapabilityStatementRestResourceSearchParamComponent,
                                                 originalResourceType: String,
                                                 parameter: Parameter) : String
@@ -1490,35 +1463,9 @@ class OpenAPIParser(private val ctx: FhirContext?,
 
 
         if (!nextSearchParam.hasDefinition()) {
-            searchParameter = getSearchParameter("http://hl7.org/fhir/SearchParameter/$originalResourceType-"+ name)
-            if (searchParameter == null) searchParameter = getSearchParameter("http://hl7.org/fhir/SearchParameter/individual-"+ name)
-            if (searchParameter == null) {
-                searchParameter = getSearchParameter("http://hl7.org/fhir/SearchParameter/clinical-"+ name)
-                if (searchParameter != null && !searchParameter.expression.contains(originalResourceType)) {
-                    searchParameter = null
-                }
-            }
-            if (searchParameter == null) {
-                searchParameter = getSearchParameter("http://hl7.org/fhir/SearchParameter/conformance-"+ name)
-                if (searchParameter != null && !searchParameter.expression.contains(originalResourceType)) {
-                    searchParameter = null
-                }
-            }
-            if (searchParameter == null) {
-                searchParameter = getSearchParameter("http://hl7.org/fhir/SearchParameter/medications-"+ name)
-                if (searchParameter != null && !searchParameter.expression.contains(originalResourceType)) {
-                    searchParameter = null
-                }
-            }
+            searchParameter = searchParameterSupport.getSearchParameter(originalResourceType,name)
 
-            name = name.removePrefix("_")
-            if (searchParameter == null) {
-                searchParameter = getSearchParameter("http://hl7.org/fhir/SearchParameter/Resource-"+ name)
-            }
-            if (searchParameter == null) {
-                searchParameter = getSearchParameter("http://hl7.org/fhir/SearchParameter/DomainResource-"+ name)
-            }
-        } else searchParameter = getSearchParameter(nextSearchParam.definition)
+        } else searchParameter = searchParameterSupport.getSearchParameterByUrl(nextSearchParam.definition)
 
 
         // Create local copy as we are changing the definition
