@@ -1549,7 +1549,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
             when (searchParameter.type) {
                 Enumerations.SearchParamType.TOKEN -> {
                     parameter.schema = StringSchema().format("token")
-                    parameter.schema.example = "[system]&#124;[code]"
+                    parameter.schema.example = "[system]|[code]"
                 }
                 Enumerations.SearchParamType.REFERENCE -> {
                     parameter.schema = StringSchema().format("reference")
