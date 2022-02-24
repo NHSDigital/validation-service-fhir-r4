@@ -243,22 +243,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
                             operation.description += comboDoc
                         }
                         addFhirResourceResponse(ctx, openApi, operation, resourceType,resftfulIntraction)
-                        for (nextSearchParam in nextResource.searchParam) {
-                            val parametersItem = Parameter()
-                            operation.addParametersItem(parametersItem)
-                            parametersItem.name = nextSearchParam.name
-                            parametersItem.setIn("query")
-                            parametersItem.description = nextSearchParam.documentation
-                            parametersItem.description += getSearchParameterDocumentation(nextSearchParam,resourceType, parametersItem)
-
-                            parametersItem.style = Parameter.StyleEnum.SIMPLE
-
-                            if (nextSearchParam.hasExtension("https://fhir.nhs.uk/StructureDefinition/Extension-NHSDigital-APIDefinition-OAS")) {
-                                val extension = nextSearchParam.getExtensionByUrl("https://fhir.nhs.uk/StructureDefinition/Extension-NHSDigital-APIDefinition-OAS")
-                                if (extension.hasExtension("required"))
-                                    parametersItem.required = ((extension.getExtensionByUrl("required").value as BooleanType).value)
-                            }
-                        }
+                        processSearchParameter(operation,nextResource,resourceType)
                         addResourceAPIMParameter(operation)
                     }
                     // Instance Read
@@ -334,6 +319,40 @@ class OpenAPIParser(private val ctx: FhirContext?,
                         addFhirResourceResponse(ctx, openApi, operation, "OperationOutcome",resftfulIntraction)
                     }
 
+                    // Type history
+                    CapabilityStatement.TypeRestfulInteraction.HISTORYTYPE -> {
+                        val operation = getPathItem(paths, "/$resourceType/_history", PathItem.HttpMethod.GET)
+                        operation.addTagsItem(resourceType)
+                        operation.summary = "history"
+                        operation.description =
+                            "Fetch the resource change [history](http://www.hl7.org/fhir/http.html#history) for all resources of type $resourceType."
+                        if (resftfulIntraction.hasDocumentation()) {
+                            operation.description += "\n\n"+resftfulIntraction.documentation
+                        }
+                        processSearchParameter(operation,nextResource,resourceType)
+                        addResourceAPIMParameter(operation)
+                        addFhirResourceResponse(ctx, openApi, operation,  resourceType,resftfulIntraction)
+                    }
+
+                        // Instance history
+                     CapabilityStatement.TypeRestfulInteraction.HISTORYINSTANCE -> {
+                        val operation = getPathItem(
+                            paths,
+                            "/$resourceType/{id}/_history", PathItem.HttpMethod.GET
+                        )
+                        operation.addTagsItem(resourceType)
+                        operation.summary = "history"
+                        operation.description =
+                            "Fetch the resource change [history](http://www.hl7.org/fhir/http.html#history) for all resources of type $resourceType"
+                         if (resftfulIntraction.hasDocumentation()) {
+                             operation.description += "\n\n"+resftfulIntraction.documentation
+                         }
+                        addResourceIdParameter(operation)
+                        processSearchParameter(operation,nextResource,resourceType)
+                        addResourceAPIMParameter(operation)
+                        addFhirResourceResponse(ctx, openApi, operation,  resourceType,resftfulIntraction)
+                    }
+
                     else -> {}
                 }
             }
@@ -352,35 +371,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
                 addResourceIdParameter(operation)
                 addResourceVersionIdParameter(operation)
                 addResourceAPIMParameter(operation)
-                addFhirResourceResponse(ctx, openApi, operation, null,null)
-            }
-
-            // Type history
-            if (typeRestfulInteractions.contains(CapabilityStatement.TypeRestfulInteraction.HISTORYTYPE)) {
-                val operation = getPathItem(paths, "/$resourceType/_history", PathItem.HttpMethod.GET)
-                operation.addTagsItem(resourceType)
-                operation.summary = "history"
-                operation.description =
-                    "Fetch the resource change [history](http://www.hl7.org/fhir/http.html#history) for all resources of type $resourceType."
-
-                addResourceAPIMParameter(operation)
-                addFhirResourceResponse(ctx, openApi, operation, null,null)
-            }
-
-            // Instance history
-            if (typeRestfulInteractions.contains(CapabilityStatement.TypeRestfulInteraction.HISTORYTYPE)) {
-                val operation = getPathItem(
-                    paths,
-                    "/$resourceType/{id}/_history", PathItem.HttpMethod.GET
-                )
-                operation.addTagsItem(resourceType)
-                operation.summary = "history"
-                operation.description =
-                    "Fetch the resource change [history](http://www.hl7.org/fhir/http.html#history) for all resources of type $resourceType"
-
-                addResourceIdParameter(operation)
-                addResourceAPIMParameter(operation)
-                addFhirResourceResponse(ctx, openApi, operation, null,null)
+                addFhirResourceResponse(ctx, openApi, operation,  resourceType,null)
             }
 
 
@@ -391,6 +382,26 @@ class OpenAPIParser(private val ctx: FhirContext?,
         }
         return openApi
     }
+
+    private fun processSearchParameter(operation : Operation, nextResource : CapabilityStatement.CapabilityStatementRestResourceComponent,resourceType: String) {
+        for (nextSearchParam in nextResource.searchParam) {
+            val parametersItem = Parameter()
+            operation.addParametersItem(parametersItem)
+            parametersItem.name = nextSearchParam.name
+            parametersItem.setIn("query")
+            parametersItem.description = nextSearchParam.documentation
+            parametersItem.description += getSearchParameterDocumentation(nextSearchParam,resourceType, parametersItem,true)
+
+            parametersItem.style = Parameter.StyleEnum.SIMPLE
+
+            if (nextSearchParam.hasExtension("https://fhir.nhs.uk/StructureDefinition/Extension-NHSDigital-APIDefinition-OAS")) {
+                val extension = nextSearchParam.getExtensionByUrl("https://fhir.nhs.uk/StructureDefinition/Extension-NHSDigital-APIDefinition-OAS")
+                if (extension.hasExtension("required"))
+                    parametersItem.required = ((extension.getExtensionByUrl("required").value as BooleanType).value)
+            }
+        }
+    }
+
     private fun addJSONSchema(openApi: OpenAPI) {
         // Add schema
 
@@ -1450,7 +1461,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
 
     private fun getSearchParameterDocumentation(nextSearchParam: CapabilityStatement.CapabilityStatementRestResourceSearchParamComponent,
                                                 originalResourceType: String,
-                                                parameter: Parameter) : String
+                                                parameter: Parameter, first : Boolean) : String
     {
         var searchParameter : SearchParameter?
 
@@ -1459,7 +1470,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
 
         val modifiers = parameters.get(0).split(":")
 
-        var name = modifiers.get(0)
+        val name = modifiers.get(0)
 
 
         if (!nextSearchParam.hasDefinition()) {
@@ -1562,9 +1573,9 @@ class OpenAPIParser(private val ctx: FhirContext?,
         if (parameters.size>1) {
             description += "\n\n Chained search parameter. Please see [chained](http://www.hl7.org/fhir/search.html#chaining)"
         }
-
+        if (first) description += "\n\n | Name | Type |  Expression | \n |--------|--------|--------| \n "
         if (searchParameter != null) {
-            description += "\n\n | Name | Type |  Expression | \n |--------|--------|--------| \n | $name | [" + type?.lowercase() + " ](https://www.hl7.org/fhir/search.html#" + type?.lowercase() + ")|  $expression | \n"
+            description += "| $name | [" + type?.lowercase() + " ](https://www.hl7.org/fhir/search.html#" + type?.lowercase() + ")|  $expression | \n"
         } else {
             description += "\n\n Caution: This does not appear to be a valid search parameter. **Please check HL7 FHIR conformance.**"
         }
@@ -1590,7 +1601,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
                 for (i in 3..parameters.size) {
                     newSearchParam.name += "."+parameters.get(i)
                 }
-                description += resourceType?.let { getSearchParameterDocumentation(newSearchParam, it, parameter) }
+                description += resourceType?.let { getSearchParameterDocumentation(newSearchParam, it, parameter,false) }
             }
         }
         return description
