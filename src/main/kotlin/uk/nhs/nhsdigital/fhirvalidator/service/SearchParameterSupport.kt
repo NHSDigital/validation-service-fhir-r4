@@ -118,7 +118,10 @@ class SearchParameterSupport(@Qualifier("SupportChain") private val supportChain
         return searchParameter
     }
 
-    fun getSearchParameterByCode(code : String) : SearchParameter? {
+    fun getSearchParameterByCode(originalCode : String) : SearchParameter? {
+
+        val codes=originalCode.split(":")
+        val code= codes[0]
 
         var searchParameter: SearchParameter? = null
         for (resource in supportChain.fetchAllConformanceResources()!!) {

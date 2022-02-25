@@ -391,8 +391,51 @@ class OpenAPIParser(private val ctx: FhirContext?,
             parametersItem.setIn("query")
             parametersItem.description = nextSearchParam.documentation
             parametersItem.description += getSearchParameterDocumentation(nextSearchParam,resourceType, parametersItem,true)
-
-            parametersItem.style = Parameter.StyleEnum.SIMPLE
+            if (nextSearchParam.name.startsWith("_include") && nextResource.hasSearchInclude()) {
+                nextSearchParam.name = "_include"
+                val iterateSchema = StringSchema().format("string").example("MedicationRequest:patient")
+                parametersItem.schema.example = "MedicationRequest:patient"
+                for (include in nextResource.searchInclude) {
+                    val includes = include.value.split(":")
+                    if (includes[0].equals(resourceType)) {
+                        parametersItem.schema.addEnumItemObject(include)
+                    }
+                    else {
+                        iterateSchema.addEnumItemObject(include)
+                    }
+                    if (!includes[0].equals("*")) {
+                        if (includes.size < 2) {
+                            parametersItem.description += "\n **FHIR ERROR _include "+include.value + " format {resourceType}:{searchParameterName}**"
+                        } else {
+                            val searchParameter = searchParameterSupport.getSearchParameter(includes[0],includes[1])
+                            if (searchParameter == null) {
+                                parametersItem.description += "\n **FHIR ERROR _include "+include.value + " searchParameter " + includes[1] + " does not exist for " + includes[0] + "**"
+                            }
+                        }
+                    }
+                }
+                if (iterateSchema.enum.size>0) {
+                    val iterateParameter = Parameter()
+                    iterateParameter.schema(iterateSchema).name("_include:iterate")
+                        .description("The inclusion process can be iterative").setIn("query")
+                    operation.addParametersItem(iterateParameter)
+                }
+            }
+            if (nextSearchParam.name.startsWith("_revinclude") && nextResource.hasSearchRevInclude()) {
+                for (include in nextResource.searchRevInclude) {
+                    parametersItem.schema.addEnumItemObject(include)
+                    val includes = include.value.split(":")
+                    if (includes.size < 2) {
+                        parametersItem.description += "\n INVALID _revinclude "+include + " format {resourceType}:{searchParameterName}"
+                    } else {
+                        val searchParameter = searchParameterSupport.getSearchParameter(includes[0],includes[1])
+                        if (searchParameter == null) {
+                            parametersItem.description += "\n INVALID _revinclude "+include + " searchParameter " + includes[1] + " does not exist for " + includes[0]
+                        }
+                    }
+                }
+            }
+            parametersItem.style = Parameter.StyleEnum.FORM
 
             if (nextSearchParam.hasExtension("https://fhir.nhs.uk/StructureDefinition/Extension-NHSDigital-APIDefinition-OAS")) {
                 val extension = nextSearchParam.getExtensionByUrl("https://fhir.nhs.uk/StructureDefinition/Extension-NHSDigital-APIDefinition-OAS")
@@ -1549,7 +1592,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
             when (searchParameter.type) {
                 Enumerations.SearchParamType.TOKEN -> {
                     parameter.schema = StringSchema().format("token")
-                    parameter.schema.example = "[system][code]"
+                    parameter.schema.example = "[system]|[code]"
                 }
                 Enumerations.SearchParamType.REFERENCE -> {
                     parameter.schema = StringSchema().format("reference")

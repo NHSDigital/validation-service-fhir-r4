@@ -77,6 +77,40 @@ class VerifyOAS(private val ctx: FhirContext?,
                     if (apiParameter is QueryParameter) {
 
                         val searchParameter = getSearchParameter(outcomes, path, resourceType,apiParameter.name)
+
+                        if (apiParameter.name.startsWith("_include")) {
+                            if (apiParameter.schema.enum == null || apiParameter.schema.enum.size ==0) {
+                                addOperationIssue(outcomes,OperationOutcome.IssueType.INCOMPLETE, OperationOutcome.IssueSeverity.ERROR, "_include parameters MUST have an enumeration listing possible values")
+                            } else
+                            {
+                                for (allowed in apiParameter.schema.enum) {
+                                    if (allowed is String) {
+                                        if (!allowed.equals("*")) {
+                                            val includes=allowed.split(":")
+                                            if (includes.size < 2) {
+                                                val operationIssue = addOperationIssue(outcomes,OperationOutcome.IssueType.INCOMPLETE, OperationOutcome.IssueSeverity.ERROR, "_include allowed values MUST be of resourceType:searchParameter format")
+                                                operationIssue.location.add(StringType("OAS: "+apiPaths.key + "/get/" + apiParameter.name+"/schema/enum"))
+                                            } else {
+                                                val searchParameter = searchParameterSupport.getSearchParameter(includes[0],includes[1])
+                                                if (searchParameter == null) {
+                                                    val operationIssue = addOperationIssue(outcomes,OperationOutcome.IssueType.CODEINVALID, OperationOutcome.IssueSeverity.ERROR, "_include allowed values not found "+allowed)
+                                                    operationIssue.location.add(StringType("OAS: "+apiPaths.key + "/get/" + apiParameter.name+"/schema/enum"))
+                                                }
+                                                if (!includes[0].equals(resourceType) && !apiParameter.name.equals("_include:iterate") ) {
+                                                    val operationIssue = addOperationIssue(outcomes,OperationOutcome.IssueType.CODEINVALID, OperationOutcome.IssueSeverity.WARNING, "_include:iterate MUST be used with "+allowed)
+                                                    operationIssue.location.add(StringType("OAS: "+apiPaths.key + "/get/" + apiParameter.name+"/schema/enum"))
+                                                }
+                                                if (includes[0].equals(resourceType) && apiParameter.name.contains("_iterate") ) {
+                                                    val operationIssue = addOperationIssue(outcomes,OperationOutcome.IssueType.CODEINVALID, OperationOutcome.IssueSeverity.WARNING, "_include MUST be used with "+allowed + " only and not :iterate")
+                                                    operationIssue.location.add(StringType("OAS: "+apiPaths.key + "/get/" + apiParameter.name+"/schema/enum"))
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
                         if (searchParameter == null) {
                             val operationIssue = addOperationIssue(outcomes,OperationOutcome.IssueType.CODEINVALID, OperationOutcome.IssueSeverity.ERROR, "Unable to find FHIR SearchParameter of for: "+apiParameter.name)
 
