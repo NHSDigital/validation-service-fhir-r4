@@ -393,6 +393,8 @@ class OpenAPIParser(private val ctx: FhirContext?,
             parametersItem.description += getSearchParameterDocumentation(nextSearchParam,resourceType, parametersItem,true)
             if (nextSearchParam.name.startsWith("_include") && nextResource.hasSearchInclude()) {
                 nextSearchParam.name = "_include"
+                parametersItem.explode = true
+                parametersItem.style= Parameter.StyleEnum.FORM
                 val iterateSchema = StringSchema().format("string").example("MedicationRequest:patient")
                 parametersItem.schema.example = "MedicationRequest:patient"
                 for (include in nextResource.searchInclude) {
@@ -422,6 +424,11 @@ class OpenAPIParser(private val ctx: FhirContext?,
                 }
             }
             if (nextSearchParam.name.startsWith("_revinclude") && nextResource.hasSearchRevInclude()) {
+                nextSearchParam.name = "_revinclude"
+                parametersItem.explode = true
+                parametersItem.style= Parameter.StyleEnum.FORM
+                val iterateSchema = StringSchema().format("string").example("MedicationRequest:patient")
+                parametersItem.schema.example = "MedicationRequest:patient"
                 for (include in nextResource.searchRevInclude) {
                     parametersItem.schema.addEnumItemObject(include)
                     val includes = include.value.split(":")
