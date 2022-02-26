@@ -462,11 +462,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
                 }
             }
 
-            if (nextSearchParam.hasExtension("https://fhir.nhs.uk/StructureDefinition/Extension-NHSDigital-APIDefinition-OAS")) {
-                val extension = nextSearchParam.getExtensionByUrl("https://fhir.nhs.uk/StructureDefinition/Extension-NHSDigital-APIDefinition-OAS")
-                if (extension.hasExtension("required"))
-                    parametersItem.required = ((extension.getExtensionByUrl("required").value as BooleanType).value)
-            }
+            addSchemaProperties(nextSearchParam,parametersItem)
         }
     }
 
@@ -1734,6 +1730,25 @@ class OpenAPIParser(private val ctx: FhirContext?,
             openApi.components.addSchemas(resourceType, schema)
         }
     }
-
+    private fun addSchemaProperties(searchParam: CapabilityStatement.CapabilityStatementRestResourceSearchParamComponent, parametersItem : Parameter)  {
+        if (searchParam.hasExtension("https://fhir.nhs.uk/StructureDefinition/Extension-NHSDigital-APIDefinition-OAS")) {
+            val schemaExtension = searchParam.getExtensionByUrl("https://fhir.nhs.uk/StructureDefinition/Extension-NHSDigital-APIDefinition-OAS")
+            if (schemaExtension.hasExtension("schema")){
+                val extension = schemaExtension.getExtensionByUrl("schema")
+                if (extension.hasExtension("required")) {
+                        parametersItem.required = ((extension.getExtensionByUrl("required").value as BooleanType).value)
+                }
+                if (extension.hasExtension("minimum")) {
+                        parametersItem.schema.minimum = ((extension.getExtensionByUrl("minimum").value as IntegerType).value).toBigDecimal()
+                }
+                if (extension.hasExtension("maximum")) {
+                    parametersItem.schema.maximum = ((extension.getExtensionByUrl("maximum").value as IntegerType).value).toBigDecimal()
+                }
+                if (extension.hasExtension("exampleParameter")) {
+                    parametersItem.schema.example = ((extension.getExtensionByUrl("exampleParameter").value as StringType).value)
+                }
+            }
+        }
+    }
 
 }
