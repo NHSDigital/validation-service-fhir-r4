@@ -1617,7 +1617,8 @@ class OpenAPIParser(private val ctx: FhirContext?,
             when (searchParameter.type) {
                 Enumerations.SearchParamType.TOKEN -> {
                     val array =  ArraySchema()
-                    array.items = StringSchema()
+                    array.items = StringSchema().format("token")
+                    // Should really be added to the StringSchema only but this gets around UI issues
                     array.format("token")
                     parameter.schema = array
                    // parameter.schema.type = "string"
@@ -1629,7 +1630,8 @@ class OpenAPIParser(private val ctx: FhirContext?,
                 }
                 Enumerations.SearchParamType.DATE -> {
                     val array =  ArraySchema()
-                    array.items = StringSchema()
+                    array.items = StringSchema().format("date")
+                    // Should really be added to the StringSchema only but this gets around UI issues
                     array.format("date")
                     parameter.schema = array
                     parameter.description = "See FHIR documentation for more details."
