@@ -391,10 +391,29 @@ class OpenAPIParser(private val ctx: FhirContext?,
             parametersItem.setIn("query")
             parametersItem.description = nextSearchParam.documentation
             parametersItem.description += getSearchParameterDocumentation(nextSearchParam,resourceType, parametersItem,true)
+
+            // calculate style and explode
+            parametersItem.style = Parameter.StyleEnum.FORM
+            if (parametersItem.schema != null && parametersItem.schema.format != null) {
+                when (parametersItem.schema.format) {
+                    "date" -> {
+                        parametersItem.explode = true
+                    }
+                    "token" -> {
+                        parametersItem.explode = false
+                    }
+                    else -> {
+                        parametersItem.explode = false
+                    }
+                }
+            }
+
+
+
             if (nextSearchParam.name.startsWith("_include") && nextResource.hasSearchInclude()) {
                 nextSearchParam.name = "_include"
                 parametersItem.explode = true
-                parametersItem.style= Parameter.StyleEnum.FORM
+                //parametersItem.style= Parameter.StyleEnum.FORM
                 val iterateSchema = StringSchema().format("string").example("MedicationRequest:patient")
                 parametersItem.schema.example = "MedicationRequest:patient"
                 for (include in nextResource.searchInclude) {
@@ -426,7 +445,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
             if (nextSearchParam.name.startsWith("_revinclude") && nextResource.hasSearchRevInclude()) {
                 nextSearchParam.name = "_revinclude"
                 parametersItem.explode = true
-                parametersItem.style= Parameter.StyleEnum.FORM
+                //parametersItem.style= Parameter.StyleEnum.FORM
                 val iterateSchema = StringSchema().format("string").example("MedicationRequest:patient")
                 parametersItem.schema.example = "MedicationRequest:patient"
                 for (include in nextResource.searchRevInclude) {
@@ -442,7 +461,6 @@ class OpenAPIParser(private val ctx: FhirContext?,
                     }
                 }
             }
-            parametersItem.style = Parameter.StyleEnum.FORM
 
             if (nextSearchParam.hasExtension("https://fhir.nhs.uk/StructureDefinition/Extension-NHSDigital-APIDefinition-OAS")) {
                 val extension = nextSearchParam.getExtensionByUrl("https://fhir.nhs.uk/StructureDefinition/Extension-NHSDigital-APIDefinition-OAS")
@@ -1598,15 +1616,22 @@ class OpenAPIParser(private val ctx: FhirContext?,
         if (searchParameter != null) {
             when (searchParameter.type) {
                 Enumerations.SearchParamType.TOKEN -> {
-                    parameter.schema = StringSchema().format("token")
-                    parameter.schema.example = "[system]|[code]"
+                    val array =  ArraySchema()
+                    array.items = StringSchema()
+                    array.format("token")
+                    parameter.schema = array
+                   // parameter.schema.type = "string"
+                    parameter.schema.example = "[system]|[code],[code],[system]"
                 }
                 Enumerations.SearchParamType.REFERENCE -> {
                     parameter.schema = StringSchema().format("reference")
                     parameter.schema.example = "[type]/[id] or [id] or [uri]"
                 }
                 Enumerations.SearchParamType.DATE -> {
-                    parameter.schema = StringSchema().format("date")
+                    val array =  ArraySchema()
+                    array.items = StringSchema()
+                    array.format("date")
+                    parameter.schema = array
                     parameter.description = "See FHIR documentation for more details."
                     parameter.schema.example = "eq2013-01-14"
                 }

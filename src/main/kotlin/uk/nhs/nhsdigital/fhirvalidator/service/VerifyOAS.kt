@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import io.swagger.v3.oas.models.OpenAPI
 import io.swagger.v3.oas.models.Operation
 import io.swagger.v3.oas.models.examples.Example
+import io.swagger.v3.oas.models.media.ArraySchema
 import io.swagger.v3.oas.models.media.MediaType
 import io.swagger.v3.oas.models.parameters.QueryParameter
 import org.hl7.fhir.instance.model.api.IBaseResource
@@ -131,10 +132,28 @@ class VerifyOAS(private val ctx: FhirContext?,
                                 }
                                 // Check fhir type
                                 when(searchParameter.type) {
-                                    Enumerations.SearchParamType.STRING, Enumerations.SearchParamType.TOKEN, Enumerations.SearchParamType.DATE,Enumerations.SearchParamType.REFERENCE -> {
+                                    Enumerations.SearchParamType.STRING, Enumerations.SearchParamType.REFERENCE -> {
+
                                         if (!apiParameter.schema.type.equals("string")) {
                                             val operationIssue = addOperationIssue(outcomes,OperationOutcome.IssueType.CODEINVALID, OperationOutcome.IssueSeverity.ERROR,"Parameter schema type for : "+apiParameter.name + " should be a string/(FHIR Search: "+searchParameter.type.toCode()+")")
 
+                                            operationIssue.location.add(StringType("OAS: "+apiPaths.key + "/get/" + apiParameter.name+"/schema/type"))
+                                        }
+                                    }
+                                    Enumerations.SearchParamType.TOKEN, Enumerations.SearchParamType.DATE -> {
+                                        if (!apiParameter.schema.type.equals("string") && (
+                                                    apiParameter.schema.type.equals("array") && !((apiParameter.schema as ArraySchema).items.type.equals("string"))
+                                                    )) {
+                                            val operationIssue = addOperationIssue(outcomes,OperationOutcome.IssueType.CODEINVALID, OperationOutcome.IssueSeverity.ERROR,"Parameter schema type for : "+apiParameter.name + " should be a string/array(string) (FHIR Search: "+searchParameter.type.toCode()+")")
+
+                                            operationIssue.location.add(StringType("OAS: "+apiPaths.key + "/get/" + apiParameter.name+"/schema/type"))
+                                        }
+                                        if (apiParameter.schema is ArraySchema && apiParameter.schema.format.equals("token") && apiParameter.explode) {
+                                            val operationIssue = addOperationIssue(outcomes,OperationOutcome.IssueType.CODEINVALID, OperationOutcome.IssueSeverity.ERROR,"For array of format = token, explode should be set to false")
+                                            operationIssue.location.add(StringType("OAS: "+apiPaths.key + "/get/" + apiParameter.name+"/schema/type"))
+                                        }
+                                        if (apiParameter.schema is ArraySchema && apiParameter.schema.format.equals("date") && !apiParameter.explode) {
+                                            val operationIssue = addOperationIssue(outcomes,OperationOutcome.IssueType.CODEINVALID, OperationOutcome.IssueSeverity.ERROR,"For array of format = date, explode should be set to true")
                                             operationIssue.location.add(StringType("OAS: "+apiPaths.key + "/get/" + apiParameter.name+"/schema/type"))
                                         }
                                     }
