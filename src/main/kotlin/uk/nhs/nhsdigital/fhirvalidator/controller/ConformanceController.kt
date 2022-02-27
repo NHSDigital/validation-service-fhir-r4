@@ -157,10 +157,10 @@ class ConformanceController(
     fun getCapabilityStatement() : CapabilityStatement{
         val cs = CapabilityStatement();
         val apiextension = Extension();
-        apiextension.url = "https://fhir.nhs.uk/StructureDefinition/Extension-NHSDigital-APIDefinition"
+        apiextension.url = "https://fhir.nhs.uk/StructureDefinition/Extension-NHSDigital-CapabilityStatement-Package"
         npmPackages.forEach {
             val packageExtension = Extension();
-            packageExtension.url="implementationGuide"
+            packageExtension.url="FHIRPakcage"
             packageExtension.extension.add(Extension().setUrl("name").setValue(StringType(it.name())))
             packageExtension.extension.add(Extension().setUrl("version").setValue(StringType(it.version())))
             apiextension.extension.add(packageExtension)
