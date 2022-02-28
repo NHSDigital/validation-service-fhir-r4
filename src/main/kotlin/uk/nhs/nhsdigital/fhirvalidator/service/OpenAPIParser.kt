@@ -414,8 +414,11 @@ class OpenAPIParser(private val ctx: FhirContext?,
                 nextSearchParam.name = "_include"
                 parametersItem.explode = true
                 //parametersItem.style= Parameter.StyleEnum.FORM
-                val iterateSchema = StringSchema().format("string").example("MedicationRequest:patient")
+                val iterateSchema = ArraySchema()
+                iterateSchema.example("MedicationRequest:patient")
+                iterateSchema.items = StringSchema()
                 parametersItem.schema.example = "MedicationRequest:patient"
+                parametersItem.schema.minimum = BigDecimal.ZERO
                 for (include in nextResource.searchInclude) {
                     val includes = include.value.split(":")
                     if (includes[0].equals(resourceType)) {
@@ -446,7 +449,10 @@ class OpenAPIParser(private val ctx: FhirContext?,
                 nextSearchParam.name = "_revinclude"
                 parametersItem.explode = true
                 //parametersItem.style= Parameter.StyleEnum.FORM
-                val iterateSchema = StringSchema().format("string").example("MedicationRequest:patient")
+                val iterateSchema = ArraySchema()
+                iterateSchema.example("MedicationRequest:patient")
+                iterateSchema.items = StringSchema()
+                parametersItem.schema.minimum = BigDecimal.ZERO
                 parametersItem.schema.example = "MedicationRequest:patient"
                 for (include in nextResource.searchRevInclude) {
                     parametersItem.schema.addEnumItemObject(include)
@@ -1754,7 +1760,12 @@ class OpenAPIParser(private val ctx: FhirContext?,
 
                 val reference = (extension.getExtensionByUrl("allowedValues").value as Reference)
                 val valueSet = supportChain.fetchValueSet(reference.reference)
-                if (valueSet !=null) {
+                if (valueSet !=null && valueSet is ValueSet) {
+                    if (reference.reference.startsWith("http://hl7.org")) {
+                        parametersItem.description += "\n\n A code from FHIR ValueSet [" +  (valueSet as ValueSet).name + "]("+(valueSet as ValueSet).url + ")"
+                    } else {
+                        parametersItem.description += "\n\n A code from FHIR ValueSet [" +  (valueSet as ValueSet).name + "](https://simplifier.net/guide/nhsdigital/home)"
+                    }
                     val expansionOutcome = supportChain.expandValueSet(validationSupportContext,ValueSetExpansionOptions() ,valueSet)
                     if (expansionOutcome != null && expansionOutcome.valueSet != null && expansionOutcome.valueSet is ValueSet) {
                         for (expansion in (expansionOutcome.valueSet as ValueSet).expansion.contains) {
