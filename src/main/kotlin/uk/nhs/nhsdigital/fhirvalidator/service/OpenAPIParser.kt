@@ -2,6 +2,8 @@ package uk.nhs.nhsdigital.fhirvalidator.service
 
 import ca.uhn.fhir.context.FhirContext
 import ca.uhn.fhir.context.support.IValidationSupport
+import ca.uhn.fhir.context.support.ValidationSupportContext
+import ca.uhn.fhir.context.support.ValueSetExpansionOptions
 import ca.uhn.fhir.rest.api.Constants
 import ca.uhn.fhir.util.HapiExtensions
 import io.swagger.v3.oas.models.*
@@ -44,10 +46,8 @@ class OpenAPIParser(private val ctx: FhirContext?,
     private var cs: CapabilityStatement = CapabilityStatement()
     private val exampleServer = "http://example.org/"
     private val exampleServerPrefix = "FHIR/R4/"
-
+    private val validationSupportContext = ValidationSupportContext(supportChain)
     var implementationGuideParser: ImplementationGuideParser? = ImplementationGuideParser(ctx!!)
-
-
 
 
     fun generateOpenApi(_cs: CapabilityStatement): OpenAPI? {
@@ -1749,6 +1749,23 @@ class OpenAPIParser(private val ctx: FhirContext?,
             if (extension.hasExtension("exampleParameter")) {
                 parametersItem.schema.example =
                     ((extension.getExtensionByUrl("exampleParameter").value as StringType).value)
+            }
+            if (extension.hasExtension("allowedValues")) {
+
+                val reference = (extension.getExtensionByUrl("allowedValues").value as Reference)
+                val valueSet = supportChain.fetchValueSet(reference.reference)
+                if (valueSet !=null) {
+                    val expansionOutcome = supportChain.expandValueSet(validationSupportContext,ValueSetExpansionOptions() ,valueSet)
+                    if (expansionOutcome != null && expansionOutcome.valueSet != null && expansionOutcome.valueSet is ValueSet) {
+                        for (expansion in (expansionOutcome.valueSet as ValueSet).expansion.contains) {
+                            if (extension.hasExtension("showCodeAndSystem") && !(extension.getExtensionByUrl("showCodeAndSystem").value as BooleanType).booleanValue()) {
+                                parametersItem.schema.addEnumItemObject(expansion.code)
+                            } else {
+                                parametersItem.schema.addEnumItemObject(expansion.system + "|" + expansion.code)
+                            }
+                        }
+                    }
+                }
             }
         }
     }

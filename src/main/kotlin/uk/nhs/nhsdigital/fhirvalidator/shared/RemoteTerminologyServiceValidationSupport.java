@@ -1,10 +1,7 @@
 package uk.nhs.nhsdigital.fhirvalidator.shared;
 
 import ca.uhn.fhir.context.FhirContext;
-import ca.uhn.fhir.context.support.ConceptValidationOptions;
-import ca.uhn.fhir.context.support.DefaultProfileValidationSupport;
-import ca.uhn.fhir.context.support.IValidationSupport;
-import ca.uhn.fhir.context.support.ValidationSupportContext;
+import ca.uhn.fhir.context.support.*;
 import ca.uhn.fhir.rest.client.api.IGenericClient;
 import ca.uhn.fhir.rest.gclient.IOperationUnnamed;
 import ca.uhn.fhir.util.BundleUtil;
@@ -20,6 +17,7 @@ import org.hl7.fhir.instance.model.api.IBaseBundle;
 import org.hl7.fhir.instance.model.api.IBaseParameters;
 import org.hl7.fhir.instance.model.api.IBaseResource;
 import org.hl7.fhir.r4.model.CodeSystem;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 public class RemoteTerminologyServiceValidationSupport extends BaseValidationSupport implements IValidationSupport {
@@ -34,6 +32,11 @@ public class RemoteTerminologyServiceValidationSupport extends BaseValidationSup
         System.out.println(theFhirContext.getRestfulClientFactory().getConnectTimeout());
     }
 
+    @Nullable
+    @Override
+    public ValueSetExpansionOutcome expandValueSet(ValidationSupportContext theValidationSupportContext, @Nullable ValueSetExpansionOptions theExpansionOptions, @NotNull IBaseResource theValueSetToExpand) {
+        return super.expandValueSet(theValidationSupportContext, theExpansionOptions, theValueSetToExpand);
+    }
 
     public CodeValidationResult validateCode(ValidationSupportContext theValidationSupportContext, ConceptValidationOptions theOptions, String theCodeSystem, String theCode, String theDisplay, String theValueSetUrl) {
         // KGM this change for a ValueSet from validator to be used (and not use the one on the ontology server
