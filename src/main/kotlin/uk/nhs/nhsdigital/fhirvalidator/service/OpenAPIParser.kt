@@ -171,6 +171,8 @@ class OpenAPIParser(private val ctx: FhirContext?,
 
             if (nextResource.hasProfile()) {
                 val profile=nextResource.profile
+                resourceTag.extensions = mutableMapOf<String,Any>()
+                resourceTag.extensions.put("x-HL7-FHIR-Profile",profile)
                 val idStr = getProfileName(profile)
                 val documentation = getDocumentationPath(profile)
                 resourceTag.description = "" //""Resource (schema): [FHIR $resourceType](https://www.hl7.org/fhir/$resourceType.html)"
@@ -191,6 +193,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
                 profileDef = getProfile(profile)
 
                 if (profileDef !=null) {
+
                     if (profileDef.hasDescription()) {
                         resourceTag.description += "\n\n "+profileDef.description
                     }
@@ -1256,7 +1259,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
                         ?.forEach {
                             if (it is Resource) {
                                 val resource: Resource = it
-                                ///println(resource.resourceType.name + " - "+pathParts.get(0))
+
                                 if (resource.resourceType.name == pathParts.get(0)) {
                                     //println("Match "+ resource.idElement.idPart + " - resource.id=" + resource.id + " - "+ path + " - pathParts.get(1)="+pathParts.get(1))
                                     if (resource.id !=null && (resource.idElement.idPart.equals(pathParts.get(1)) || resource.id.equals(path))) {
