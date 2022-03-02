@@ -1,27 +1,22 @@
-package uk.nhs.nhsdigital.fhirvalidator.controller
+package uk.nhs.nhsdigital.fhirvalidator.provider
 
 import ca.uhn.fhir.context.FhirContext
-import ca.uhn.fhir.context.support.IValidationSupport
-import uk.nhs.nhsdigital.fhirvalidator.service.ImplementationGuideParser
-import uk.nhs.nhsdigital.fhirvalidator.service.OpenAPIParser
-import io.swagger.v3.core.util.Json
-import org.hl7.fhir.instance.model.api.IBaseResource
+import ca.uhn.fhir.rest.api.server.RequestDetails
+import ca.uhn.fhir.rest.server.IServerConformanceProvider
+import ca.uhn.fhir.rest.server.RestfulServer
 import org.hl7.fhir.r4.model.*
 import org.hl7.fhir.utilities.npm.NpmPackage
-import org.springframework.beans.factory.annotation.Qualifier
-import org.springframework.web.bind.annotation.*
-import uk.nhs.nhsdigital.fhirvalidator.service.SearchParameterSupport
+import org.springframework.stereotype.Component
+import uk.nhs.nhsdigital.fhirvalidator.service.ImplementationGuideParser
+import javax.servlet.http.HttpServletRequest
 
-@RestController
-class ConformanceController(
-    private val fhirContext: FhirContext,
-    private val npmPackages: List<NpmPackage>
-) {
+@Component
+class metadataProvider(private val fhirContext: FhirContext, private val npmPackages: List<NpmPackage>) :
+    IServerConformanceProvider<CapabilityStatement>
+{
     var implementationGuideParser: ImplementationGuideParser? = ImplementationGuideParser(fhirContext)
 
-
-
-    fun getCapabilityStatement() : CapabilityStatement{
+    override fun getServerConformance(p0: HttpServletRequest?, p1: RequestDetails?): CapabilityStatement {
         val cs = CapabilityStatement();
         val apiextension = Extension();
         apiextension.url = "https://fhir.nhs.uk/StructureDefinition/Extension-NHSDigital-CapabilityStatement-Package"
@@ -147,7 +142,7 @@ class ConformanceController(
                 )) {
                     if (resourceIG.hasUrl()) {
                         val messageDefinition = CapabilityStatement.CapabilityStatementMessagingSupportedMessageComponent()
-                        .setDefinition(resourceIG.url)
+                            .setDefinition(resourceIG.url)
 
                         message.supportedMessage.add(messageDefinition)
                     }
@@ -164,7 +159,7 @@ class ConformanceController(
     fun getResourceComponent(type : String, cs : CapabilityStatement ) : CapabilityStatement.CapabilityStatementRestResourceComponent? {
         for (rest in cs.rest) {
             for (resource in rest.resource) {
-               // println(type + " - " +resource.type)
+                // println(type + " - " +resource.type)
                 if (resource.type.equals(type))
                     return resource
             }
@@ -172,4 +167,7 @@ class ConformanceController(
         return null
     }
 
+    override fun setRestfulServer(p0: RestfulServer?) {
+
+    }
 }

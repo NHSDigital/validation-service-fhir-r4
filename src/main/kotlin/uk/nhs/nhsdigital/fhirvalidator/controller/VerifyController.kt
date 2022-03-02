@@ -1,0 +1,61 @@
+package uk.nhs.nhsdigital.fhirvalidator.controller
+
+import ca.uhn.fhir.context.FhirContext
+import ca.uhn.fhir.validation.FhirValidator
+import uk.nhs.nhsdigital.fhirvalidator.service.CapabilityStatementApplier
+import uk.nhs.nhsdigital.fhirvalidator.service.MessageDefinitionApplier
+import uk.nhs.nhsdigital.fhirvalidator.service.VerifyOAS
+import uk.nhs.nhsdigital.fhirvalidator.util.createOperationOutcome
+import io.swagger.v3.oas.models.OpenAPI
+import io.swagger.v3.parser.OpenAPIV3Parser
+import io.swagger.v3.parser.core.models.ParseOptions
+import mu.KLogging
+import org.hl7.fhir.instance.model.api.IBaseResource
+import org.hl7.fhir.r4.model.Bundle
+import org.hl7.fhir.r4.model.OperationOutcome
+import org.hl7.fhir.r4.model.ResourceType
+import org.springframework.web.bind.annotation.*
+import java.util.*
+
+
+@RestController
+class VerifyController(
+    private val fhirContext: FhirContext,
+    private val verifyOAS:VerifyOAS
+
+) {
+    companion object : KLogging()
+
+    @PostMapping("/\$verifyOAS", produces = ["application/json", "application/x-yaml"])
+    fun validate(
+        @RequestBody input: Optional<String>,
+        @RequestParam(required = false) url: String?
+    ): String {
+        var openAPI : OpenAPI? = null
+        if (url != null) {
+            val parseOptions = ParseOptions()
+            parseOptions.isResolve = true // implicit
+          //  parseOptions.isResolveFully = true
+            openAPI = OpenAPIV3Parser().readLocation(url,null,parseOptions).openAPI
+        }
+        else {
+            if (input.isPresent) {
+                openAPI = OpenAPIV3Parser().readContents(input.get()).openAPI
+            } else {
+                return  fhirContext.newJsonParser().encodeResourceToString(OperationOutcome()
+                    .addIssue(OperationOutcome.OperationOutcomeIssueComponent()
+                    .setSeverity(OperationOutcome.IssueSeverity.FATAL)
+                        .setDiagnostics("If url is not provided, the OAS must be present in the payload")))
+            }
+        }
+
+        if (openAPI !=null) {
+            val results = verifyOAS.validate(openAPI)
+            return  fhirContext.newJsonParser().encodeResourceToString(createOperationOutcome(results))
+        }
+
+        return  fhirContext.newJsonParser().encodeResourceToString(OperationOutcome().addIssue(OperationOutcome.OperationOutcomeIssueComponent()
+            .setSeverity(OperationOutcome.IssueSeverity.FATAL).setDiagnostics("Unable to process OAS")))
+    }
+
+}
