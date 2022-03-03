@@ -452,9 +452,9 @@ class OpenAPIParser(private val ctx: FhirContext?,
                 nextSearchParam.name = "_revinclude"
                 parametersItem.explode = true
                 //parametersItem.style= Parameter.StyleEnum.FORM
-                val iterateSchema = ArraySchema()
-                iterateSchema.example("MedicationRequest:patient")
-                iterateSchema.items = StringSchema()
+                //val iterateSchema = ArraySchema()
+               // iterateSchema.example("MedicationRequest:patient")
+                //iterateSchema.items = StringSchema()
                 parametersItem.schema.minimum = BigDecimal.ZERO
                 parametersItem.schema.example = "MedicationRequest:patient"
                 for (include in nextResource.searchRevInclude) {

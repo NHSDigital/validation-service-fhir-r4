@@ -41,7 +41,8 @@ private val verifyOAS: VerifyOAS
     ): IBaseResource? {
         return resource
     }
-
+/*
+ Move to a STU3 RestfulServer, is asuming input is R4 at present
     @Operation(name = "\$convertR4", idempotent = true)
     @Throws(java.lang.Exception::class)
     fun convertR4(
@@ -51,7 +52,7 @@ private val verifyOAS: VerifyOAS
         val resourceR3 = resource as Resource
         return convertor.convertResource(resourceR3)
     }
-
+*/
     @Validate
     fun validate(
         servletRequest: HttpServletRequest,
