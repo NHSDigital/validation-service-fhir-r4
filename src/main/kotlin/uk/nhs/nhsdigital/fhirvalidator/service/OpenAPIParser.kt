@@ -123,7 +123,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
         val capabilitiesOperation = getPathItem(paths, "/metadata", PathItem.HttpMethod.GET)
         capabilitiesOperation.addTagsItem(PAGE_SYSTEM)
         capabilitiesOperation.summary = "server-capabilities: Fetch the server FHIR CapabilityStatement"
-        addFhirResourceResponse(this.ctx, openApi, capabilitiesOperation, "CapabilityStatement",null,null)
+        addFhirResourceResponse(this.ctx, openApi, capabilitiesOperation, "CapabilityStatement",null,null,null)
         val systemInteractions =
             cs.restFirstRep.interaction.stream().map { t: CapabilityStatement.SystemInteractionComponent -> t.code }
                 .collect(Collectors.toSet())
@@ -137,8 +137,8 @@ class OpenAPIParser(private val ctx: FhirContext?,
             val transaction = getPathItem(paths, "/", PathItem.HttpMethod.POST)
             transaction.addTagsItem(PAGE_SYSTEM)
             transaction.summary = "server-transaction: Execute a FHIR Transaction (or FHIR Batch) Bundle"
-            addFhirResourceResponse(ctx, openApi, transaction, null, null,null)
-            addFhirResourceRequestBody(openApi, transaction, emptyList(), "Bundle")
+            addFhirResourceResponse(ctx, openApi, transaction, null, null,null,null)
+            addFhirResourceRequestBody(openApi, transaction, emptyList(), "Bundle",null)
         }
 
         // System History Operation
@@ -147,7 +147,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
             systemHistory.addTagsItem(PAGE_SYSTEM)
             systemHistory.summary =
                 "server-history: Fetch the resource change history across all resource types on the server"
-            addFhirResourceResponse(ctx, openApi, systemHistory, null, null,null)
+            addFhirResourceResponse(ctx, openApi, systemHistory, null, null,null,null)
         }
 
         // System-level Operations
@@ -164,50 +164,8 @@ class OpenAPIParser(private val ctx: FhirContext?,
                 nextResource.interaction.stream().map { t: CapabilityStatement.ResourceInteractionComponent ->
                     t.codeElement.value
                 }.collect(Collectors.toSet())
-            val resourceTag = Tag()
-            resourceTag.name = resourceType
 
-            //addFhirResourceSchema(openApi, resourceType, nextResource.profile)
-
-            if (nextResource.hasProfile()) {
-                val profile=nextResource.profile
-                resourceTag.extensions = mutableMapOf<String,Any>()
-                resourceTag.extensions.put("x-HL7-FHIR-Profile",profile)
-                val idStr = getProfileName(profile)
-                val documentation = getDocumentationPath(profile)
-                resourceTag.description = "" //""Resource (schema): [FHIR $resourceType](https://www.hl7.org/fhir/$resourceType.html)"
-
-                var profileDef = getBaseProfile(profile)
-
-                if (profileDef !=null) {
-                    if (profileDef.hasDescription()) {
-                        resourceTag.description += "\n\n "+profileDef.description
-                    }
-                    if (profileDef.hasPurpose()) {
-                        resourceTag.description += "\n\n "+profileDef.purpose
-                    }
-                }
-
-                resourceTag.description += "\n\n Profile (constraints): [$idStr]($documentation)"
-
-                profileDef = getProfile(profile)
-
-                if (profileDef !=null) {
-
-                    if (profileDef.hasDescription()) {
-                        resourceTag.description += "\n\n "+profileDef.description
-                    }
-                    if (profileDef.hasPurpose()) {
-                        resourceTag.description += "\n\n "+profileDef.purpose
-                    }
-                }
-
-            } else {
-                resourceTag.description = "Resource type: $resourceType"
-            }
-
-            if (nextResource.hasInteraction()) openApi.addTagsItem(resourceTag)
-
+            addResoureTag(openApi,resourceType,nextResource.profile)
 
             for (resftfulIntraction in nextResource.interaction) {
                 val requestExample = getRequestExample(resftfulIntraction)
@@ -245,7 +203,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
                             }
                             operation.description += comboDoc
                         }
-                        addFhirResourceResponse(ctx, openApi, operation, resourceType,resftfulIntraction, null)
+                        addFhirResourceResponse(ctx, openApi, operation, resourceType,resftfulIntraction, null,null)
                         processSearchParameter(operation,nextResource,resourceType)
                         addResourceAPIMParameter(operation)
                     }
@@ -261,7 +219,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
                         }
                         addResourceIdParameter(operation)
                         addResourceAPIMParameter(operation)
-                        addFhirResourceResponse(ctx, openApi, operation,resourceType,resftfulIntraction,null)
+                        addFhirResourceResponse(ctx, openApi, operation,resourceType,resftfulIntraction,null,null)
                     }
                     // Instance Update
                     CapabilityStatement.TypeRestfulInteraction.UPDATE -> {
@@ -275,8 +233,8 @@ class OpenAPIParser(private val ctx: FhirContext?,
                         }
                         addResourceIdParameter(operation)
                         addResourceAPIMParameter(operation)
-                        addFhirResourceRequestBody(openApi, operation,  requestExample, resourceType)
-                        addFhirResourceResponse(ctx, openApi, operation, "OperationOutcome",resftfulIntraction,null)
+                        addFhirResourceRequestBody(openApi, operation,  requestExample, resourceType,nextResource.profile)
+                        addFhirResourceResponse(ctx, openApi, operation, "OperationOutcome",resftfulIntraction,null,null)
                     }
                     // Type Create
                     CapabilityStatement.TypeRestfulInteraction.CREATE -> {
@@ -288,8 +246,8 @@ class OpenAPIParser(private val ctx: FhirContext?,
                             operation.description += "\n\n"+resftfulIntraction.documentation
                         }
                         addResourceAPIMParameter(operation)
-                        addFhirResourceRequestBody(openApi, operation, requestExample, resourceType)
-                        addFhirResourceResponse(ctx, openApi, operation, "OperationOutcome",resftfulIntraction,null)
+                        addFhirResourceRequestBody(openApi, operation, requestExample, resourceType, nextResource.profile)
+                        addFhirResourceResponse(ctx, openApi, operation, "OperationOutcome",resftfulIntraction,null,null)
                     }
                     // Instance Patch
                     CapabilityStatement.TypeRestfulInteraction.PATCH -> {
@@ -305,7 +263,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
                         addResourceAPIMParameter(operation)
                         addJSONSchema(openApi)
                         addPatchResourceRequestBody(operation, patchExampleSupplier(resourceType))
-                        addFhirResourceResponse(ctx, openApi, operation, "OperationOutcome",resftfulIntraction,null)
+                        addFhirResourceResponse(ctx, openApi, operation, "OperationOutcome",resftfulIntraction,null,null)
                     }
 
                         // Instance Delete
@@ -319,7 +277,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
                             operation.description += "\n\n"+resftfulIntraction.documentation
                         }
                         addResourceIdParameter(operation)
-                        addFhirResourceResponse(ctx, openApi, operation, "OperationOutcome",resftfulIntraction,null)
+                        addFhirResourceResponse(ctx, openApi, operation, "OperationOutcome",resftfulIntraction,null,null)
                     }
 
                     // Type history
@@ -334,7 +292,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
                         }
                         processSearchParameter(operation,nextResource,resourceType)
                         addResourceAPIMParameter(operation)
-                        addFhirResourceResponse(ctx, openApi, operation,  resourceType,resftfulIntraction, null)
+                        addFhirResourceResponse(ctx, openApi, operation,  resourceType,resftfulIntraction, null,null)
                     }
 
                         // Instance history
@@ -353,7 +311,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
                         addResourceIdParameter(operation)
                         processSearchParameter(operation,nextResource,resourceType)
                         addResourceAPIMParameter(operation)
-                        addFhirResourceResponse(ctx, openApi, operation,  resourceType,resftfulIntraction,null)
+                        addFhirResourceResponse(ctx, openApi, operation,  resourceType,resftfulIntraction,null,null)
                     }
 
                     else -> {}
@@ -374,7 +332,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
                 addResourceIdParameter(operation)
                 addResourceVersionIdParameter(operation)
                 addResourceAPIMParameter(operation)
-                addFhirResourceResponse(ctx, openApi, operation,  resourceType,null,null)
+                addFhirResourceResponse(ctx, openApi, operation,  resourceType,null,null,null)
             }
 
 
@@ -385,6 +343,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
         }
         return openApi
     }
+
 
     private fun processSearchParameter(operation : Operation, nextResource : CapabilityStatement.CapabilityStatementRestResourceComponent,resourceType: String) {
         for (nextSearchParam in nextResource.searchParam) {
@@ -728,7 +687,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
 
     private fun populateOperation(
         theFhirContext: FhirContext?,
-        theOpenApi: OpenAPI,
+        openApi: OpenAPI,
         theResourceType: String?,
         theOperationDefinition: OperationDefinition?,
         theOperation: Operation,
@@ -752,20 +711,21 @@ class OpenAPIParser(private val ctx: FhirContext?,
                 val exampleList = mutableListOf<Example>()
                 exampleList.add(Example().value(ctx?.newJsonParser()?.encodeResourceToString(exampleOperation.get())))
                 response200.content = provideContentFhirResource(
-                    theOpenApi,
+                    openApi,
                     exampleList,
-                    (exampleOperation.get())?.fhirType()
+                    (exampleOperation.get())?.fhirType(),
+                    null
                 )
                 theOperation.responses.addApiResponse("200",response200)
 
-                addStandardResponses(theOpenApi,theOperation.responses)
+                addStandardResponses(openApi,theOperation.responses)
             } else {
-                addFhirResourceResponse(theFhirContext, theOpenApi, theOperation, "Parameters", null,theOperationComponent)
+                addFhirResourceResponse(theFhirContext, openApi, theOperation, "Parameters", null,theOperationComponent,null)
             }
 
             //theOperation.requestBody.content = provideContentFhirResource(theOpenApi,ctx,exampleOperation, null)
         } else {
-            addFhirResourceResponse(theFhirContext, theOpenApi, theOperation, "Parameters", null, theOperationComponent)
+            addFhirResourceResponse(theFhirContext, openApi, theOperation, "Parameters", null, theOperationComponent,null)
         }
         val mediaType = MediaType()
         if (theGet) {
@@ -899,6 +859,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
             if (theOperationDefinition.url.equals("http://hl7.org/fhir/OperationDefinition/MessageHeader-process-message")
                 || theOperationDefinition.url.equals("https://fhir.nhs.uk/OperationDefinition/MessageHeader-process-message")) {
                     val bundleSchema = Schema<Any?>().type("object").title("Bundle-Message")
+                 /*
                         .required(mutableListOf("resourceType","type","entry"))
                 bundleSchema.addProperties("resourceType", Schema<String>()
                     .type("string")
@@ -928,13 +889,14 @@ class OpenAPIParser(private val ctx: FhirContext?,
                         .maxProperties(1)
                         .type("object")
                         .description("A resource in the bundle. First entry MUST be a FHIR MessageHeader"))
-                addSchemaFhirResource(theOpenApi,bundleEntry,"Bundle-Entry")
+                addSchemaFhirResource(openApi,bundleEntry,"Bundle-Entry")
                 val entry = ArraySchema().type("array").items(bundleEntry)
 
                 bundleSchema.addProperties("entry", entry)
-                addSchemaFhirResource(theOpenApi,bundleSchema,"Bundle-Message")
+                */
+                addSchemaFhirResource(openApi,bundleSchema,"Bundle-Message")
                 mediaType.schema = ObjectSchema().`$ref`(
-                    "#/components/schemas/Bundle-Message"
+                    "#/components/schemas/Bundle"
                 )
             } else {
                 //addSchemaFhirResource(theOpenApi,parametersSchema,"Parameters-"+theOperationDefinition.code)
@@ -996,7 +958,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
                 for (supportedMessage in messaging.supportedMessage) {
                     val idStr = getProfileName(supportedMessage.definition)
                     supportedDocumentation += "* $idStr \n"
-                    mediaType.examples[idStr] = getMessageExample(supportedMessage)
+                    mediaType.examples[idStr] = getMessageExample(openApi, supportedMessage)
                 }
             }
             theOperation.description += supportedDocumentation
@@ -1061,10 +1023,11 @@ class OpenAPIParser(private val ctx: FhirContext?,
         theOpenApi: OpenAPI,
         theOperation: Operation,
         theExampleSupplier: List<Example>,
-        theResourceType: String?
+        theResourceType: String?,
+        profile: String?
     ) {
         val requestBody = RequestBody()
-        requestBody.content = provideContentFhirResource(theOpenApi, theExampleSupplier,theResourceType)
+        requestBody.content = provideContentFhirResource(theOpenApi, theExampleSupplier,theResourceType, profile)
         theOperation.requestBody = requestBody
     }
 
@@ -1085,7 +1048,8 @@ class OpenAPIParser(private val ctx: FhirContext?,
         theOperation: Operation,
         theResourceType: String?,
         resftfulIntraction : CapabilityStatement.ResourceInteractionComponent?,
-        operationComponent: CapabilityStatement.CapabilityStatementRestResourceOperationComponent?
+        operationComponent: CapabilityStatement.CapabilityStatementRestResourceOperationComponent?,
+        profile: String?
     ) {
         theOperation.responses = ApiResponses()
         val response200 = ApiResponse()
@@ -1096,7 +1060,8 @@ class OpenAPIParser(private val ctx: FhirContext?,
             response200.content = provideContentFhirResource(
                 theOpenApi,
                 exampleResponse,
-                theResourceType
+                theResourceType,
+                profile
             )
 
         }
@@ -1106,7 +1071,8 @@ class OpenAPIParser(private val ctx: FhirContext?,
             response200.content = provideContentFhirResource(
                 theOpenApi,
                 exampleResponse,
-                theResourceType
+                theResourceType,
+                profile
             )
 
         }
@@ -1115,7 +1081,8 @@ class OpenAPIParser(private val ctx: FhirContext?,
             response200.content = provideContentFhirResource(
                 theOpenApi,
                 genericExampleSupplier(theFhirContext, theResourceType),
-                theResourceType
+                theResourceType,
+                profile
             )
         }
 
@@ -1134,7 +1101,8 @@ class OpenAPIParser(private val ctx: FhirContext?,
         response4xx.content = provideContentFhirResource(
             theOpenApi,
             exampleResponse,
-            "OperationOutcome"
+            "OperationOutcome",
+            null
         )
         responses.addApiResponse("4xx", response4xx)
 
@@ -1147,7 +1115,8 @@ class OpenAPIParser(private val ctx: FhirContext?,
             response403.content = provideContentFhirResource(
                 theOpenApi,
                 exampleResponse,
-                "OperationOutcome"
+                "OperationOutcome",
+                null
             )
             responses.addApiResponse("403", response403)
         }
@@ -1187,7 +1156,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
         return ctx?.newJsonParser()?.setPrettyPrint(true)?.encodeResourceToString(operationOutcome)
     }
 
-    private fun getMessageExample(supportedMessage : CapabilityStatement.CapabilityStatementMessagingSupportedMessageComponent) : Example {
+    private fun getMessageExample(openApi: OpenAPI,supportedMessage : CapabilityStatement.CapabilityStatementMessagingSupportedMessageComponent) : Example {
 
         var supportedDocumentation = ""
         val example = Example()
@@ -1218,7 +1187,9 @@ class OpenAPIParser(private val ctx: FhirContext?,
                                 if (profile == null) {
                                     profile = ""
                                 } else {
-                                    profile = getDocumentationPath(profile)
+                                    profile = "#/components/schemas/"+foci.code // getDocumentationPath(profile)
+                                    addFhirResourceSchema(openApi, foci.code, foci.profile)
+                                    addResoureTag(openApi, foci.code,foci.profile)
                                 }
                                 val idStr = getProfileName(foci.profile)
                                 supportedDocumentation += "| [$resource](https://www.hl7.org/fhir/$resource.html) | [$idStr]($profile) | $min | $max | \n"
@@ -1418,7 +1389,8 @@ class OpenAPIParser(private val ctx: FhirContext?,
     private fun provideContentFhirResource(
         theOpenApi: OpenAPI,
         examples: List<Example>,
-        resourceType: String?
+        resourceType: String?,
+        profile: String?
     ): Content {
         val retVal = Content()
         var resourceType2 = resourceType
@@ -1434,7 +1406,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
             if (resourceType2 == null && theExampleSupplier != null)
                 resourceType2 = theExampleSupplier.fhirType()
            // if (resourceType2 != null) addJSONSchema(theOpenApi, resourceType2)
-            val jsonSchema = resourceType2?.let { getMediaType(theOpenApi, it) }
+            val jsonSchema = resourceType2?.let { getMediaType(theOpenApi, it, profile) }
 
             if (theExampleSupplier != null) {
                 if (jsonSchema != null) {
@@ -1442,7 +1414,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
                 }
             }
             retVal.addMediaType(Constants.CT_FHIR_JSON_NEW, jsonSchema)
-            val xmlSchema = resourceType2?.let { getMediaType(theOpenApi, it) }
+            val xmlSchema = resourceType2?.let { getMediaType(theOpenApi, it, profile) }
 
             if (theExampleSupplier != null) {
                 if (xmlSchema != null) {
@@ -1451,7 +1423,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
             }
             if (generateXML) retVal.addMediaType(Constants.CT_FHIR_XML_NEW, xmlSchema)
         } else {
-            val jsonSchema = getMediaType(theOpenApi,resourceType2)
+            val jsonSchema = getMediaType(theOpenApi,resourceType2, profile)
 
             // Ensure schema is added
             //if (resourceType2 != null) addJSONSchema(theOpenApi, resourceType2)
@@ -1709,12 +1681,12 @@ class OpenAPIParser(private val ctx: FhirContext?,
         return description
     }
 
-    private fun getMediaType(openApi: OpenAPI, resourceType: String?) : MediaType {
+    private fun getMediaType(openApi: OpenAPI, resourceType: String?, profile: String?) : MediaType {
         val mediaType = MediaType().schema(ObjectSchema().`$ref`(
             "#/components/schemas/$resourceType"
             //"https://hl7.org/fhir/R4/fhir.schema.json#/definitions/$resourceType"
         ))
-        addFhirResourceSchema(openApi,resourceType)
+        addFhirResourceSchema(openApi,resourceType, profile)
         return mediaType
     }
 
@@ -1735,7 +1707,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
         }
     }
 
-    private fun addFhirResourceSchema(openApi: OpenAPI, resourceType: String?) {
+    private fun addFhirResourceSchema(openApi: OpenAPI, resourceType: String?, profile: String?) {
         // Add schema
         ensureComponentsSchemasPopulated(openApi)
         if (!openApi.components.schemas.containsKey(resourceType)) {
@@ -1749,6 +1721,30 @@ class OpenAPIParser(private val ctx: FhirContext?,
             schema.externalDocs.description = resourceType
 
             schema.externalDocs.url = "https://www.hl7.org/fhir/$resourceType.html"
+            if (profile != null) {
+                val structureDefinition = getProfile(profile)
+                if (structureDefinition is StructureDefinition) {
+                    for (element in structureDefinition.snapshot.element) {
+                        if ((element.hasDefinition() ||
+                                    element.hasShort() ||
+                                    element.hasType() ||
+                                    element.hasBinding()) &&
+                            element.hasMustSupport()
+                        ) {
+                            var title = element.path.replace(structureDefinition.type + ".", "")
+                            if (element.hasSliceName()) {
+                                title += " (" + element.sliceName + ")"
+                            }
+
+                            schema.addProperties(
+                                title, Schema<String>()
+                                    .type("string")
+                                    .description(getElementDescription(element))
+                            )
+                        }
+                    }
+                }
+            }
             openApi.components.addSchemas(resourceType, schema)
         }
     }
@@ -1778,7 +1774,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
                 val valueSet = supportChain.fetchValueSet(reference.reference)
                 if (valueSet !=null && valueSet is ValueSet) {
                     if (reference.reference.startsWith("http://hl7.org")) {
-                        parametersItem.description += "\n\n A code from FHIR ValueSet [" +  (valueSet).name + "]("+(valueSet as ValueSet).url + ")"
+                        parametersItem.description += "\n\n A code from FHIR ValueSet [" +  (valueSet).name + "]("+(valueSet).url + ")"
                     } else {
                         parametersItem.description += "\n\n A code from FHIR ValueSet [" +  (valueSet).name + "](https://simplifier.net/guide/nhsdigital/home)"
                     }
@@ -1796,4 +1792,138 @@ class OpenAPIParser(private val ctx: FhirContext?,
             }
         }
     }
+
+    private fun getProfileDescription(profile: String) :String {
+        if (profile.startsWith("https://www.hl7.org")) return ""
+        // todo disable for now and try using schema instead
+        return ""
+        /*
+        val structureDefinition = supportChain.fetchStructureDefinition(profile)
+        var description = ""
+        if (structureDefinition is StructureDefinition) {
+            for (element in structureDefinition.snapshot.element) {
+                if ((element.hasDefinition() ||
+                    element.hasShort() ||
+                    element.hasType() ||
+                    element.hasBinding()) &&
+                    element.hasMustSupport()
+                ) {
+                    // section title
+                    description += "\n\n ### " + element.path.replace(structureDefinition.type + ".", "")
+                    if (element.hasSliceName()) {
+                       description += " ("+element.sliceName+ ")"
+                    }
+
+                description += getElementDescription(element)
+
+                }
+            }
+        }
+        return description
+
+         */
+    }
+
+    private fun getElementDescription(element : ElementDefinition) : String {
+        var description = ""
+        // header body
+        if (element.hasMustSupport() && element.mustSupport) {
+            description += "\n `mustSupport`"
+        }
+        if (element.hasMin()) {
+            if (element.min == 0) {
+                description += "\n `optional`"
+            } else {
+                description += "\n `mandatory`"
+            }
+        }
+        if (element.hasMax()) {
+            description += "\n `max = "+element.max + "`"
+        }
+        // Data type
+        if (element.hasType()) {
+            for (type in element.type) {
+                description += "\n\n [" + type.code+ "](https://www.hl7.org/fhir/datatypes.html) \n"
+                for (target in type.targetProfile) {
+                    description += "\n - "+target.value
+                }
+
+                for (target in type.profile) {
+                    description += "\n - " + target.value
+                }
+
+            }
+        }
+        // Documentation section
+        if (element.hasShort()) {
+            description += "\n\n " + element.short
+        }
+        if (element.hasDefinition()) {
+            description += "\n\n " + element.definition.replace("\\n","\n")
+        }
+        if (element.hasBinding()) {
+            description += "\n "
+            if (element.binding.hasStrength()) description += "`" + element.binding.strength.display + "` "
+            if (element.binding.hasValueSet()) description += element.binding.valueSet
+            if (element.binding.hasDescription()) {
+                var elementDescription = element.binding.description
+                elementDescription = elementDescription.replace("\\n","\n")
+                description += elementDescription + " "
+            }
+
+        }
+        return description
+    }
+
+    private fun addResoureTag(openApi: OpenAPI,resourceType: String?, profile: String?) {
+        // potential flaw here if multiple profiles are used.
+        for (tags in openApi.tags) {
+            if (tags.name.equals(resourceType)) return
+        }
+        // Try using schema for describing the profile .
+        addFhirResourceSchema(openApi,resourceType,profile)
+        val resourceTag = Tag()
+        resourceTag.name = resourceType
+
+        //addFhirResourceSchema(openApi, resourceType, nextResource.profile)
+
+        if (profile != null) {
+            resourceTag.extensions = mutableMapOf<String,Any>()
+            resourceTag.extensions.put("x-HL7-FHIR-Profile",profile)
+            val idStr = getProfileName(profile)
+            val documentation = getDocumentationPath(profile)
+            resourceTag.description = "" //""Resource (schema): [FHIR $resourceType](https://www.hl7.org/fhir/$resourceType.html)"
+
+            var profileDef = getBaseProfile(profile)
+
+            if (profileDef !=null) {
+                if (profileDef.hasDescription()) {
+                    resourceTag.description += "\n\n "+profileDef.description
+                }
+                if (profileDef.hasPurpose()) {
+                    resourceTag.description += "\n\n "+profileDef.purpose
+                }
+            }
+
+            resourceTag.description += "\n\n Profile (constraints): [$idStr]($documentation)"
+            resourceTag.description += "\n\n" + getProfileDescription(profile)
+
+            profileDef = getProfile(profile)
+
+            if (profileDef !=null) {
+
+                if (profileDef.hasDescription()) {
+                    resourceTag.description += "\n\n "+profileDef.description
+                }
+                if (profileDef.hasPurpose()) {
+                    resourceTag.description += "\n\n "+profileDef.purpose
+                }
+            }
+
+        } else {
+            resourceTag.description = "Resource type: $resourceType"
+        }
+        openApi.addTagsItem(resourceTag)
+    }
+
 }
