@@ -894,7 +894,8 @@ class OpenAPIParser(private val ctx: FhirContext?,
 
                 bundleSchema.addProperties("entry", entry)
                 */
-                addSchemaFhirResource(openApi,bundleSchema,"Bundle-Message")
+               // addSchemaFhirResource(openApi,bundleSchema,"Bundle-Message")
+                addFhirResourceSchema(openApi,"Bundle","https://fhir.nhs.uk/StructureDefinition/NHSDigital-Bundle-FHIRMessage")
                 mediaType.schema = ObjectSchema().`$ref`(
                     "#/components/schemas/Bundle"
                 )
@@ -1690,13 +1691,14 @@ class OpenAPIParser(private val ctx: FhirContext?,
         return mediaType
     }
 
+    /*
     private fun addSchemaFhirResource(openApi: OpenAPI, schema : Schema<Any?>, schemaName : String?) {
         ensureComponentsSchemasPopulated(openApi)
         if (!openApi.components.schemas.containsKey(schemaName)) {
             openApi.components.addSchemas(schemaName,schema)
         }
     }
-
+*/
 
     private fun ensureComponentsSchemasPopulated(theOpenApi: OpenAPI) {
         if (theOpenApi.components == null) {
@@ -1714,33 +1716,82 @@ class OpenAPIParser(private val ctx: FhirContext?,
 
             val schema = ObjectSchema()
 
+            var schemaList = mutableMapOf<String, Schema<Any>>()
+
             schema.description = "HL7 FHIR Schema [$resourceType](https://hl7.org/fhir/R4/fhir.schema.json#/definitions/$resourceType)."+ ". HL7 FHIR Documentation [$resourceType](\"https://www.hl7.org/fhir/$resourceType.html\")"
+
 
             // This doesn't appear to be used. Consider removing
             schema.externalDocs = ExternalDocumentation()
             schema.externalDocs.description = resourceType
 
             schema.externalDocs.url = "https://www.hl7.org/fhir/$resourceType.html"
+
+            if (resourceType != null) {
+                schemaList.put(resourceType,schema)
+            }
             if (profile != null) {
                 val structureDefinition = getProfile(profile)
                 if (structureDefinition is StructureDefinition) {
+
+                    if (structureDefinition.hasDescription()) {
+                        schema.description += "\n\n " + structureDefinition.description
+                    }
+                    if (structureDefinition.hasPurpose()) {
+                        schema.description += "\n\n " + structureDefinition.purpose
+                    }
+
                     for (element in structureDefinition.snapshot.element) {
                         if ((element.hasDefinition() ||
                                     element.hasShort() ||
                                     element.hasType() ||
                                     element.hasBinding()) &&
-                            element.hasMustSupport()
+                            (element.hasMustSupport() || (element.hasMin() && element.min >0))
                         ) {
-                            var title = element.path.replace(structureDefinition.type + ".", "")
-                            if (element.hasSliceName()) {
+                            val paths = element.id.split(".")
+                            var title = paths[paths.size-1]
+                           /* if (element.hasSliceName()) {
                                 title += " (" + element.sliceName + ")"
+                            }*/
+                            var elementSchema : Schema<Any>? = null
+
+                            if (element.hasType()) {
+                                if (element.typeFirstRep.code[0].isUpperCase()) {
+                                    elementSchema = Schema<ObjectSchema>().type("object")
+                                } else {
+                                    elementSchema = Schema<String>()
+                                        .type("string")
+                                }
+                            }
+                            else {
+                                elementSchema = Schema<String>()
+                                    .type("string")
                             }
 
-                            schema.addProperties(
-                                title, Schema<String>()
-                                    .type("string")
-                                    .description(getElementDescription(element))
-                            )
+                            if (element.hasBase() && element.base.max.equals("*")) {
+                                elementSchema = ArraySchema().type("array").items(elementSchema)
+                            }
+
+                            if (elementSchema != null) {
+                                elementSchema.description = getElementDescription(element)
+                                if (element.hasMin()) elementSchema.minimum = BigDecimal(element.min)
+
+
+                                var parent = ""
+                                for (i in 0 until (paths.size - 1)) {
+                                    if (!parent.isEmpty()) parent += "."
+                                    parent += paths[i]
+                                }
+                                if (schemaList.get(element.id) == null) {
+                                    schemaList.put(element.id, elementSchema)
+                                }
+                                val parentSchema = schemaList.get(parent)
+                                if (parentSchema is ArraySchema) {
+                                    parentSchema.items.addProperties(title, elementSchema)
+                                } else {
+                                    parentSchema?.addProperties(title, elementSchema)
+                                }
+                            }
                         }
                     }
                 }
@@ -1830,30 +1881,33 @@ class OpenAPIParser(private val ctx: FhirContext?,
         if (element.hasMustSupport() && element.mustSupport) {
             description += "\n `mustSupport`"
         }
-        if (element.hasMin()) {
-            if (element.min == 0) {
-                description += "\n `optional`"
-            } else {
-                description += "\n `mandatory`"
-            }
-        }
+
         if (element.hasMax()) {
             description += "\n `max = "+element.max + "`"
+        }
+        if (element.hasFixed()) {
+            if (element.fixed is UriType) {
+                description += "\n `fixed value = " + (element.fixed as UriType).value +"`"
+            }
+            if (element.fixed is CodeType) {
+                description += "\n `fixed value = " + (element.fixed as CodeType).value +"`"
+            }
         }
         // Data type
         if (element.hasType()) {
             for (type in element.type) {
                 description += "\n\n [" + type.code+ "](https://www.hl7.org/fhir/datatypes.html) \n"
                 for (target in type.targetProfile) {
-                    description += "\n - "+target.value
+                    description += "\n - ["+target.value+ "](https://simplifier.net/search?canonical="+target.value +")"
                 }
 
                 for (target in type.profile) {
-                    description += "\n - " + target.value
+                    description += "\n - ["+target.value+ "](https://simplifier.net/search?canonical="+target.value +")"
                 }
 
             }
         }
+
         // Documentation section
         if (element.hasShort()) {
             description += "\n\n " + element.short
@@ -1864,7 +1918,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
         if (element.hasBinding()) {
             description += "\n "
             if (element.binding.hasStrength()) description += "`" + element.binding.strength.display + "` "
-            if (element.binding.hasValueSet()) description += element.binding.valueSet
+            if (element.binding.hasValueSet()) description += "["+element.binding.valueSet + "](https://simplifier.net/search?canonical="+element.binding.valueSet +")"
             if (element.binding.hasDescription()) {
                 var elementDescription = element.binding.description
                 elementDescription = elementDescription.replace("\\n","\n")
