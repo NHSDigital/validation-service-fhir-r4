@@ -16,6 +16,7 @@ class FHIRRestfulServer(
     fhirContext: FhirContext,
     private val validateProvider: ValidateProvider,
     private val openAPIProvider: OpenAPIProvider,
+    private val markdownProvider: MarkdownProvider,
     private val capabilityStatementProvider: CapabilityStatementProvider,
     private val messageDefinitionProvider: MessageDefinitionProvider,
     private val structureDefinitionProvider: StructureDefinitionProvider,
@@ -37,6 +38,7 @@ class FHIRRestfulServer(
 
         registerProvider(validateProvider)
         registerProvider(openAPIProvider)
+        registerProvider(markdownProvider)
         registerProvider(capabilityStatementProvider)
         registerProvider(messageDefinitionProvider)
         registerProvider(structureDefinitionProvider)

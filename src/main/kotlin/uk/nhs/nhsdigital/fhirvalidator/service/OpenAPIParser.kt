@@ -50,6 +50,8 @@ class OpenAPIParser(private val ctx: FhirContext?,
     var implementationGuideParser: ImplementationGuideParser? = ImplementationGuideParser(ctx!!)
 
 
+
+
     fun generateOpenApi(_cs: CapabilityStatement): OpenAPI? {
         cs = _cs
         val openApi = OpenAPI()
@@ -1876,56 +1878,76 @@ class OpenAPIParser(private val ctx: FhirContext?,
     }
 
     private fun getElementDescription(element : ElementDefinition) : String {
-        var description = ""
+
+        var table = "\n\n| | Description |\n|----|----|"
         // header body
+        /*
         if (element.hasMustSupport() && element.mustSupport) {
             description += "\n `mustSupport`"
         }
+*/
+        table += "\n|Element Id|"+element.id+"|"
+        table += "\n|[Cardinality](https://www.hl7.org/fhir/conformance-rules.html#cardinality)|"+element.min+".."+element.max+"|"
 
-        if (element.hasMax()) {
-            description += "\n `max = "+element.max + "`"
-        }
+
         if (element.hasFixed()) {
             if (element.fixed is UriType) {
-                description += "\n `fixed value = " + (element.fixed as UriType).value +"`"
+                table += "\n|Fixed Value|"+(element.fixed as UriType).value+"|"
             }
             if (element.fixed is CodeType) {
-                description += "\n `fixed value = " + (element.fixed as CodeType).value +"`"
+                table += "\n|Fixed Value|"+(element.fixed as CodeType).value+"|"
             }
         }
+
+        if (element.hasBinding()) {
+            if (element.binding.hasValueSet())
+            {
+                var description = "["+element.binding.valueSet + "](https://simplifier.net/search?canonical="+element.binding.valueSet +")"
+                if (element.binding.hasStrength()) description += " (" + element.binding.strength.display + ")"
+                if (element.binding.hasDescription()) {
+                    var elementDescription = element.binding.description
+                    elementDescription = elementDescription.replace("\\n","\n")
+                    description += elementDescription + " "
+                }
+                table += "\n|[Terminology Binding](https://www.hl7.org/fhir/terminologies.html)|"+description+"|"
+            }
+        }
+
+
         // Data type
         if (element.hasType()) {
+            var description = ""
             for (type in element.type) {
-                description += "\n\n [" + type.code+ "](https://www.hl7.org/fhir/datatypes.html) \n"
+
+                description += "["+type.code+"](https://www.hl7.org/fhir/datatypes.html#"+type.code+")"
+                var itemDescription=""
                 for (target in type.targetProfile) {
-                    description += "\n - ["+target.value+ "](https://simplifier.net/search?canonical="+target.value +")"
+                    if (itemDescription.isEmpty()) description+= "("
+                    itemDescription += "["+target.value+ "](https://simplifier.net/search?canonical="+target.value +")"
                 }
 
                 for (target in type.profile) {
-                    description += "\n - ["+target.value+ "](https://simplifier.net/search?canonical="+target.value +")"
+                    if (itemDescription.isEmpty()) description+= "("
+                    itemDescription += "["+target.value+ "](https://simplifier.net/search?canonical="+target.value +") "
                 }
+                if (itemDescription.isNotEmpty()) description+= itemDescription + ")"
 
             }
+            table += "\n|[type](https://www.hl7.org/fhir/datatypes.html)|"+description+"|"
         }
-
+        var description = table
         // Documentation section
+        /*
         if (element.hasShort()) {
+
             description += "\n\n " + element.short
         }
+         */
+
         if (element.hasDefinition()) {
             description += "\n\n " + element.definition.replace("\\n","\n")
         }
-        if (element.hasBinding()) {
-            description += "\n "
-            if (element.binding.hasStrength()) description += "`" + element.binding.strength.display + "` "
-            if (element.binding.hasValueSet()) description += "["+element.binding.valueSet + "](https://simplifier.net/search?canonical="+element.binding.valueSet +")"
-            if (element.binding.hasDescription()) {
-                var elementDescription = element.binding.description
-                elementDescription = elementDescription.replace("\\n","\n")
-                description += elementDescription + " "
-            }
 
-        }
         return description
     }
 
@@ -1978,6 +2000,49 @@ class OpenAPIParser(private val ctx: FhirContext?,
             resourceTag.description = "Resource type: $resourceType"
         }
         openApi.addTagsItem(resourceTag)
+    }
+
+    fun generateMarkdown(profile :String) : String {
+        var description = ""
+
+
+        if (profile != null) {
+            val structureDefinition = getProfile(profile)
+            if (structureDefinition is StructureDefinition) {
+
+                if (structureDefinition.hasDescription()) {
+                    description += "\n\n " + structureDefinition.description
+                }
+                if (structureDefinition.hasPurpose()) {
+                    description += "\n\n " + structureDefinition.purpose
+                }
+
+                for (element in structureDefinition.snapshot.element) {
+                    if ((element.hasDefinition() ||
+                                element.hasShort() ||
+                                element.hasType() ||
+                                element.hasBinding()) &&
+                        (element.hasMustSupport() || (element.hasMin() && element.min >0))
+                    ) {
+                        val paths = element.id.split(".")
+                        var title = ""
+
+
+                        if (paths.size>1){
+                            for (i in 2..paths.size) {
+                                if (title.isNotEmpty()) title += "."
+                                title += paths[i-1]
+                            }
+                            description += "\n\n ## "+title
+                        }
+
+                        description += getElementDescription(element)
+
+                    }
+                }
+            }
+        }
+        return description
     }
 
 }
