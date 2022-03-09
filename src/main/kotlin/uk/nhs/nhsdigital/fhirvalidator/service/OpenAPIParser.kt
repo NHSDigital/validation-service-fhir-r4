@@ -1916,7 +1916,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
 
         // Data type
         if (element.hasType()) {
-            var description = ""
+            var description = "\n\n"
             for (type in element.type) {
 
                 description += "["+type.code+"](https://www.hl7.org/fhir/datatypes.html#"+type.code+")"
