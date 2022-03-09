@@ -482,27 +482,14 @@ class OpenAPIParser(private val ctx: FhirContext?,
         return "https://simplifier.net/guide/nhsdigital/home"
     }
 
-    private fun getProfileUrl(idStr : String, packageName : String) : String {
 
-        if (packageName.startsWith("uk.nhsdigital.medicines.r4"))
-            return "https://simplifier.net/guide/NHSDigital-Medicines/Home/FHIRAssets/AllAssets/Profiles/" + idStr + ".guide.md"
-        if (packageName.startsWith("uk.nhsdigital.r4"))
-            return "https://simplifier.net/guide/NHSDigital/Home/FHIRAssets/AllAssets/Profiles/" + idStr + ".guide.md"
-        if (packageName.contains("ukcore"))
-            return "https://simplifier.net/guide/HL7FHIRUKCoreR4Release1/Home/ProfilesandExtensions/Profile" + idStr
-        return "https://simplifier.net/guide/nhsdigital/home"
-    }
     private fun getProfileName(profile : String) : String {
         val uri = URI(profile)
         val path: String = uri.path
         return path.substring(path.lastIndexOf('/') + 1)
     }
 
-    private fun getDocumentationPathNpm(profile : String, npmPackage : NpmPackage) : String {
-        val idStr = getProfileName(profile)
-        return getProfileUrl(idStr,npmPackage.name())
 
-    }
 
     private fun patchExampleSupplier(resourceType: String?): String {
 
@@ -1902,7 +1889,8 @@ class OpenAPIParser(private val ctx: FhirContext?,
         if (element.hasBinding()) {
             if (element.binding.hasValueSet())
             {
-                var description = "["+element.binding.valueSet + "](https://simplifier.net/search?canonical="+element.binding.valueSet +")"
+                val valueSet = supportChain.fetchValueSet(element.binding.valueSet)
+                var description = "["+(valueSet as ValueSet).name + "](" + getCanonicalUrl(element.binding.valueSet) +")"
                 if (element.binding.hasStrength()) description += " (" + element.binding.strength.display + ")"
                 if (element.binding.hasDescription()) {
                     var elementDescription = element.binding.description
@@ -1923,12 +1911,14 @@ class OpenAPIParser(private val ctx: FhirContext?,
                 var itemDescription=""
                 for (target in type.targetProfile) {
                     if (itemDescription.isEmpty()) description+= "("
-                    itemDescription += "["+target.value+ "](https://simplifier.net/search?canonical="+target.value +")"
+                    val profile = supportChain.fetchStructureDefinition(target.value)
+                    itemDescription += "["+(profile as StructureDefinition).name + "]("+ getCanonicalUrl(target.value) +")"
                 }
 
                 for (target in type.profile) {
                     if (itemDescription.isEmpty()) description+= "("
-                    itemDescription += "["+target.value+ "](https://simplifier.net/search?canonical="+target.value +") "
+                    val profile = supportChain.fetchStructureDefinition(target.value)
+                    itemDescription += "["+(profile as StructureDefinition).name+ "](" +getCanonicalUrl(target.value) +") "
                 }
                 if (itemDescription.isNotEmpty()) description+= itemDescription + ")"
 
@@ -1945,7 +1935,18 @@ class OpenAPIParser(private val ctx: FhirContext?,
          */
 
         if (element.hasDefinition()) {
+            description += "\n\n #### Definition"
             description += "\n\n " + element.definition.replace("\\n","\n")
+        }
+
+        if (element.hasRequirements()) {
+            description += "\n\n #### Requirements"
+            description += "\n\n " + element.requirements.replace("\\n","\n")
+        }
+
+        if (element.hasComment()) {
+            description += "\n\n #### Comment"
+            description += "\n\n " + element.comment.replace("\\n","\n")
         }
 
         return description
@@ -2003,7 +2004,9 @@ class OpenAPIParser(private val ctx: FhirContext?,
     }
 
     fun generateMarkdown(profile :String) : String {
-        var description = ""
+        var mainDescription = ""
+        var subDescription = ""
+        var index = ""
 
 
         if (profile != null) {
@@ -2011,10 +2014,10 @@ class OpenAPIParser(private val ctx: FhirContext?,
             if (structureDefinition is StructureDefinition) {
 
                 if (structureDefinition.hasDescription()) {
-                    description += "\n\n " + structureDefinition.description
+                    mainDescription += "\n\n " + structureDefinition.description
                 }
                 if (structureDefinition.hasPurpose()) {
-                    description += "\n\n " + structureDefinition.purpose
+                    mainDescription += "\n\n " + structureDefinition.purpose
                 }
 
                 for (element in structureDefinition.snapshot.element) {
@@ -2022,7 +2025,8 @@ class OpenAPIParser(private val ctx: FhirContext?,
                                 element.hasShort() ||
                                 element.hasType() ||
                                 element.hasBinding()) &&
-                        (element.hasMustSupport() || (element.hasMin() && element.min >0))
+                        (element.hasMustSupport() || (element.hasMin() && element.min >0)
+                                || element.id.split(".").size == 1)
                     ) {
                         val paths = element.id.split(".")
                         var title = ""
@@ -2033,16 +2037,34 @@ class OpenAPIParser(private val ctx: FhirContext?,
                                 if (title.isNotEmpty()) title += "."
                                 title += paths[i-1]
                             }
-                            description += "\n\n ## "+title
+                            index += "\n- <a href=\"#"+title+"\">"+title+"</a>"
+                            subDescription += "\n\n<a name=\""+title+"\"></a>\n ## "+title
+                            subDescription += getElementDescription(element)
+                        } else {
+                            mainDescription += getElementDescription(element)
                         }
 
-                        description += getElementDescription(element)
+
 
                     }
                 }
             }
         }
-        return description
+        return mainDescription + "\n\n" + index + subDescription
+    }
+
+
+
+    private fun getPackageCanonicalUrl(profile : String, npmPackage: NpmPackage?) : String {
+        val npm= npmPackage?.npm?.get("name").toString().replace("\"","") + "@" + npmPackage?.npm?.get("version").toString().replace("\"","")
+        return "https://simplifier.net/resolve?target=simplifier&fhirVersion=R4&scope="+ npm + "&canonical="+profile
+    }
+    private fun getDocumentationPathNpm(profile : String, npmPackage : NpmPackage) : String {
+        return getPackageCanonicalUrl(profile,npmPackage)
+    }
+    private fun getCanonicalUrl(resourceUrl : String ) :String {
+        val npm = npmPackages?.get(npmPackages.size-1) // get last package
+        return getPackageCanonicalUrl(resourceUrl, npm)
     }
 
 }
