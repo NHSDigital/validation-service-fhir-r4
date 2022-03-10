@@ -38,8 +38,19 @@ class ImplementationGuideParser(private val fhirContext: FhirContext) {
 
     fun getResourcesFromFolder(npmPackage: NpmPackage, folderName: String): List<IBaseResource> {
         val jsonParser = fhirContext.newJsonParser()
-        return npmPackage.list(folderName)
-            .map { npmPackage.load(folderName, it) }
-            .map(jsonParser::parseResource)
+        var cnt : Int = 0
+        val list = npmPackage.list(folderName).map {
+            //println(cnt.toString() + " " + it)
+            //cnt++
+            npmPackage.load(folderName, it)
+        }
+        cnt = 0
+        return list
+            .map {
+              //  println(cnt)
+              //  cnt++
+                jsonParser.parseResource(it)
+            }
     }
+
 }
