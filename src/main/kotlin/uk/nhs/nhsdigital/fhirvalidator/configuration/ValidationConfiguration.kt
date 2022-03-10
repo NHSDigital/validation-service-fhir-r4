@@ -1,15 +1,10 @@
 package uk.nhs.nhsdigital.fhirvalidator.configuration
 
-import uk.nhs.nhsdigital.fhirvalidator.validationSupport.UnsupportedCodeSystemWarningValidationSupport
 import ca.uhn.fhir.context.FhirContext
 import ca.uhn.fhir.context.support.DefaultProfileValidationSupport
 import ca.uhn.fhir.context.support.IValidationSupport
 import ca.uhn.fhir.context.support.ValidationSupportContext
 import ca.uhn.fhir.validation.FhirValidator
-import uk.nhs.nhsdigital.fhirvalidator.service.ImplementationGuideParser
-import uk.nhs.nhsdigital.fhirvalidator.shared.RemoteTerminologyServiceValidationSupport
-import uk.nhs.nhsdigital.fhirvalidator.util.AccessTokenInterceptor
-import uk.nhs.nhsdigital.fhirvalidator.validationSupport.SwitchedTerminologyServiceValidationSupport
 import mu.KLogging
 import org.hl7.fhir.common.hapi.validation.support.*
 import org.hl7.fhir.common.hapi.validation.validator.FhirInstanceValidator
@@ -19,10 +14,13 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager
-import java.io.InputStream
-import java.io.InputStreamReader
-import java.net.URL
-import java.nio.charset.Charset
+import uk.nhs.nhsdigital.fhirvalidator.service.ImplementationGuideParser
+import uk.nhs.nhsdigital.fhirvalidator.shared.RemoteTerminologyServiceValidationSupport
+import uk.nhs.nhsdigital.fhirvalidator.util.AccessTokenInterceptor
+import uk.nhs.nhsdigital.fhirvalidator.validationSupport.SwitchedTerminologyServiceValidationSupport
+import uk.nhs.nhsdigital.fhirvalidator.validationSupport.UnsupportedCodeSystemWarningValidationSupport
+import java.time.Duration
+import java.time.Instant
 import java.util.*
 import java.util.function.Predicate
 
@@ -121,15 +119,16 @@ class ValidationConfiguration(
                     logger.error("Failed to generate snapshot for $it", e)
                 }
             }
-        /*
-        val ukCoreObservation : StructureDefinition = supportChain.fetchStructureDefinition("https://fhir.hl7.org.uk/StructureDefinition/UKCore-Observation") as StructureDefinition
-        supportChain.generateSnapshot(context, ukCoreObservation, ukCoreObservation.url,"https://fhir.nhs.uk/R4", ukCoreObservation.name )
-        */
+
         structureDefinitions
             .filter { shouldGenerateSnapshot(it) }
             .forEach {
                 try {
+                    val start: Instant = Instant.now()
                     supportChain.generateSnapshot(context, it, it.url, "https://fhir.nhs.uk/R4", it.name)
+                    val end: Instant = Instant.now()
+                    val duration: Duration = Duration.between(start, end)
+                    logger.info(duration.toMillis().toString() + " ms $it")
                 } catch (e: Exception) {
                     logger.error("Failed to generate snapshot for $it", e)
                 }

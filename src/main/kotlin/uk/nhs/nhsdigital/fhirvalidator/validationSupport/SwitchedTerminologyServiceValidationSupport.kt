@@ -62,6 +62,16 @@ class SwitchedTerminologyServiceValidationSupport(
         return default.lookupCode(context, system, code)
     }
 
+    override fun expandValueSet(
+        theValidationSupportContext: ValidationSupportContext?,
+        theExpansionOptions: ValueSetExpansionOptions?,
+        theValueSetToExpand: IBaseResource
+    ): IValidationSupport.ValueSetExpansionOutcome? {
+        val outcome = default.expandValueSet(theValidationSupportContext, theExpansionOptions, theValueSetToExpand)
+        if (outcome != null) return outcome
+        return override.expandValueSet(theValidationSupportContext, theExpansionOptions, theValueSetToExpand)
+    }
+
     override fun invalidateCaches() {
         default.invalidateCaches()
         override.invalidateCaches()
