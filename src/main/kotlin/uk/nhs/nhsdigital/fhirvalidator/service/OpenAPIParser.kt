@@ -1866,7 +1866,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
 
     private fun getElementDescription(element : ElementDefinition) : String {
 
-        var table = "\n\n| | Description |\n|----|----|"
+        var table = "\n\n| | |\n|----|----|"
         // header body
         /*
         if (element.hasMustSupport() && element.mustSupport) {
@@ -1904,28 +1904,39 @@ class OpenAPIParser(private val ctx: FhirContext?,
 
         // Data type
         if (element.hasType()) {
-            var description = "\n\n"
+            var description = ""
             for (type in element.type) {
 
                 description += "["+type.code+"](https://www.hl7.org/fhir/datatypes.html#"+type.code+")"
                 var itemDescription=""
+                var first = true
                 for (target in type.targetProfile) {
                     if (itemDescription.isEmpty()) description+= "("
                     val profile = supportChain.fetchStructureDefinition(target.value)
+                    if (!first) {
+                        itemDescription += " "
+                    } else {
+                        first = false
+                    }
                     itemDescription += "["+(profile as StructureDefinition).name + "]("+ getCanonicalUrl(target.value) +")"
                 }
-
+                first = true
                 for (target in type.profile) {
                     if (itemDescription.isEmpty()) description+= "("
                     val profile = supportChain.fetchStructureDefinition(target.value)
-                    itemDescription += "["+(profile as StructureDefinition).name+ "](" +getCanonicalUrl(target.value) +") "
+                    if (!first) {
+                        itemDescription += " "
+                    } else {
+                        first = false
+                    }
+                    itemDescription += "["+(profile as StructureDefinition).name+ "](" +getCanonicalUrl(target.value) +")"
                 }
                 if (itemDescription.isNotEmpty()) description+= itemDescription + ")"
 
             }
             table += "\n|[type](https://www.hl7.org/fhir/datatypes.html)|"+description+"|"
         }
-        var description = table
+        var description = table + "\n\n<br/>"
         // Documentation section
         /*
         if (element.hasShort()) {
@@ -2021,13 +2032,10 @@ class OpenAPIParser(private val ctx: FhirContext?,
                 }
 
                 for (element in structureDefinition.snapshot.element) {
-                    if ((element.hasDefinition() ||
-                                element.hasShort() ||
-                                element.hasType() ||
-                                element.hasBinding()) &&
-                        (element.hasMustSupport() || (element.hasMin() && element.min >0)
-                                || element.id.split(".").size == 1)
-                    ) {
+                    val paths = element.path.split(".")
+                    if (
+                        element.hasMustSupport() || (element.hasSliceName() && !paths[paths.size-1].equals("extension"))
+                                || element.id.split(".").size == 1) {
                         val paths = element.id.split(".")
                         var title = ""
 
