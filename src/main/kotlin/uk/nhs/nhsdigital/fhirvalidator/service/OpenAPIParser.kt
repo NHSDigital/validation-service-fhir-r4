@@ -692,8 +692,8 @@ class OpenAPIParser(private val ctx: FhirContext?,
         theOperation.description = theOperationDefinition.description
         if (theOperationComponent.hasExtension("https://fhir.nhs.uk/StructureDefinition/Extension-NHSDigital-CapabilityStatement-Examples")) {
             //
-            val exampleOperation = getOperationExample(false,theOperationComponent)
-            if (exampleOperation != null && exampleOperation.get() !=null) {
+            val exampleOperation = getOperationResponeExample(theOperationComponent)
+            if (exampleOperation != null && exampleOperation.get() != null) {
                 theOperation.responses = ApiResponses()
                 val response200 = ApiResponse()
                 response200.description = "Success"
@@ -824,11 +824,15 @@ class OpenAPIParser(private val ctx: FhirContext?,
             var exampleRequestBodyString =
                 FHIR_CONTEXT_CANONICAL.newJsonParser().setPrettyPrint(true)
                     .encodeResourceToString(exampleRequestBody)
+            /*
             val operationExample = getOperationExample(true,theOperationComponent)
+
             if (operationExample != null && operationExample.get() !=null ) {
                 exampleRequestBodyString = FHIR_CONTEXT_CANONICAL.newJsonParser().setPrettyPrint(true)
                     .encodeResourceToString(operationExample.get())
             }
+
+             */
             theOperation.requestBody = RequestBody()
             theOperation.requestBody.content = Content()
 
@@ -837,10 +841,20 @@ class OpenAPIParser(private val ctx: FhirContext?,
                 if (theOperationComponent.hasExtension("https://fhir.nhs.uk/StructureDefinition/Extension-NHSDigital-CapabilityStatement-Examples")) {
                     //
                     val exampleOperation = getOperationExample(true,theOperationComponent)
-                    if (exampleOperation != null && exampleOperation.get() !=null) exampleRequestBodyString = ctx?.newJsonParser()?.encodeResourceToString(exampleOperation.get())
+                    if (exampleOperation != null && exampleOperation.size > 0) {
+                        mediaType.examples = mutableMapOf<String,Example>()
+                        for ( example in exampleOperation) {
+                            var exampleName = "Example"
+                            if (example.summary != null) exampleName = example.summary
+                            mediaType.examples[exampleName] = example
+                        }
+                    } else {
+                        mediaType.example = exampleRequestBodyString
+                    }
                     //theOperation.requestBody.content = provideContentFhirResource(theOpenApi,ctx,exampleOperation, null)
+                } else {
+                    mediaType.example = exampleRequestBodyString
                 }
-                mediaType.example = exampleRequestBodyString
             } else {
                 mediaType.examples = mutableMapOf<String,Example>()
             }
@@ -848,41 +862,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
             if (theOperationDefinition.url.equals("http://hl7.org/fhir/OperationDefinition/MessageHeader-process-message")
                 || theOperationDefinition.url.equals("https://fhir.nhs.uk/OperationDefinition/MessageHeader-process-message")) {
                     val bundleSchema = Schema<Any?>().type("object").title("Bundle-Message")
-                 /*
-                        .required(mutableListOf("resourceType","type","entry"))
-                bundleSchema.addProperties("resourceType", Schema<String>()
-                    .type("string")
-                    .example("Bundle")
-                    //.enum(mutableListOf<String>("message"))
-                    .description("The type of FHIR resource"))
-                    .addEnumItemObject("Bundle")
 
-                bundleSchema.addProperties("type", Schema<String>()
-                        .type("string")
-                        .example("message")
-                        //.enum(mutableListOf<String>("message"))
-                        .description("Indicates the purpose of this bundle - how it is intended to be used. Fixed value: message"))
-                        .addEnumItemObject("message")
-
-                val bundleEntry = Schema<Any>().type("object")
-                    .description("A container for a collection of resources")
-                    .addProperties("fullUrl", Schema<String>()
-                    .minProperties(1)
-                    .maxProperties(1)
-                    .type("string")
-                    .example("urn:uuid:3599c0e9-9292-413e-9270-9a1ef1ead99c")
-                    .description("URI for resource (Absolute URL server address or URI for UUID/OID)"))
-                    .required(mutableListOf("fullUrl","resource"))
-                    .addProperties("resource", Schema<Any>()
-                        .minProperties(1)
-                        .maxProperties(1)
-                        .type("object")
-                        .description("A resource in the bundle. First entry MUST be a FHIR MessageHeader"))
-                addSchemaFhirResource(openApi,bundleEntry,"Bundle-Entry")
-                val entry = ArraySchema().type("array").items(bundleEntry)
-
-                bundleSchema.addProperties("entry", entry)
-                */
                // addSchemaFhirResource(openApi,bundleSchema,"Bundle-Message")
                 addFhirResourceSchema(openApi,"Bundle","https://fhir.nhs.uk/StructureDefinition/NHSDigital-Bundle-FHIRMessage")
                 mediaType.schema = ObjectSchema().`$ref`(
@@ -900,11 +880,13 @@ class OpenAPIParser(private val ctx: FhirContext?,
 
         }
         if (theOperationDefinition.hasParameter()) {
-            var inDoc = "\n\n ## Parameters (In) \n\n |Name | Cardinality | Type | Documentation |\n |-------|-----------|-------------|------------|"
-            var outDoc = "\n\n ## Parameters (Out) \n\n |Name | Cardinality | Type | Documentation |\n |-------|-----------|-------------|------------|"
+            var inDoc = "\n\n ## Parameters (In) \n\n |Name | Cardinality | Type | Profile | Documentation |\n |-------|-----------|-------------|------------|------------|"
+            var outDoc = "\n\n ## Parameters (Out) \n\n |Name | Cardinality | Type | Profile | Documentation |\n |-------|-----------|-------------|------------|------------|"
             for (parameter in theOperationDefinition.parameter) {
                 var entry = "\n |"+parameter.name + "|" + parameter.min + ".." + parameter.max + "|"
                 if (parameter.hasType()) entry += parameter.type + "|"
+                else entry += "|"
+                if (parameter.hasTargetProfile()) entry += parameter.targetProfile + "|"
                 else entry += "|"
                 var documentation = ""
                 if (parameter.hasDocumentation()) documentation += escapeMarkdown(parameter.documentation,true)
@@ -1177,7 +1159,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
                                 if (profile == null) {
                                     profile = ""
                                 } else {
-                                    profile = "#/components/schemas/"+foci.code // getDocumentationPath(profile)
+                                    profile = getDocumentationPath(profile)
                                     addFhirResourceSchema(openApi, foci.code, foci.profile)
                                     addResoureTag(openApi, foci.code,foci.profile)
                                 }
@@ -1343,15 +1325,44 @@ class OpenAPIParser(private val ctx: FhirContext?,
         }
         return examples
     }
-    private fun getOperationExample(request: Boolean,interaction: CapabilityStatement.CapabilityStatementRestResourceOperationComponent) : Supplier<IBaseResource?>? {
+    private fun getOperationResponeExample(interaction: CapabilityStatement.CapabilityStatementRestResourceOperationComponent) : Supplier<IBaseResource?>? {
         if (interaction.hasExtension("https://fhir.nhs.uk/StructureDefinition/Extension-NHSDigital-CapabilityStatement-Examples")) {
             val apiExtension =
                 interaction.getExtensionByUrl("https://fhir.nhs.uk/StructureDefinition/Extension-NHSDigital-CapabilityStatement-Examples")
             for (extension in apiExtension.getExtensionsByUrl("example")) {
-                 return getExampleFromPackages(request, extension,false)
+                return getExampleFromPackages(false, extension,false)
             }
         }
         return null
+    }
+    private fun getOperationExample(request: Boolean,interaction: CapabilityStatement.CapabilityStatementRestResourceOperationComponent) : List<Example> {
+        val examples = mutableListOf<Example>()
+        if (interaction.hasExtension("https://fhir.nhs.uk/StructureDefinition/Extension-NHSDigital-CapabilityStatement-Examples")) {
+            val apiExtension =
+                interaction.getExtensionByUrl("https://fhir.nhs.uk/StructureDefinition/Extension-NHSDigital-CapabilityStatement-Examples")
+
+            for (exampleExt in apiExtension.getExtensionsByUrl("example")) {
+
+                val supplierExample = getExampleFromPackages(request, exampleExt, false)
+                if (supplierExample != null) {
+                    if (supplierExample != null && supplierExample.get() != null) {
+                        val exampleOAS = Example()
+                        examples.add(exampleOAS)
+
+                        var example = supplierExample.get()
+                        if (exampleExt.hasExtension("summary")) {
+                            exampleOAS.summary = (exampleExt.getExtensionString("summary") as String)
+                        }
+                        if (exampleExt.hasExtension("description")) {
+                            exampleOAS.description =
+                                escapeMarkdown((exampleExt.getExtensionString("description") as String), true)
+                        }
+                        exampleOAS.value = ctx?.newJsonParser()?.encodeResourceToString(example)
+                    }
+                }
+            }
+        }
+        return examples
     }
 
     private fun genericExampleSupplier(
@@ -1960,7 +1971,31 @@ class OpenAPIParser(private val ctx: FhirContext?,
             description += "\n\n " + element.comment.replace("\\n","\n")
         }
 
+        if (element.hasConstraint()) {
+            var displayConstraints = false
+            for (constraint in element.constraint) {
+                if (doDisplay(constraint.key)) displayConstraints = true
+            }
+
+            if (displayConstraints) {
+                description += "\n\n #### Constraints \n"
+                for (constraint in element.constraint) {
+                    if (doDisplay(constraint.key)) description += "\n- **" + constraint.key + "** (*" + constraint.severity + "*) " + constraint.human.replace(
+                        "\\n",
+                        "\n"
+                    )
+                }
+            }
+        }
+
         return description
+    }
+
+    private fun doDisplay(key : String) : Boolean {
+        if (key.startsWith("ext")) return false
+        if (key.startsWith("ele")) return false
+        if (key.startsWith("dom")) return false
+        return true
     }
 
     private fun addResoureTag(openApi: OpenAPI,resourceType: String?, profile: String?) {
