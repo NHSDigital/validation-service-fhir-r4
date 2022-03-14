@@ -1905,13 +1905,37 @@ class OpenAPIParser(private val ctx: FhirContext?,
                 if (element.binding.hasStrength()) description += " (" + element.binding.strength.display + ")"
                 if (element.binding.hasDescription()) {
                     var elementDescription = element.binding.description
-                    elementDescription = elementDescription.replace("\\n","\n")
+                    elementDescription = " <br/>" + elementDescription.replace("\\n","\n")
                     description += elementDescription + " "
                 }
                 table += "\n|[Terminology Binding](https://www.hl7.org/fhir/terminologies.html)|"+description+"|"
             }
         }
 
+        if (element.hasSliceName()) {
+            table += "\n|[Slice Name](https://www.hl7.org/fhir/profiling.html#slicing)|"+element.sliceName+"|"
+        }
+        if (element.hasSlicing()) {
+            var description = ""
+            if (element.slicing.hasRules()) {
+                description += " *"+element.slicing.rules.name + "*"
+            }
+            if (element.slicing.hasDiscriminator()) {
+                for (discrimninator in element.slicing.discriminator) {
+                    description += " discriminator - "
+                    if (discrimninator.hasType()) {
+                        description += " *"+discrimninator.type.name + "*"
+                    }
+                    if (discrimninator.hasPath()) {
+                        description += " *"+discrimninator.path + "*"
+                    }
+                }
+            }
+            if (element.slicing.hasDescription()) {
+                description += "<br/> "+element.slicing.description
+            }
+            table += "\n|[Slicing](https://www.hl7.org/fhir/profiling.html#slicing)|"+description+"|"
+        }
 
         // Data type
         if (element.hasType()) {
@@ -1930,6 +1954,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
                         first = false
                     }
                     itemDescription += "["+(profile as StructureDefinition).name + "]("+ getCanonicalUrl(target.value) +")"
+
                 }
                 first = true
                 for (target in type.profile) {
@@ -1942,8 +1967,13 @@ class OpenAPIParser(private val ctx: FhirContext?,
                     }
                     itemDescription += "["+(profile as StructureDefinition).name+ "](" +getCanonicalUrl(target.value) +")"
                 }
-                if (itemDescription.isNotEmpty()) description+= itemDescription + ")"
 
+                if (itemDescription.isNotEmpty()) description+= itemDescription + ")"
+                if (type.hasAggregation()) {
+                    for (aggregation in type.aggregation) {
+                        description += "<br/> Aggregation - [" + aggregation.code+"](http://www.hl7.org/fhir/valueset-resource-aggregation-mode.html)"
+                    }
+                }
             }
             table += "\n|[type](https://www.hl7.org/fhir/datatypes.html)|"+description+"|"
         }
@@ -2069,7 +2099,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
                 for (element in structureDefinition.snapshot.element) {
                     val paths = element.path.split(".")
                     if (
-                        element.hasMustSupport() || (element.hasSliceName() && !paths[paths.size-1].equals("extension"))
+                        element.hasMustSupport() || element.hasFixed() || (element.hasSliceName() && !paths[paths.size-1].equals("extension"))
                                 || element.id.split(".").size == 1) {
                         val paths = element.id.split(".")
                         var title = ""
@@ -2100,7 +2130,7 @@ class OpenAPIParser(private val ctx: FhirContext?,
 
     private fun getPackageCanonicalUrl(profile : String, npmPackage: NpmPackage?) : String {
         val npm= npmPackage?.npm?.get("name").toString().replace("\"","") + "@" + npmPackage?.npm?.get("version").toString().replace("\"","")
-        return "https://simplifier.net/resolve?target=simplifier&fhirVersion=R4&scope="+ npm + "&canonical="+profile
+        return "https://simplifier.net/resolve?target=simplifier&fhirVersion=R4&scope="+ npm + "&canonical="+ profile.replace("|","&#124;")
     }
     private fun getDocumentationPathNpm(profile : String, npmPackage : NpmPackage) : String {
         return getPackageCanonicalUrl(profile,npmPackage)
