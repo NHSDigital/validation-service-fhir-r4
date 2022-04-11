@@ -107,8 +107,11 @@ private val verifyOAS: VerifyOAS
             return emptyList()
         }
 
-        if (inputResource is Bundle && inputResource.type == Bundle.BundleType.SEARCHSET) {
-            val bundleResources = inputResource.entry.map { it.resource }
+        if (inputResource is Bundle
+            && inputResource.type == Bundle.BundleType.SEARCHSET) {
+            val bundleEntries = inputResource.entry
+                .map { it }
+            val bundleResources = bundleEntries.map { it.resource }
             if (bundleResources.all { it.resourceType == ResourceType.Bundle }) {
                 return bundleResources
             }
