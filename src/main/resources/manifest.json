@@ -5,10 +5,10 @@
   },
   {
       "packageName": "uk.nhsdigital.r4.test",
-      "version": "2.5.18-prerelease"
+      "version": "2.5.27-prerelease"
   },
   {
       "packageName": "uk.nhsdigital.medicines.r4.test",
-      "version": "2.5.6-prerelease"
+      "version": "2.5.7-prerelease"
   }
 ]
