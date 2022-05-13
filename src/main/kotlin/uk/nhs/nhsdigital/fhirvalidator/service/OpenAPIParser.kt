@@ -33,7 +33,7 @@ import java.util.function.Supplier
 import java.util.stream.Collectors
 
 @Service
-class OpenAPIParser(private val ctx: FhirContext?,
+class OpenAPIParser(@Qualifier("R4") private val ctx: FhirContext?,
                     private val npmPackages: List<NpmPackage>?,
                     @Qualifier("SupportChain") private val supportChain: IValidationSupport,
                     private val searchParameterSupport : SearchParameterSupport) {

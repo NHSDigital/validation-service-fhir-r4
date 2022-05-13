@@ -12,9 +12,9 @@ import java.util.*
 import javax.servlet.annotation.WebServlet
 
 @WebServlet("/FHIR/R4/*", loadOnStartup = 1)
-class FHIRRestfulServer(
-    fhirContext: FhirContext,
-    private val validateProvider: ValidateProvider,
+class FHIRR4RestfulServer(
+    @Qualifier("R4") fhirContext: FhirContext,
+    private val validateR4Provider: ValidateR4Provider,
     private val openAPIProvider: OpenAPIProvider,
     private val markdownProvider: MarkdownProvider,
     private val capabilityStatementProvider: CapabilityStatementProvider,
@@ -36,7 +36,7 @@ class FHIRRestfulServer(
 
         TimeZone.setDefault(TimeZone.getTimeZone("UTC"))
 
-        registerProvider(validateProvider)
+        registerProvider(validateR4Provider)
         registerProvider(openAPIProvider)
         registerProvider(markdownProvider)
         registerProvider(capabilityStatementProvider)
@@ -48,7 +48,7 @@ class FHIRRestfulServer(
         registerProvider(conceptMapProvider)
         registerProvider(namingSystemProvider)
 
-        registerInterceptor(CapabilityStatementInterceptor(fhirContext,npmPackages, supportChain))
+        registerInterceptor(CapabilityStatementInterceptor(this.fhirContext,npmPackages, supportChain))
 
         isDefaultPrettyPrint = true
         defaultResponseEncoding = EncodingEnum.JSON

@@ -14,13 +14,14 @@ import org.hl7.fhir.instance.model.api.IBaseResource
 import org.hl7.fhir.r4.model.Bundle
 import org.hl7.fhir.r4.model.OperationOutcome
 import org.hl7.fhir.r4.model.ResourceType
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.web.bind.annotation.*
 import java.util.*
 
 
 @RestController
 class VerifyController(
-    private val fhirContext: FhirContext,
+    @Qualifier("R4") private val fhirContext: FhirContext,
     private val verifyOAS:VerifyOAS
 
 ) {

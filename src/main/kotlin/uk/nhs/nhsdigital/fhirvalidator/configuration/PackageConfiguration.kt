@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import mu.KLogging
 import org.hl7.fhir.r4.model.Bundle
 import org.hl7.fhir.utilities.npm.NpmPackage
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.io.ClassPathResource
@@ -36,7 +37,7 @@ class PackageConfiguration(val objectMapper: ObjectMapper) {
     }
 
     @Bean
-    fun getCoreSearchParamters(ctx: FhirContext) : Bundle? {
+    fun getCoreSearchParamters(@Qualifier("R4") ctx: FhirContext) : Bundle? {
 
         // TODO could maybe get this from packages
         val u = URL("http://hl7.org/fhir/R4/search-parameters.json")

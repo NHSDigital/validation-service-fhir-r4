@@ -6,6 +6,7 @@ import io.swagger.v3.core.util.Json
 import org.apache.commons.io.IOUtils
 import org.hl7.fhir.instance.model.api.IBaseResource
 import org.hl7.fhir.r4.model.CapabilityStatement
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
 import uk.nhs.nhsdigital.fhirvalidator.service.OpenAPIParser
 import javax.servlet.http.HttpServletRequest
@@ -13,7 +14,7 @@ import javax.servlet.http.HttpServletResponse
 
 
 @Component
-class OpenAPIProvider(private val fhirContext: FhirContext,
+class OpenAPIProvider(@Qualifier("R4") private val fhirContext: FhirContext,
                       private val oasParser : OpenAPIParser
 ) {
     @Operation(name = "openapi", idempotent = true,manualResponse=true, manualRequest=true)
