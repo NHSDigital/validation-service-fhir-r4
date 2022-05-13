@@ -15,7 +15,7 @@ import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 
 @Component
-class MarkdownProvider (private val fhirContext: FhirContext,
+class MarkdownProvider (
                         private val oasParser : OpenAPIParser
 ) {
     companion object : KLogging()

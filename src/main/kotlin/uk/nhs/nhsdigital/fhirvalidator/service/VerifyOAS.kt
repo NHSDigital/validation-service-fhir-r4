@@ -20,7 +20,7 @@ import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 
 @Service
-class VerifyOAS(private val ctx: FhirContext?,
+class VerifyOAS(@Qualifier("R4") private val ctx: FhirContext?,
                 @Qualifier("SupportChain") private val supportChain: IValidationSupport,
                 private val searchParameterSupport : SearchParameterSupport,
                 private val fhirValidator: FhirValidator,

@@ -6,12 +6,13 @@ import ca.uhn.fhir.rest.annotation.Search
 import ca.uhn.fhir.rest.param.TokenParam
 import ca.uhn.fhir.rest.server.IResourceProvider
 import org.hl7.fhir.r4.model.SearchParameter
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
 import uk.nhs.nhsdigital.fhirvalidator.service.ImplementationGuideParser
 import uk.nhs.nhsdigital.fhirvalidator.service.SearchParameterSupport
 
 @Component
-class SearchParameterProvider (private val fhirContext: FhirContext, private val searchParameterSupport : SearchParameterSupport) : IResourceProvider {
+class SearchParameterProvider (@Qualifier("R4") private val fhirContext: FhirContext, private val searchParameterSupport : SearchParameterSupport) : IResourceProvider {
     /**
      * The getResourceType method comes from IResourceProvider, and must
      * be overridden to indicate what type of resource this provider

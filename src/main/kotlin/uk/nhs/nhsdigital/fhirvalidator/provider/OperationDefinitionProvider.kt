@@ -8,11 +8,12 @@ import ca.uhn.fhir.rest.server.IResourceProvider
 import org.hl7.fhir.r4.model.Bundle
 import org.hl7.fhir.r4.model.OperationDefinition
 import org.hl7.fhir.utilities.npm.NpmPackage
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
 import uk.nhs.nhsdigital.fhirvalidator.service.ImplementationGuideParser
 
 @Component
-class OperationDefinitionProvider (private val fhirContext: FhirContext, private val npmPackages: List<NpmPackage>) : IResourceProvider {
+class OperationDefinitionProvider (@Qualifier("R4") private val fhirContext: FhirContext, private val npmPackages: List<NpmPackage>) : IResourceProvider {
     /**
      * The getResourceType method comes from IResourceProvider, and must
      * be overridden to indicate what type of resource this provider

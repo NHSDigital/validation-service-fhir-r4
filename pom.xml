@@ -90,7 +90,7 @@
         </dependency>
         <dependency>
             <groupId>ca.uhn.hapi.fhir</groupId>
-            <artifactId>hapi-fhir-structures-dstu2</artifactId>
+            <artifactId>hapi-fhir-structures-dstu3</artifactId>
             <version>${fhir.version}</version>
         </dependency>
         <dependency>
@@ -101,6 +101,11 @@
         <dependency>
             <groupId>ca.uhn.hapi.fhir</groupId>
             <artifactId>hapi-fhir-validation-resources-r4</artifactId>
+            <version>${fhir.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>ca.uhn.hapi.fhir</groupId>
+            <artifactId>hapi-fhir-validation-resources-dstu3</artifactId>
             <version>${fhir.version}</version>
         </dependency>
         <dependency>

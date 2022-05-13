@@ -10,6 +10,7 @@ import org.hl7.fhir.common.hapi.validation.support.*
 import org.hl7.fhir.common.hapi.validation.validator.FhirInstanceValidator
 import org.hl7.fhir.r4.model.StructureDefinition
 import org.hl7.fhir.utilities.npm.NpmPackage
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -33,7 +34,7 @@ class ValidationConfiguration(
     companion object : KLogging()
 
     @Bean
-    fun validator(fhirContext: FhirContext, instanceValidator: FhirInstanceValidator): FhirValidator {
+    fun validator(@Qualifier("R4") fhirContext: FhirContext, instanceValidator: FhirInstanceValidator): FhirValidator {
         return fhirContext.newValidator().registerValidatorModule(instanceValidator)
     }
 
@@ -45,7 +46,7 @@ class ValidationConfiguration(
 
     @Bean("SupportChain")
     fun validationSupportChain(
-        fhirContext: FhirContext,
+        @Qualifier("R4") fhirContext: FhirContext,
         switchedTerminologyServiceValidationSupport: SwitchedTerminologyServiceValidationSupport,
         npmPackages: List<NpmPackage>
     ): ValidationSupportChain {
@@ -68,7 +69,7 @@ class ValidationConfiguration(
 
     @Bean
     fun switchedTerminologyServiceValidationSupport(
-        fhirContext: FhirContext,
+        @Qualifier("R4") fhirContext: FhirContext,
         optionalRemoteTerminologySupport: Optional<RemoteTerminologyServiceValidationSupport>
     ): SwitchedTerminologyServiceValidationSupport {
         val snomedValidationSupport = if (optionalRemoteTerminologySupport.isPresent) {
@@ -88,7 +89,7 @@ class ValidationConfiguration(
     @Bean
     @ConditionalOnProperty("terminology.url")
     fun remoteTerminologyServiceValidationSupport(
-        fhirContext: FhirContext,
+        @Qualifier("R4") fhirContext: FhirContext,
         optionalAuthorizedClientManager: Optional<OAuth2AuthorizedClientManager>
     ): RemoteTerminologyServiceValidationSupport {
         logger.info("Using remote terminology server at ${terminologyValidationProperties.url}")
