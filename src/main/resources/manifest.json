@@ -1,14 +1,14 @@
 [
   {
-      "packageName": "fhir.r4.ukcore.stu1",
-      "version": "0.5.0"
+    "packageName": "fhir.r4.ukcore.stu1",
+    "version": "0.5.1"
   },
   {
-      "packageName": "uk.nhsdigital.r4.test",
-      "version": "2.5.27-prerelease"
+    "packageName": "uk.nhsdigital.r4.test",
+    "version": "2.6.4-prerelease"
   },
   {
-      "packageName": "uk.nhsdigital.medicines.r4.test",
-      "version": "2.5.7-prerelease"
+    "packageName": "uk.nhsdigital.medicines.r4.test",
+    "version": "2.6.1-prerelease"
   }
 ]
