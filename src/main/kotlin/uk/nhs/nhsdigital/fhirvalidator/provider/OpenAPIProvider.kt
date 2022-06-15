@@ -2,6 +2,7 @@ package uk.nhs.nhsdigital.fhirvalidator.provider
 
 import ca.uhn.fhir.context.FhirContext
 import ca.uhn.fhir.rest.annotation.Operation
+import io.swagger.util.Yaml
 import io.swagger.v3.core.util.Json
 import org.apache.commons.io.IOUtils
 import org.hl7.fhir.instance.model.api.IBaseResource
@@ -35,7 +36,10 @@ class OpenAPIProvider(@Qualifier("R4") private val fhirContext: FhirContext,
         if (inputResource is CapabilityStatement) {
             val cs : CapabilityStatement = inputResource
 
-            servletResponse.writer.write(Json.pretty(oasParser.generateOpenApi(cs)))
+            val os = oasParser.generateOpenApi(cs);
+            val yaml = Yaml.pretty().writeValueAsString(os);
+            System.out.println(yaml);
+            servletResponse.writer.write(Json.pretty(os))
             servletResponse.writer.flush()
             return
         }
