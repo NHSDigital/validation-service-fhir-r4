@@ -1456,6 +1456,8 @@ class OpenAPIParser(@Qualifier("R4") private val ctx: FhirContext?,
 
     private fun addResourceAPIMParameter(theOperation: Operation) {
 
+        return;
+        /*
         var parameter = Parameter()
 
         if (cs.restFirstRep.hasSecurity()) {
@@ -1500,6 +1502,8 @@ class OpenAPIParser(@Qualifier("R4") private val ctx: FhirContext?,
         parameter.schema = Schema<Any?>().type("string").minimum(BigDecimal(1))
         parameter.style = Parameter.StyleEnum.SIMPLE
         theOperation.addParametersItem(parameter)
+
+         */
     }
 /*
     protected fun getIndexTemplate(): ClassLoaderTemplateResource? {
