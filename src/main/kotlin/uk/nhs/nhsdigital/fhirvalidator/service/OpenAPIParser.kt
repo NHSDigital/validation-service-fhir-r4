@@ -1718,7 +1718,8 @@ class OpenAPIParser(@Qualifier("R4") private val ctx: FhirContext?,
 
             var schemaList = mutableMapOf<String, Schema<Any>>()
 
-            schema.description = "HL7 FHIR Schema [$resourceType](https://hl7.org/fhir/R4/fhir.schema.json#/definitions/$resourceType)."+ ". HL7 FHIR Documentation [$resourceType](\"https://www.hl7.org/fhir/$resourceType.html\")"
+            schema.description =
+                "HL7 FHIR Schema [$resourceType](https://hl7.org/fhir/R4/fhir.schema.json#/definitions/$resourceType)." + ". HL7 FHIR Documentation [$resourceType](\"https://www.hl7.org/fhir/$resourceType.html\")"
 
 
             // This doesn't appear to be used. Consider removing
@@ -1728,7 +1729,7 @@ class OpenAPIParser(@Qualifier("R4") private val ctx: FhirContext?,
             schema.externalDocs.url = "https://www.hl7.org/fhir/$resourceType.html"
 
             if (resourceType != null) {
-                schemaList.put(resourceType,schema)
+                schemaList.put(resourceType, schema)
             }
             if (profile != null) {
                 val structureDefinition = getProfile(profile)
@@ -1746,14 +1747,14 @@ class OpenAPIParser(@Qualifier("R4") private val ctx: FhirContext?,
                                     element.hasShort() ||
                                     element.hasType() ||
                                     element.hasBinding()) &&
-                            (element.hasMustSupport() || (element.hasMin() && element.min >0))
+                            (element.hasMustSupport() || (element.hasMin() && element.min > 0))
                         ) {
                             val paths = element.id.split(".")
-                            var title = paths[paths.size-1]
-                           /* if (element.hasSliceName()) {
+                            var title = paths[paths.size - 1]
+                            /* if (element.hasSliceName()) {
                                 title += " (" + element.sliceName + ")"
                             }*/
-                            var elementSchema : Schema<Any>? = null
+                            var elementSchema: Schema<Any>? = null
 
                             if (element.hasType()) {
                                 if (element.typeFirstRep.code[0].isUpperCase()) {
@@ -1762,8 +1763,7 @@ class OpenAPIParser(@Qualifier("R4") private val ctx: FhirContext?,
                                     elementSchema = Schema<String>()
                                         .type("string")
                                 }
-                            }
-                            else {
+                            } else {
                                 elementSchema = Schema<String>()
                                     .type("string")
                             }
@@ -1796,7 +1796,12 @@ class OpenAPIParser(@Qualifier("R4") private val ctx: FhirContext?,
                     }
                 }
             }
-            openApi.components.addSchemas(resourceType, schema)
+            if (resourceType == null) {
+                System.out.println("resourceTyoe null")
+            } else {
+                openApi.components.addSchemas(resourceType, schema)
+
+            }
         }
     }
     private fun addSchemaProperties(searchParam: CapabilityStatement.CapabilityStatementRestResourceSearchParamComponent, parametersItem : Parameter) {
