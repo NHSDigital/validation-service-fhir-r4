@@ -38,7 +38,7 @@ class OpenAPIProvider(@Qualifier("R4") private val fhirContext: FhirContext,
 
             val os = oasParser.generateOpenApi(cs);
             val yaml = Yaml.pretty().writeValueAsString(os);
-            System.out.println(yaml);
+           // System.out.println(yaml);
             servletResponse.writer.write(Json.pretty(os))
             servletResponse.writer.flush()
             return
