@@ -248,7 +248,13 @@ public class PrePopulatedValidationSupport extends BaseStaticResourceValidationS
 
     @Override
     public boolean isCodeSystemSupported(ValidationSupportContext theValidationSupportContext, String theSystem) {
-        return myCodeSystems.containsKey(theSystem);
+        IBaseResource resource = myCodeSystems.get(theSystem);
+        if (resource != null && resource instanceof CodeSystem) {
+            CodeSystem codeSystem = (CodeSystem) resource;
+            if (codeSystem.hasContent() &&codeSystem.getContent().equals(CodeSystem.CodeSystemContentMode.NOTPRESENT))
+                return false;
+        }
+         return myCodeSystems.containsKey(theSystem);
     }
 
     @Override
