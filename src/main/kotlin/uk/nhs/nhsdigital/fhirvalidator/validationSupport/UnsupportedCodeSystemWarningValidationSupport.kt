@@ -22,8 +22,8 @@ class UnsupportedCodeSystemWarningValidationSupport(
     }
 
     override fun validateCode(
-        context: ValidationSupportContext?,
-        options: ConceptValidationOptions?,
+        context: ValidationSupportContext,
+        options: ConceptValidationOptions,
         system: String?,
         code: String?,
         display: String?,
