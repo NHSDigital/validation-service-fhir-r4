@@ -7,23 +7,23 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.web.client.RestTemplate
 
 @Configuration
-class ApplicationConfiguration {
+open class ApplicationConfiguration {
     @Bean("R4")
-    fun fhirR4Context(): FhirContext {
+    open fun fhirR4Context(): FhirContext {
         val fhirContext = FhirContext.forR4()
         fhirContext.setParserErrorHandler(StrictErrorHandler())
         return fhirContext
     }
 
     @Bean("STU3")
-    fun fhirSTU3Context(): FhirContext {
+    open fun fhirSTU3Context(): FhirContext {
         val fhirContext = FhirContext.forDstu3()
         fhirContext.setParserErrorHandler(StrictErrorHandler())
         return fhirContext
     }
 
     @Bean
-    fun restTemplate(): RestTemplate {
+    open fun restTemplate(): RestTemplate {
         return RestTemplate()
     }
 }
