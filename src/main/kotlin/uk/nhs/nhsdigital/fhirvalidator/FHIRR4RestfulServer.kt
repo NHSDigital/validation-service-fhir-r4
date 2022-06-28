@@ -25,6 +25,7 @@ class FHIRR4RestfulServer(
     private val structureMapProvider: StructureMapProvider,
     private val conceptMapProvider: ConceptMapProvider,
     private val namingSystemProvider: NamingSystemProvider,
+    private val valueSetProvider: ValueSetProvider,
 
     private val npmPackages: List<NpmPackage>,
     @Qualifier("SupportChain") private val supportChain: IValidationSupport
@@ -47,6 +48,7 @@ class FHIRR4RestfulServer(
         registerProvider(structureMapProvider)
         registerProvider(conceptMapProvider)
         registerProvider(namingSystemProvider)
+        registerProvider(valueSetProvider)
 
         registerInterceptor(CapabilityStatementInterceptor(this.fhirContext,npmPackages, supportChain))
 

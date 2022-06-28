@@ -35,6 +35,7 @@ class StructureDefinitionProvider (@Qualifier("R4") private val fhirContext: Fhi
                     StructureDefinition::class.java
                 )) {
                     if (resource.url.equals(url.value)) {
+                        resource.setId(url.value);
                         list.add(resource)
                     }
                 }
