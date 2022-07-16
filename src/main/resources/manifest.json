@@ -8,7 +8,7 @@
     "version": "2.6.16-prerelease"
   },
   {
-    "packageName": "uk.nhsdigital.medicines.r4",
-    "version": "0.0.0-prerelease"
+    "packageName": "uk.nhsdigital.medicines.r4.test",
+    "version": "2.6.4-prerelease"
   }
 ]
