@@ -20,13 +20,13 @@ import kotlin.streams.toList
 
 
 @Configuration
-class PackageConfiguration(val objectMapper: ObjectMapper) {
+open class PackageConfiguration(val objectMapper: ObjectMapper) {
     companion object : KLogging()
 
 
 
     @Bean
-    fun getPackages(): List<NpmPackage> {
+    open fun getPackages(): List<NpmPackage> {
         val inputStream = ClassPathResource("manifest.json").inputStream
         val packages = objectMapper.readValue(inputStream, Array<SimplifierPackage>::class.java)
         return Arrays.stream(packages)
@@ -37,7 +37,7 @@ class PackageConfiguration(val objectMapper: ObjectMapper) {
     }
 
     @Bean
-    fun getCoreSearchParamters(@Qualifier("R4") ctx: FhirContext) : Bundle? {
+    open fun getCoreSearchParamters(@Qualifier("R4") ctx: FhirContext) : Bundle? {
 
         // TODO could maybe get this from packages
         val u = URL("http://hl7.org/fhir/R4/search-parameters.json")

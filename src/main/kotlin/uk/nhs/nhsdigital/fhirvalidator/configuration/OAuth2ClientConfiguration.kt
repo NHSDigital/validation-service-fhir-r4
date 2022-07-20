@@ -14,9 +14,9 @@ const val REGISTRATION_ID = "terminology"
 
 @Configuration
 @ConditionalOnProperty("terminology.authorization.tokenUrl")
-class OAuth2ClientConfiguration(private val terminologyValidationProperties: TerminologyValidationProperties) {
+open class OAuth2ClientConfiguration(private val terminologyValidationProperties: TerminologyValidationProperties) {
     @Bean
-    fun clientRegistration(): ClientRegistration {
+    open fun clientRegistration(): ClientRegistration {
         val authorization = terminologyValidationProperties.authorization ?: throw Error("Missing authorization properties")
         return ClientRegistration.withRegistrationId(REGISTRATION_ID)
             .clientId(authorization.clientId)
@@ -28,13 +28,13 @@ class OAuth2ClientConfiguration(private val terminologyValidationProperties: Ter
     }
 
     @Bean
-    fun clientRegistrationRepository(clientRegistration: ClientRegistration): ClientRegistrationRepository {
+    open fun clientRegistrationRepository(clientRegistration: ClientRegistration): ClientRegistrationRepository {
         return InMemoryClientRegistrationRepository(clientRegistration)
     }
 
 
     @Bean
-    fun authorizedClientManager(
+    open fun authorizedClientManager(
         clientRegistrationRepository: ClientRegistrationRepository,
         authorizedClientService: OAuth2AuthorizedClientService
     ): OAuth2AuthorizedClientManager {

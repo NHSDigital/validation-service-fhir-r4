@@ -9,7 +9,7 @@ import org.springframework.boot.web.servlet.ServletComponentScan
 @SpringBootApplication
 @ServletComponentScan
 @EnableConfigurationProperties(TerminologyValidationProperties::class)
-class FhirValidatorApplication
+open class FhirValidatorApplication
 
 fun main(args: Array<String>) {
     runApplication<FhirValidatorApplication>(*args)

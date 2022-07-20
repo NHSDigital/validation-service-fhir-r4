@@ -1,8 +1,12 @@
 package uk.nhs.nhsdigital.fhirvalidator.validationSupport
 
 import ca.uhn.fhir.context.FhirContext
-import ca.uhn.fhir.context.support.*
+import ca.uhn.fhir.context.support.ConceptValidationOptions
+import ca.uhn.fhir.context.support.IValidationSupport
+import ca.uhn.fhir.context.support.ValidationSupportContext
+import ca.uhn.fhir.context.support.ValueSetExpansionOptions
 import org.hl7.fhir.instance.model.api.IBaseResource
+import uk.nhs.nhsdigital.fhirvalidator.controller.VerifyController
 import java.util.function.Predicate
 
 class SwitchedTerminologyServiceValidationSupport(
@@ -67,8 +71,9 @@ class SwitchedTerminologyServiceValidationSupport(
         theExpansionOptions: ValueSetExpansionOptions?,
         theValueSetToExpand: IBaseResource
     ): IValidationSupport.ValueSetExpansionOutcome? {
+        VerifyController.logger.info("Switched validation expansion called")
         val outcome = default.expandValueSet(theValidationSupportContext, theExpansionOptions, theValueSetToExpand)
-        if (outcome != null) return outcome
+        if (outcome != null && outcome.error == null) return outcome
         return override.expandValueSet(theValidationSupportContext, theExpansionOptions, theValueSetToExpand)
     }
 

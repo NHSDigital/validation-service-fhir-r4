@@ -27,25 +27,25 @@ import java.util.function.Predicate
 
 
 @Configuration
-class ValidationConfiguration(
+open class ValidationConfiguration(
     private val implementationGuideParser: ImplementationGuideParser,
     private val terminologyValidationProperties: TerminologyValidationProperties
 ) {
     companion object : KLogging()
 
     @Bean
-    fun validator(@Qualifier("R4") fhirContext: FhirContext, instanceValidator: FhirInstanceValidator): FhirValidator {
+    open fun validator(@Qualifier("R4") fhirContext: FhirContext, instanceValidator: FhirInstanceValidator): FhirValidator {
         return fhirContext.newValidator().registerValidatorModule(instanceValidator)
     }
 
     @Bean
-    fun instanceValidator(supportChain: ValidationSupportChain): FhirInstanceValidator {
+    open fun instanceValidator(supportChain: ValidationSupportChain): FhirInstanceValidator {
         return FhirInstanceValidator(CachingValidationSupport(supportChain))
     }
 
 
     @Bean("SupportChain")
-    fun validationSupportChain(
+    open fun validationSupportChain(
         @Qualifier("R4") fhirContext: FhirContext,
         switchedTerminologyServiceValidationSupport: SwitchedTerminologyServiceValidationSupport,
         npmPackages: List<NpmPackage>
@@ -68,7 +68,7 @@ class ValidationConfiguration(
     }
 
     @Bean
-    fun switchedTerminologyServiceValidationSupport(
+    open fun switchedTerminologyServiceValidationSupport(
         @Qualifier("R4") fhirContext: FhirContext,
         optionalRemoteTerminologySupport: Optional<RemoteTerminologyServiceValidationSupport>
     ): SwitchedTerminologyServiceValidationSupport {
@@ -88,7 +88,7 @@ class ValidationConfiguration(
 
     @Bean
     @ConditionalOnProperty("terminology.url")
-    fun remoteTerminologyServiceValidationSupport(
+    open fun remoteTerminologyServiceValidationSupport(
         @Qualifier("R4") fhirContext: FhirContext,
         optionalAuthorizedClientManager: Optional<OAuth2AuthorizedClientManager>
     ): RemoteTerminologyServiceValidationSupport {
