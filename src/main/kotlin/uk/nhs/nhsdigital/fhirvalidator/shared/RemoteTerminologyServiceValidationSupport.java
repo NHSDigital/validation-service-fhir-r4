@@ -17,8 +17,12 @@ import org.hl7.fhir.instance.model.api.IBaseBundle;
 import org.hl7.fhir.instance.model.api.IBaseParameters;
 import org.hl7.fhir.instance.model.api.IBaseResource;
 import org.hl7.fhir.r4.model.CodeSystem;
+import org.hl7.fhir.r4.model.Parameters;
+import org.hl7.fhir.r4.model.Resource;
+import org.hl7.fhir.r4.model.ValueSet;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import uk.nhs.nhsdigital.fhirvalidator.controller.VerifyController;
 
 public class RemoteTerminologyServiceValidationSupport extends BaseValidationSupport implements IValidationSupport {
     private String myBaseUrl;
@@ -35,6 +39,27 @@ public class RemoteTerminologyServiceValidationSupport extends BaseValidationSup
     @Nullable
     @Override
     public ValueSetExpansionOutcome expandValueSet(ValidationSupportContext theValidationSupportContext, @Nullable ValueSetExpansionOptions theExpansionOptions, @NotNull IBaseResource theValueSetToExpand) {
+        VerifyController.Companion.getLogger().info("Remote validation expansion called");
+        IGenericClient client = this.provideClient();
+        IBaseParameters input = ParametersUtil.newInstance(this.getFhirContext());
+        ParametersUtil.addParameterToParameters(this.getFhirContext(), input, "valueSet", theValueSetToExpand);
+
+        IBaseParameters output = client
+                .operation()
+                .onType("ValueSet")
+                .named("expand")
+                .withParameters(input)
+                .execute();
+        if (output instanceof Parameters) {
+            Parameters parameters = (Parameters) output;
+            if (parameters.getParameter().size()>0) {
+                Resource resource = parameters.getParameter().get(0).getResource();
+                if (resource instanceof ValueSet) {
+                    ValueSet valueSet = (ValueSet) resource;
+                    return new ValueSetExpansionOutcome(resource);
+                }
+            }
+        }
         return super.expandValueSet(theValidationSupportContext, theExpansionOptions, theValueSetToExpand);
     }
 
