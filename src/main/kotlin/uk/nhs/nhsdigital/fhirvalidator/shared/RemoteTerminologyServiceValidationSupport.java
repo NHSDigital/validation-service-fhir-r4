@@ -22,7 +22,7 @@ import org.hl7.fhir.r4.model.Resource;
 import org.hl7.fhir.r4.model.ValueSet;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import uk.nhs.nhsdigital.fhirvalidator.controller.VerifyController;
+
 
 public class RemoteTerminologyServiceValidationSupport extends BaseValidationSupport implements IValidationSupport {
     private String myBaseUrl;
@@ -39,7 +39,7 @@ public class RemoteTerminologyServiceValidationSupport extends BaseValidationSup
     @Nullable
     @Override
     public ValueSetExpansionOutcome expandValueSet(ValidationSupportContext theValidationSupportContext, @Nullable ValueSetExpansionOptions theExpansionOptions, @NotNull IBaseResource theValueSetToExpand) {
-        VerifyController.Companion.getLogger().info("Remote validation expansion called");
+
         IGenericClient client = this.provideClient();
         IBaseParameters input = ParametersUtil.newInstance(this.getFhirContext());
         ParametersUtil.addParameterToParameters(this.getFhirContext(), input, "valueSet", theValueSetToExpand);

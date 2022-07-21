@@ -1,19 +1,13 @@
 package uk.nhs.nhsdigital.fhirvalidator.controller
 
 import ca.uhn.fhir.context.FhirContext
-import ca.uhn.fhir.validation.FhirValidator
-import uk.nhs.nhsdigital.fhirvalidator.service.CapabilityStatementApplier
-import uk.nhs.nhsdigital.fhirvalidator.service.MessageDefinitionApplier
 import uk.nhs.nhsdigital.fhirvalidator.service.VerifyOAS
 import uk.nhs.nhsdigital.fhirvalidator.util.createOperationOutcome
 import io.swagger.v3.oas.models.OpenAPI
 import io.swagger.v3.parser.OpenAPIV3Parser
 import io.swagger.v3.parser.core.models.ParseOptions
 import mu.KLogging
-import org.hl7.fhir.instance.model.api.IBaseResource
-import org.hl7.fhir.r4.model.Bundle
 import org.hl7.fhir.r4.model.OperationOutcome
-import org.hl7.fhir.r4.model.ResourceType
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.web.bind.annotation.*
 import java.util.*
