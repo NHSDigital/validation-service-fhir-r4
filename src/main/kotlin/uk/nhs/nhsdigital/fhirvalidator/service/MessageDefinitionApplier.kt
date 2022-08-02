@@ -31,7 +31,8 @@ class MessageDefinitionApplier(
             )
 
         val messageType = messageHeader.eventCoding
-        val messageDefinition = findMessageDefinition(messageType)
+        val messageDefinitionProfile = messageHeader.definition
+        val messageDefinition = findMessageDefinition(messageType, messageDefinitionProfile)
             ?: return createOperationOutcome(
                 "Unsupported message type ${messageType.system}#${messageType.code}.",
                 "MessageHeader.eventCoding"
@@ -47,10 +48,16 @@ class MessageDefinitionApplier(
             ?.singleOrNull()
     }
 
-    private fun findMessageDefinition(messageType: Coding): MessageDefinition? {
-        return messageDefinitions
-            .filter { it.eventCoding.system == messageType.system }
-            .firstOrNull { it.eventCoding.code == messageType.code }
+    private fun findMessageDefinition(messageType: Coding, messageDefinitionProfile: String?): MessageDefinition? {
+        if (messageDefinitionProfile != null) {
+            return messageDefinitions
+                .filter { it.eventCoding.system == messageType.system }
+                .firstOrNull { it.eventCoding.code == messageType.code &&  it.url == messageDefinitionProfile }
+        } else {
+            return messageDefinitions
+                .filter { it.eventCoding.system == messageType.system }
+                .firstOrNull { it.eventCoding.code == messageType.code }
+        }
     }
 
     private fun applyMessageDefinition(
