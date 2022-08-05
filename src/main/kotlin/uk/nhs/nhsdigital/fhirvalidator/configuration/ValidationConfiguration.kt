@@ -40,7 +40,8 @@ open class ValidationConfiguration(
 
     @Bean
     open fun instanceValidator(supportChain: ValidationSupportChain): FhirInstanceValidator {
-        return FhirInstanceValidator(CachingValidationSupport(supportChain))
+       // return FhirInstanceValidator(CachingValidationSupport(supportChain))
+        return FhirInstanceValidator(supportChain)
     }
 
 
@@ -73,7 +74,9 @@ open class ValidationConfiguration(
         optionalRemoteTerminologySupport: Optional<RemoteTerminologyServiceValidationSupport>
     ): SwitchedTerminologyServiceValidationSupport {
         val snomedValidationSupport = if (optionalRemoteTerminologySupport.isPresent) {
-            CachingValidationSupport(optionalRemoteTerminologySupport.get())
+            //CachingValidationSupport(optionalRemoteTerminologySupport.get())
+            // Disabled caching as it was causing invalid results (on snomed display terms)
+            optionalRemoteTerminologySupport.get()
         } else {
             UnsupportedCodeSystemWarningValidationSupport(fhirContext)
         }
