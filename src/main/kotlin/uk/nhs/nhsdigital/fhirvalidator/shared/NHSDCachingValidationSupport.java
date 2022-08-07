@@ -127,8 +127,8 @@ public class NHSDCachingValidationSupport extends BaseValidationSupportWrapper i
     }
 
     public CodeValidationResult validateCode(@Nonnull ValidationSupportContext theValidationSupportContext, @Nonnull ConceptValidationOptions theOptions, String theCodeSystem, String theCode, String theDisplay, String theValueSetUrl) {
-        String key = "validateCode " + theCodeSystem + " " + theCode + " " + (String) StringUtils.defaultIfBlank(theValueSetUrl, "NO_VS");
-        if (theDisplay != null)  return super.validateCode(theValidationSupportContext, theOptions, theCodeSystem, theCode, theDisplay, theValueSetUrl);
+        String key = "validateCode " + theCodeSystem + " " + theCode + " " + (String) StringUtils.defaultIfBlank(theValueSetUrl, "NO_VS")+ " " + StringUtils.defaultString(theDisplay, "(null)");
+        //if (theDisplay != null)  return super.validateCode(theValidationSupportContext, theOptions, theCodeSystem, theCode, theDisplay, theValueSetUrl);
         return (CodeValidationResult)this.loadFromCache(this.myValidateCodeCache, key, (t) -> {
             return super.validateCode(theValidationSupportContext, theOptions, theCodeSystem, theCode, theDisplay, theValueSetUrl);
         });
@@ -151,7 +151,7 @@ public class NHSDCachingValidationSupport extends BaseValidationSupportWrapper i
         if (valueSetUrl.isPresent()) {
             String var10000 = theValidationOptions.toString();
             String key = "validateCodeInValueSet " + var10000 + " " + StringUtils.defaultString(theCodeSystem, "(null)") + " " + StringUtils.defaultString(theCode, "(null)") + " " + StringUtils.defaultString(theDisplay, "(null)") + " " + (String)valueSetUrl.get();
-            if (theDisplay != null) return super.validateCodeInValueSet(theValidationSupportContext, theValidationOptions, theCodeSystem, theCode, theDisplay, theValueSet);
+            //if (theDisplay != null) return super.validateCodeInValueSet(theValidationSupportContext, theValidationOptions, theCodeSystem, theCode, theDisplay, theValueSet);
             return (CodeValidationResult)this.loadFromCache(this.myValidateCodeCache, key, (t) -> {
                 return super.validateCodeInValueSet(theValidationSupportContext, theValidationOptions, theCodeSystem, theCode, theDisplay, theValueSet);
             });
