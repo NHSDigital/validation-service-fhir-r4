@@ -192,4 +192,10 @@ public class RemoteTerminologyServiceValidationSupport extends BaseValidationSup
         Validate.notNull(theClientInterceptor, "theClientInterceptor must not be null", new Object[0]);
         this.myClientInterceptors.add(theClientInterceptor);
     }
+
+    @Nullable
+    @Override
+    public LookupCodeResult lookupCode(ValidationSupportContext theValidationSupportContext, String theSystem, String theCode) {
+        return super.lookupCode(theValidationSupportContext, theSystem, theCode);
+    }
 }
