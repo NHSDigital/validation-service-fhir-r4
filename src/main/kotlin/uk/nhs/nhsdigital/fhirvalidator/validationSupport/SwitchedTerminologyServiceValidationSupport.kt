@@ -66,6 +66,18 @@ class SwitchedTerminologyServiceValidationSupport(
         return default.lookupCode(context, system, code)
     }
 
+    override fun lookupCode(
+        context: ValidationSupportContext?,
+        system: String?,
+        code: String?,
+        theDisplayLanguage: String?
+    ): IValidationSupport.LookupCodeResult? {
+        if (system != null && codeSystemPredicate.test(system)) {
+            return override.lookupCode(context, system, code)
+        }
+        return default.lookupCode(context, system, code)
+    }
+
     override fun expandValueSet(
         theValidationSupportContext: ValidationSupportContext?,
         theExpansionOptions: ValueSetExpansionOptions?,

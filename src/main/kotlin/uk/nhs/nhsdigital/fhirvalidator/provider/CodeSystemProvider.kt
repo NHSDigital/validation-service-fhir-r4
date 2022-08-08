@@ -1,7 +1,6 @@
 package uk.nhs.nhsdigital.fhirvalidator.provider
 
 import ca.uhn.fhir.context.FhirContext
-import ca.uhn.fhir.context.support.ConceptValidationOptions
 import ca.uhn.fhir.context.support.IValidationSupport
 import ca.uhn.fhir.context.support.ValidationSupportContext
 import ca.uhn.fhir.rest.annotation.*
@@ -14,6 +13,7 @@ import org.hl7.fhir.utilities.npm.NpmPackage
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
 import uk.nhs.nhsdigital.fhirvalidator.service.ImplementationGuideParser
+import uk.nhs.nhsdigital.fhirvalidator.shared.LookupCodeResultUK
 
 @Component
 class CodeSystemProvider (@Qualifier("R4") private val fhirContext: FhirContext,
@@ -64,12 +64,45 @@ class CodeSystemProvider (@Qualifier("R4") private val fhirContext: FhirContext,
         val input = Parameters()
 
         if (code != null) {
-            val conceptValidaton = ConceptValidationOptions()
+
             var lookupCodeResult: IValidationSupport.LookupCodeResult? =
                 supportChain.lookupCode(this.validationSupportContext,  system, code)
 
             if (lookupCodeResult != null) {
-
+                if (lookupCodeResult is LookupCodeResultUK) {
+                    return (lookupCodeResult).originalParameters
+                } else {
+                    if (lookupCodeResult.codeDisplay != null) {
+                        input.addParameter(
+                            Parameters.ParametersParameterComponent().setName("display")
+                                .setValue(StringType(lookupCodeResult.codeDisplay))
+                        )
+                    }
+                    if (lookupCodeResult.codeSystemDisplayName != null) {
+                        input.addParameter(
+                            Parameters.ParametersParameterComponent().setName("name")
+                                .setValue(StringType(lookupCodeResult.codeSystemDisplayName))
+                        )
+                    }
+                    if (lookupCodeResult.codeSystemVersion != null) {
+                        input.addParameter(
+                            Parameters.ParametersParameterComponent().setName("version")
+                                .setValue(StringType(lookupCodeResult.codeSystemVersion))
+                        )
+                    }
+                    if (lookupCodeResult.searchedForCode != null) {
+                        input.addParameter(
+                            Parameters.ParametersParameterComponent().setName("code")
+                                .setValue(StringType(lookupCodeResult.searchedForCode))
+                        )
+                    }
+                    if (lookupCodeResult.searchedForSystem != null) {
+                        input.addParameter(
+                            Parameters.ParametersParameterComponent().setName("system")
+                                .setValue(StringType(lookupCodeResult.searchedForSystem))
+                        )
+                    }
+                }
             }
         }
         return input;

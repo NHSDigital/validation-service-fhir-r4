@@ -37,7 +37,7 @@ public class NHSDCachingValidationSupport extends BaseValidationSupportWrapper i
     private final Cache<TranslateCodeRequest, Object> myTranslateCodeCache;
     private final Cache<String, Object> myLookupCodeCache;
     private final ThreadPoolExecutor myBackgroundExecutor;
-    private final Map<Object, Object> myNonExpiringCache;
+    private final Map myNonExpiringCache;
     private final Cache<String, Object> myExpandValueSetCache;
 
     public NHSDCachingValidationSupport(IValidationSupport theWrap) {
@@ -141,6 +141,11 @@ public class NHSDCachingValidationSupport extends BaseValidationSupportWrapper i
         });
     }
 
+    public LookupCodeResult lookupCode(ValidationSupportContext theValidationSupportContext, String theSystem, String theCode) {
+        return this.lookupCode(theValidationSupportContext,theSystem,theCode,null);
+    }
+
+
     public CodeValidationResult validateCodeInValueSet(ValidationSupportContext theValidationSupportContext, ConceptValidationOptions theValidationOptions, String theCodeSystem, String theCode, String theDisplay, @Nonnull IBaseResource theValueSet) {
         BaseRuntimeChildDefinition urlChild = this.myCtx.getResourceDefinition(theValueSet).getChildByName("url");
         Optional<String> valueSetUrl = urlChild.getAccessor().getValues(theValueSet).stream().map((t) -> {
@@ -166,7 +171,8 @@ public class NHSDCachingValidationSupport extends BaseValidationSupportWrapper i
         });
     }
 
-    @Nullable
+    @
+            Nullable
     private <S, T> T loadFromCache(Cache<S, Object> theCache, S theKey, Function<S, T> theLoader) {
         ourLog.trace("Fetching from cache: {}", theKey);
         Function<S, Optional<T>> loaderWrapper = (key) -> {

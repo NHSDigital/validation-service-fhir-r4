@@ -12,14 +12,12 @@ import java.util.List;
 import javax.annotation.Nonnull;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
+import org.checkerframework.checker.units.qual.C;
 import org.hl7.fhir.common.hapi.validation.support.BaseValidationSupport;
 import org.hl7.fhir.instance.model.api.IBaseBundle;
 import org.hl7.fhir.instance.model.api.IBaseParameters;
 import org.hl7.fhir.instance.model.api.IBaseResource;
-import org.hl7.fhir.r4.model.CodeSystem;
-import org.hl7.fhir.r4.model.Parameters;
-import org.hl7.fhir.r4.model.Resource;
-import org.hl7.fhir.r4.model.ValueSet;
+import org.hl7.fhir.r4.model.*;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -77,9 +75,8 @@ public class RemoteTerminologyServiceValidationSupport extends BaseValidationSup
 
             String valueSetUrl = DefaultProfileValidationSupport.getConformanceResourceUrl(this.myCtx, theValueSet);
             // KGM this next section
-            if (valueSet == null && StringUtils.isNotBlank(valueSetUrl)) valueSet = theValidationSupportContext.getRootValidationSupport().fetchValueSet(valueSetUrl);
-            if (valueSet != null)
-                valueSetUrl = null;
+            if (valueSet == null) valueSet = theValidationSupportContext.getRootValidationSupport().fetchValueSet(valueSetUrl);
+            valueSetUrl = null;
             // KGM also this line
             return this.invokeRemoteValidateCode(theCodeSystem, theCode, theDisplay, valueSetUrl, valueSet);
         }
@@ -88,17 +85,17 @@ public class RemoteTerminologyServiceValidationSupport extends BaseValidationSup
     public IBaseResource fetchCodeSystem(String theSystem) {
         IGenericClient client = this.provideClient();
         Class<? extends IBaseBundle> bundleType = this.myCtx.getResourceDefinition("Bundle").getImplementingClass(IBaseBundle.class);
-        IBaseBundle results = (IBaseBundle)client.search().forResource("CodeSystem").where(CodeSystem.URL.matches().value(theSystem)).returnBundle(bundleType).execute();
+        IBaseBundle results = client.search().forResource("CodeSystem").where(CodeSystem.URL.matches().value(theSystem)).returnBundle(bundleType).execute();
         List<IBaseResource> resultsList = BundleUtil.toListOfResources(this.myCtx, results);
-        return resultsList.size() > 0 ? (IBaseResource)resultsList.get(0) : null;
+        return resultsList.size() > 0 ? resultsList.get(0) : null;
     }
 
     public IBaseResource fetchValueSet(String theValueSetUrl) {
         IGenericClient client = this.provideClient();
         Class<? extends IBaseBundle> bundleType = this.myCtx.getResourceDefinition("Bundle").getImplementingClass(IBaseBundle.class);
-        IBaseBundle results = (IBaseBundle)client.search().forResource("ValueSet").where(CodeSystem.URL.matches().value(theValueSetUrl)).returnBundle(bundleType).execute();
+        IBaseBundle results = client.search().forResource("ValueSet").where(CodeSystem.URL.matches().value(theValueSetUrl)).returnBundle(bundleType).execute();
         List<IBaseResource> resultsList = BundleUtil.toListOfResources(this.myCtx, results);
-        return resultsList.size() > 0 ? (IBaseResource)resultsList.get(0) : null;
+        return resultsList.size() > 0 ? resultsList.get(0) : null;
     }
 
     public boolean isCodeSystemSupported(ValidationSupportContext theValidationSupportContext, String theSystem) {
@@ -111,10 +108,8 @@ public class RemoteTerminologyServiceValidationSupport extends BaseValidationSup
 
     private IGenericClient provideClient() {
         IGenericClient retVal = this.myCtx.newRestfulGenericClient(this.myBaseUrl);
-        Iterator var2 = this.myClientInterceptors.iterator();
 
-        while(var2.hasNext()) {
-            Object next = var2.next();
+        for (Object next : this.myClientInterceptors) {
             retVal.registerInterceptor(next);
         }
 
@@ -155,11 +150,11 @@ public class RemoteTerminologyServiceValidationSupport extends BaseValidationSup
                 }
             }
 
-            IBaseParameters output = (IBaseParameters)((IOperationUnnamed)client.operation().onType(resourceType)).named("validate-code").withParameters(input).execute();
+            IBaseParameters output =(client.operation().onType(resourceType)).named("validate-code").withParameters(input).execute();
             List<String> resultValues = ParametersUtil.getNamedParameterValuesAsString(this.getFhirContext(), output, "result");
-            if (resultValues.size() >= 1 && !StringUtils.isBlank((CharSequence)resultValues.get(0))) {
-                Validate.isTrue(resultValues.size() == 1, "Response contained %d 'result' values", (long)resultValues.size());
-                boolean success = "true".equalsIgnoreCase((String)resultValues.get(0));
+            if (resultValues.size() >= 1 && !StringUtils.isBlank(resultValues.get(0))) {
+                Validate.isTrue(resultValues.size() == 1, "Response contained %d 'result' values", resultValues.size());
+                boolean success = "true".equalsIgnoreCase(resultValues.get(0));
                 CodeValidationResult retVal = new CodeValidationResult();
                 List displayValues;
                 if (success) {
@@ -184,7 +179,7 @@ public class RemoteTerminologyServiceValidationSupport extends BaseValidationSup
     }
 
     public void setBaseUrl(String theBaseUrl) {
-        Validate.notBlank(theBaseUrl, "theBaseUrl must be provided", new Object[0]);
+        Validate.notBlank(theBaseUrl, "theBaseUrl must be provided");
         this.myBaseUrl = theBaseUrl;
     }
 
@@ -196,6 +191,53 @@ public class RemoteTerminologyServiceValidationSupport extends BaseValidationSup
     @Nullable
     @Override
     public LookupCodeResult lookupCode(ValidationSupportContext theValidationSupportContext, String theSystem, String theCode) {
-        return super.lookupCode(theValidationSupportContext, theSystem, theCode);
+        return this.lookupCode(theValidationSupportContext, theSystem, theCode,null);
+    }
+
+    @Nullable
+    @Override
+    public LookupCodeResult lookupCode(ValidationSupportContext theValidationSupportContext, String theSystem, String theCode, String theDisplayLanguage) {
+        IGenericClient client = this.provideClient();
+        IBaseParameters input = ParametersUtil.newInstance(this.getFhirContext());
+        String resourceType = "CodeSystem";
+        ParametersUtil.addParameterToParametersString(this.getFhirContext(), input, "code", theCode);
+        if (StringUtils.isNotBlank(theSystem)) {
+            ParametersUtil.addParameterToParametersUri(this.getFhirContext(), input, "system", theSystem);
+        }
+
+        if (StringUtils.isNotBlank(theDisplayLanguage)) {
+            ParametersUtil.addParameterToParametersString(this.getFhirContext(), input, "displayLanguage", theDisplayLanguage);
+        }
+
+        IBaseParameters output = (IBaseParameters)((IOperationUnnamed)client.operation().onType(resourceType)).named("lookup").withParameters(input).execute();
+        if (output != null && output instanceof Parameters) {
+            Parameters parameters = (Parameters) output;
+            LookupCodeResultUK lookupCodeResult = new LookupCodeResultUK();
+            lookupCodeResult.setOriginalParameters(parameters);
+            for (Parameters.ParametersParameterComponent parametersParameterComponent : parameters.getParameter()) {
+                if (parametersParameterComponent.getName().equals("code")) {
+                    lookupCodeResult.setFound(true);
+                } else
+                if (parametersParameterComponent.getName().equals("display")) {
+                    lookupCodeResult.setCodeDisplay(((StringType) parametersParameterComponent.getValue()).getValue());
+                } else if (parametersParameterComponent.getName().equals("name")) {
+                    lookupCodeResult.setCodeSystemDisplayName(((StringType) parametersParameterComponent.getValue()).getValue());
+                } else if (parametersParameterComponent.getName().equals("version")) {
+                    lookupCodeResult.setCodeSystemVersion(((StringType) parametersParameterComponent.getValue()).getValue());
+                } else if (parametersParameterComponent.getName().equals("code")) {
+                    lookupCodeResult.setSearchedForCode(((StringType) parametersParameterComponent.getValue()).getValue());
+                } else if (parametersParameterComponent.getName().equals("system")) {
+                    lookupCodeResult.setSearchedForSystem(((UriType) parametersParameterComponent.getValue()).getValue());
+                }
+                else if (parametersParameterComponent.getValue() instanceof StringType) {
+                    lookupCodeResult.getProperties().add(new StringConceptProperty(parametersParameterComponent.getName(), ((StringType) parametersParameterComponent.getValue()).getValue()));
+                } else if (parametersParameterComponent.getValue() instanceof CodeType) {
+                    CodeType codeType = (CodeType) parametersParameterComponent.getValue();
+                    lookupCodeResult.getProperties().add(new CodingConceptProperty(parametersParameterComponent.getName(),codeType.getSystem(),codeType.getCode(),codeType.getDisplay()));
+                }
+            }
+            return  lookupCodeResult;
+        }
+        return new LookupCodeResult();
     }
 }
