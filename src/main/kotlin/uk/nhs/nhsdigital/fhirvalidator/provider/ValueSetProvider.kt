@@ -82,7 +82,7 @@ class ValueSetProvider (@Qualifier("R4") private val fhirContext: FhirContext,
                 supportChain.validateCode(this.validationSupportContext, conceptValidaton, system, code, display, url)
 
             if (validationResult != null) {
-                logger.info(validationResult?.code)
+                //logger.info(validationResult?.code)
                 if (validationResult.severity != null) {
                     when (validationResult.severity) {
                         IValidationSupport.IssueSeverity.ERROR -> input.issueFirstRep.severity = OperationOutcome.IssueSeverity.ERROR;
@@ -90,7 +90,7 @@ class ValueSetProvider (@Qualifier("R4") private val fhirContext: FhirContext,
                     }
                 }
                 input.issueFirstRep.diagnostics = validationResult.message
-                logger.info(validationResult?.message)
+                //logger.info(validationResult?.message)
             }
         }
         return input;

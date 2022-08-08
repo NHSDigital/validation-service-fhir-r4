@@ -1,13 +1,15 @@
 package uk.nhs.nhsdigital.fhirvalidator.provider
 
 import ca.uhn.fhir.context.FhirContext
+import ca.uhn.fhir.context.support.ConceptValidationOptions
+import ca.uhn.fhir.context.support.IValidationSupport
 import ca.uhn.fhir.context.support.ValidationSupportContext
-import ca.uhn.fhir.rest.annotation.RequiredParam
-import ca.uhn.fhir.rest.annotation.Search
+import ca.uhn.fhir.rest.annotation.*
+import ca.uhn.fhir.rest.param.DateParam
 import ca.uhn.fhir.rest.param.TokenParam
 import ca.uhn.fhir.rest.server.IResourceProvider
 import org.hl7.fhir.common.hapi.validation.support.ValidationSupportChain
-import org.hl7.fhir.r4.model.CodeSystem
+import org.hl7.fhir.r4.model.*
 import org.hl7.fhir.utilities.npm.NpmPackage
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
@@ -47,6 +49,30 @@ class CodeSystemProvider (@Qualifier("R4") private val fhirContext: FhirContext,
             }
         }
         return list
+    }
+
+    @Operation(name = "\$lookup", idempotent = true)
+    fun validateCode (
+
+        @OperationParam(name = "code") code: String?,
+        @OperationParam(name = "system") system: String?,
+        @OperationParam(name = "version") version: String?,
+        @OperationParam(name = "coding") coding: TokenParam?,
+        @OperationParam(name = "date") date: DateParam?,
+        @OperationParam(name = "displayLanguage") displayLanguage: CodeType?
+    ) : Parameters {
+        val input = Parameters()
+
+        if (code != null) {
+            val conceptValidaton = ConceptValidationOptions()
+            var lookupCodeResult: IValidationSupport.LookupCodeResult? =
+                supportChain.lookupCode(this.validationSupportContext,  system, code)
+
+            if (lookupCodeResult != null) {
+
+            }
+        }
+        return input;
     }
 
 
