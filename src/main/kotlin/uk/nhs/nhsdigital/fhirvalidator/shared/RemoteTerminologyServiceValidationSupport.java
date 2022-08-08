@@ -75,8 +75,9 @@ public class RemoteTerminologyServiceValidationSupport extends BaseValidationSup
 
             String valueSetUrl = DefaultProfileValidationSupport.getConformanceResourceUrl(this.myCtx, theValueSet);
             // KGM this next section
-            if (valueSet == null) valueSet = theValidationSupportContext.getRootValidationSupport().fetchValueSet(valueSetUrl);
-            valueSetUrl = null;
+            if (valueSet == null && StringUtils.isNotBlank(valueSetUrl)) valueSet = theValidationSupportContext.getRootValidationSupport().fetchValueSet(valueSetUrl);
+            if (valueSet != null)
+                valueSetUrl = null;
             // KGM also this line
             return this.invokeRemoteValidateCode(theCodeSystem, theCode, theDisplay, valueSetUrl, valueSet);
         }
@@ -93,7 +94,7 @@ public class RemoteTerminologyServiceValidationSupport extends BaseValidationSup
     public IBaseResource fetchValueSet(String theValueSetUrl) {
         IGenericClient client = this.provideClient();
         Class<? extends IBaseBundle> bundleType = this.myCtx.getResourceDefinition("Bundle").getImplementingClass(IBaseBundle.class);
-        IBaseBundle results = client.search().forResource("ValueSet").where(CodeSystem.URL.matches().value(theValueSetUrl)).returnBundle(bundleType).execute();
+        IBaseBundle results = (IBaseBundle)client.search().forResource("ValueSet").where(CodeSystem.URL.matches().value(theValueSetUrl)).returnBundle(bundleType).execute();
         List<IBaseResource> resultsList = BundleUtil.toListOfResources(this.myCtx, results);
         return resultsList.size() > 0 ? resultsList.get(0) : null;
     }
@@ -108,8 +109,10 @@ public class RemoteTerminologyServiceValidationSupport extends BaseValidationSup
 
     private IGenericClient provideClient() {
         IGenericClient retVal = this.myCtx.newRestfulGenericClient(this.myBaseUrl);
+        Iterator var2 = this.myClientInterceptors.iterator();
 
-        for (Object next : this.myClientInterceptors) {
+        while(var2.hasNext()) {
+            Object next = var2.next();
             retVal.registerInterceptor(next);
         }
 
@@ -179,7 +182,7 @@ public class RemoteTerminologyServiceValidationSupport extends BaseValidationSup
     }
 
     public void setBaseUrl(String theBaseUrl) {
-        Validate.notBlank(theBaseUrl, "theBaseUrl must be provided");
+        Validate.notBlank(theBaseUrl, "theBaseUrl must be provided", new Object[0]);
         this.myBaseUrl = theBaseUrl;
     }
 
