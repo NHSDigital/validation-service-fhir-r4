@@ -1,4 +1,4 @@
-package uk.nhs.nhsdigital.fhirvalidator.provider
+package uk.nhs.nhsdigital.fhirvalidator.providerSTU3
 
 import ca.uhn.fhir.parser.DataFormatException
 import ca.uhn.fhir.rest.annotation.Operation
@@ -20,7 +20,7 @@ import uk.nhs.nhsdigital.fhirvalidator.util.createSTU3OperationOutcome
 import javax.servlet.http.HttpServletRequest
 
 @Component
-class ValidateSTU3Provider (
+class ValidateProviderSTU3 (
                         private val validator: FhirValidator
 ) {
     companion object : KLogging()

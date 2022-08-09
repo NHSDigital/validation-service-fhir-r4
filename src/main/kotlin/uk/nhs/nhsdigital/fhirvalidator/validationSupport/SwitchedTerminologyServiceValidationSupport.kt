@@ -60,10 +60,7 @@ class SwitchedTerminologyServiceValidationSupport(
         system: String?,
         code: String?
     ): IValidationSupport.LookupCodeResult? {
-        if (system != null && codeSystemPredicate.test(system)) {
-            return override.lookupCode(context, system, code)
-        }
-        return default.lookupCode(context, system, code)
+        return this.lookupCode(context, system, code, null)
     }
 
     override fun lookupCode(
@@ -73,9 +70,9 @@ class SwitchedTerminologyServiceValidationSupport(
         theDisplayLanguage: String?
     ): IValidationSupport.LookupCodeResult? {
         if (system != null && codeSystemPredicate.test(system)) {
-            return override.lookupCode(context, system, code)
+            return override.lookupCode(context, system, code, theDisplayLanguage)
         }
-        return default.lookupCode(context, system, code)
+        return default.lookupCode(context, system, code, theDisplayLanguage)
     }
 
     override fun expandValueSet(
