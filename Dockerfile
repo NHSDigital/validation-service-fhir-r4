@@ -1,11 +1,11 @@
 FROM openjdk:11.0.8
 
-WORKDIR /app
+VOLUME /tmp
 
-COPY target/fhir-validator-*.jar ./fhir-validator.jar
-RUN chmod -R a+x /app
+ENV JAVA_OPTS="-Xms128m -Xmx2048m"
 
-USER nobody
+ADD target/fhir-validator.jar fhir-validator.jar
 
-#AEA-1024: Setting TEST_SYSTEM_PROP_VALIDATION_RESOURCE_CACHES_MS to max long so our resource cache never expires.
-CMD ["java", "-Xms1500m", "-Xmx1500m", "-DTEST_SYSTEM_PROP_VALIDATION_RESOURCE_CACHES_MS=9223372036854775807", "-jar", "fhir-validator.jar"]
+ENTRYPOINT ["java","-Djava.security.egd=file:/dev/./urandom","-jar","/fhir-validator.jar"]
+
+
