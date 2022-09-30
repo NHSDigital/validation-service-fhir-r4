@@ -12,10 +12,11 @@ import uk.nhs.nhsdigital.fhirvalidator.configuration.FHIRServerProperties
 import uk.nhs.nhsdigital.fhirvalidator.service.ImplementationGuideParser
 
 @Interceptor
-class CapabilityStatementInterceptor(private val fhirContext: FhirContext,
-                                     private val npmPackages: List<NpmPackage>,
-                                     private val supportChain: IValidationSupport,
-                                     private val fhirServerProperties: FHIRServerProperties
+class CapabilityStatementInterceptor(
+    fhirContext: FhirContext,
+    private val npmPackages: List<NpmPackage>,
+    private val supportChain: IValidationSupport,
+    private val fhirServerProperties: FHIRServerProperties
 ) {
 
     var implementationGuideParser: ImplementationGuideParser? = ImplementationGuideParser(fhirContext)
