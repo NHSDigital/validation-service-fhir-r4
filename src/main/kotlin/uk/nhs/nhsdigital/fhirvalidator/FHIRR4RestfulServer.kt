@@ -6,8 +6,10 @@ import ca.uhn.fhir.rest.api.EncodingEnum
 import ca.uhn.fhir.rest.server.RestfulServer
 import org.hl7.fhir.utilities.npm.NpmPackage
 import org.springframework.beans.factory.annotation.Qualifier
+import uk.nhs.nhsdigital.fhirvalidator.configuration.FHIRServerProperties
 import uk.nhs.nhsdigital.fhirvalidator.interceptor.CapabilityStatementInterceptor
 import uk.nhs.nhsdigital.fhirvalidator.provider.*
+import uk.nhs.nhsdigital.fhirvalidator.interceptor.AWSAuditEventLoggingInterceptor
 import java.util.*
 import javax.servlet.annotation.WebServlet
 
@@ -29,9 +31,9 @@ class FHIRR4RestfulServer(
     private val codeSystemProvider: CodeSystemProvider,
 
     private val npmPackages: List<NpmPackage>,
-    @Qualifier("SupportChain") private val supportChain: IValidationSupport
-
-    ) : RestfulServer(fhirContext) {
+    @Qualifier("SupportChain") private val supportChain: IValidationSupport,
+    public val fhirServerProperties: FHIRServerProperties
+) : RestfulServer(fhirContext) {
 
     override fun initialize() {
         super.initialize()
@@ -52,7 +54,15 @@ class FHIRR4RestfulServer(
         registerProvider(valueSetProvider)
         registerProvider(codeSystemProvider)
 
-        registerInterceptor(CapabilityStatementInterceptor(this.fhirContext,npmPackages, supportChain))
+        registerInterceptor(CapabilityStatementInterceptor(this.fhirContext,npmPackages, supportChain, fhirServerProperties))
+
+        val awsAuditEventLoggingInterceptor =
+            AWSAuditEventLoggingInterceptor(
+                this.fhirContext,
+                fhirServerProperties
+            )
+        interceptorService.registerInterceptor(awsAuditEventLoggingInterceptor)
+
 
         isDefaultPrettyPrint = true
         defaultResponseEncoding = EncodingEnum.JSON

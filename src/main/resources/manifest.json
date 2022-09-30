@@ -5,6 +5,14 @@
   },
   {
     "packageName": "uk.nhsdigital.r4",
-    "version": "2.6.0"
+    "version": "2.5.2"
+  },
+  {
+    "packageName": "uk.nhsdigital.medicines.r4.test",
+    "version": "2.6.5-prerelease"
+  },
+  {
+    "packageName": "UKCore.R4.STU.02.00.00",
+    "version": "0.0.0-prerelease"
   }
 ]

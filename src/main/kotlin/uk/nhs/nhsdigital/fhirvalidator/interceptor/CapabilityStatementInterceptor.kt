@@ -8,13 +8,16 @@ import ca.uhn.fhir.interceptor.api.Pointcut
 import org.hl7.fhir.instance.model.api.IBaseConformance
 import org.hl7.fhir.r4.model.*
 import org.hl7.fhir.utilities.npm.NpmPackage
+import uk.nhs.nhsdigital.fhirvalidator.configuration.FHIRServerProperties
 import uk.nhs.nhsdigital.fhirvalidator.service.ImplementationGuideParser
 
 
 @Interceptor
 class CapabilityStatementInterceptor(private val fhirContext: FhirContext,
                                      private val npmPackages: List<NpmPackage>,
-                                     private val supportChain: IValidationSupport) {
+                                     private val supportChain: IValidationSupport,
+                                     private val fhirServerProperties: FHIRServerProperties
+) {
 
     var implementationGuideParser: ImplementationGuideParser? = ImplementationGuideParser(fhirContext)
 
@@ -85,6 +88,12 @@ class CapabilityStatementInterceptor(private val fhirContext: FhirContext,
                 ops.definition = operation.url
             }
         }
+        cs.name = fhirServerProperties.server.name
+        cs.software.name = fhirServerProperties.server.name
+        cs.software.version = fhirServerProperties.server.version
+        cs.publisher = "NHS Digital"
+        cs.implementation.url = "https://simplifier.net/guide/nhsdigital"
+        cs.implementation.description = "NHS Digital FHIR Implementation Guide"
     }
 
     fun getResourceComponent(type : String, cs : CapabilityStatement ) : CapabilityStatement.CapabilityStatementRestResourceComponent? {
