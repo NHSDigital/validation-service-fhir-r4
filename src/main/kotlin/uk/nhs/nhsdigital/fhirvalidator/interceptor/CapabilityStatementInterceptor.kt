@@ -11,7 +11,6 @@ import org.hl7.fhir.utilities.npm.NpmPackage
 import uk.nhs.nhsdigital.fhirvalidator.configuration.FHIRServerProperties
 import uk.nhs.nhsdigital.fhirvalidator.service.ImplementationGuideParser
 
-
 @Interceptor
 class CapabilityStatementInterceptor(private val fhirContext: FhirContext,
                                      private val npmPackages: List<NpmPackage>,
