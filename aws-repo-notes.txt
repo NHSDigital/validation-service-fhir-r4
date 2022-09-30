@@ -14,7 +14,7 @@ Then run
 
 aws sts assume-role --role-arn arn:aws:iam::365027538941:role/NHSDAdminRole --role-session-name bob
 
-And repeat config?
+And repeat configure step?
 
 aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin 365027538941.dkr.ecr.eu-west-2.amazonaws.com
 
@@ -23,8 +23,8 @@ mvn clean install
 docker build -t fhir-validator-r4 .
 
 docker tag fhir-validator-r4:latest 365027538941.dkr.ecr.eu-west-2.amazonaws.com/fhir-validator-r4:latest
-docker tag fhir-validator-r4:latest 365027538941.dkr.ecr.eu-west-2.amazonaws.com/fhir-validator-r4:6.0.30
+docker tag fhir-validator-r4:latest 365027538941.dkr.ecr.eu-west-2.amazonaws.com/fhir-validator-r4:2.6.0
 
 docker push 365027538941.dkr.ecr.eu-west-2.amazonaws.com/fhir-validator-r4:latest
 
-docker push 365027538941.dkr.ecr.eu-west-2.amazonaws.com/fhir-validator-r4:6.0.30
+docker push 365027538941.dkr.ecr.eu-west-2.amazonaws.com/fhir-validator-r4:2.6.0
