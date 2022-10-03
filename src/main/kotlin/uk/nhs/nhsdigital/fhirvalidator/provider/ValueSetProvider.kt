@@ -20,6 +20,7 @@ import org.hl7.fhir.utilities.npm.NpmPackage
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
 import uk.nhs.nhsdigital.fhirvalidator.service.ImplementationGuideParser
+import java.nio.charset.StandardCharsets
 
 @Component
 class ValueSetProvider (@Qualifier("R4") private val fhirContext: FhirContext,
@@ -42,14 +43,15 @@ class ValueSetProvider (@Qualifier("R4") private val fhirContext: FhirContext,
     @Search
     fun search(@RequiredParam(name = ValueSet.SP_URL) url: TokenParam): List<ValueSet> {
         val list = mutableListOf<ValueSet>()
+        var decodeUri = java.net.URLDecoder.decode(url.value, StandardCharsets.UTF_8.name());
         for (npmPackage in npmPackages) {
             if (!npmPackage.name().equals("hl7.fhir.r4.core")) {
                 for (resource in implementationGuideParser!!.getResourcesOfTypeFromPackage(
                     npmPackage,
                     ValueSet::class.java
                 )) {
-                    if (resource.url.equals(url.value)) {
-                        if (resource.id == null) resource.setId(url.value)
+                    if (resource.url.equals(decodeUri)) {
+                        if (resource.id == null) resource.setId(decodeUri)
                         list.add(resource)
                     }
                 }

@@ -12,6 +12,8 @@ import org.hl7.fhir.utilities.npm.NpmPackage
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
 import uk.nhs.nhsdigital.fhirvalidator.service.ImplementationGuideParser
+import java.net.URLDecoder
+import java.nio.charset.StandardCharsets
 
 @Component
 class StructureDefinitionProvider (
@@ -32,10 +34,11 @@ class StructureDefinitionProvider (
     @Search
     fun search(@RequiredParam(name = StructureDefinition.SP_URL) url: TokenParam): List<StructureDefinition> {
         val list = mutableListOf<StructureDefinition>()
+        var decodeUri = java.net.URLDecoder.decode(url.value, StandardCharsets.UTF_8.name());
         for (resource in supportChain.fetchAllStructureDefinitions()) {
             val structureDefinition = resource as StructureDefinition
-            if (structureDefinition.url.equals(url.value)) {
-                resource.setId(url.value);
+            if (structureDefinition.url.equals(decodeUri)) {
+                resource.setId(decodeUri);
 
                 list.add(structureDefinition)
             }

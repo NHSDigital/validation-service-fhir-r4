@@ -148,7 +148,7 @@ class AWSAuditEventLoggingInterceptor(
             auditEvent.type = Coding().setSystem(FhirSystems.ISO_EHR_EVENTS).setCode("access")
         } else {
             auditEvent.type = Coding().setSystem(FhirSystems.ISO_EHR_EVENTS).setCode("transmit")
-            entityComponent.addDetail().setType("resource").value = StringType(resource)
+           // DISABLED 3/Oct/2022 Don't put resources in audit  entityComponent.addDetail().setType("resource").value = StringType(resource)
         }
         entityComponent.type = Coding().setSystem(FhirSystems.FHIR_RESOURCE_TYPE).setCode(fhirResourceName)
 

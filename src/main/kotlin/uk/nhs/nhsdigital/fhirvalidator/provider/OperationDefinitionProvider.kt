@@ -11,6 +11,7 @@ import org.hl7.fhir.utilities.npm.NpmPackage
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
 import uk.nhs.nhsdigital.fhirvalidator.service.ImplementationGuideParser
+import java.nio.charset.StandardCharsets
 
 @Component
 class OperationDefinitionProvider (@Qualifier("R4") private val fhirContext: FhirContext, private val npmPackages: List<NpmPackage>) : IResourceProvider {
@@ -29,13 +30,14 @@ class OperationDefinitionProvider (@Qualifier("R4") private val fhirContext: Fhi
     @Search
     fun search(@RequiredParam(name = OperationDefinition.SP_URL) url: TokenParam): List<OperationDefinition> {
         val list = mutableListOf<OperationDefinition>()
+        var decodeUri = java.net.URLDecoder.decode(url.value, StandardCharsets.UTF_8.name());
         for (npmPackage in npmPackages) {
             if (!npmPackage.name().equals("hl7.fhir.r4.core")) {
                 for (resource in implementationGuideParser!!.getResourcesOfTypeFromPackage(
                     npmPackage,
                     OperationDefinition::class.java
                 )) {
-                    if (resource.url.equals(url.value)) {
+                    if (resource.url.equals(decodeUri)) {
                         list.add(resource)
                     }
                 }

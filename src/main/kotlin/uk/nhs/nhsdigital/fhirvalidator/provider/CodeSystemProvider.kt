@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
 import uk.nhs.nhsdigital.fhirvalidator.service.ImplementationGuideParser
 import uk.nhs.nhsdigital.fhirvalidator.shared.LookupCodeResultUK
+import java.nio.charset.StandardCharsets
 
 @Component
 class CodeSystemProvider (@Qualifier("R4") private val fhirContext: FhirContext,
@@ -35,14 +36,15 @@ class CodeSystemProvider (@Qualifier("R4") private val fhirContext: FhirContext,
     @Search
     fun search(@RequiredParam(name = CodeSystem.SP_URL) url: TokenParam): List<CodeSystem> {
         val list = mutableListOf<CodeSystem>()
+        var decodeUri = java.net.URLDecoder.decode(url.value, StandardCharsets.UTF_8.name());
         for (npmPackage in npmPackages) {
             if (!npmPackage.name().equals("hl7.fhir.r4.core")) {
                 for (resource in implementationGuideParser!!.getResourcesOfTypeFromPackage(
                     npmPackage,
                     CodeSystem::class.java
                 )) {
-                    if (resource.url.equals(url.value)) {
-                        if (resource.id == null) resource.setId(url.value)
+                    if (resource.url.equals(decodeUri)) {
+                        if (resource.id == null) resource.setId(decodeUri)
                         list.add(resource)
                     }
                 }
@@ -99,8 +101,9 @@ class CodeSystemProvider (@Qualifier("R4") private val fhirContext: FhirContext,
                     if (lookupCodeResult.searchedForSystem != null) {
                         input.addParameter(
                             Parameters.ParametersParameterComponent().setName("system")
-                                .setValue(StringType(lookupCodeResult.searchedForSystem))
+                                .setValue(StringType(java.net.URLDecoder.decode(lookupCodeResult.searchedForSystem, StandardCharsets.UTF_8.name())))
                         )
+
                     }
                 }
             }

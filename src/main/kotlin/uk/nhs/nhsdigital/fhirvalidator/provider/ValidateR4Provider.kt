@@ -18,6 +18,7 @@ import uk.nhs.nhsdigital.fhirvalidator.service.CapabilityStatementApplier
 import uk.nhs.nhsdigital.fhirvalidator.service.MessageDefinitionApplier
 import uk.nhs.nhsdigital.fhirvalidator.service.VerifyOAS
 import uk.nhs.nhsdigital.fhirvalidator.util.createOperationOutcome
+import java.nio.charset.StandardCharsets
 import javax.servlet.http.HttpServletRequest
 
 @Component
@@ -55,8 +56,8 @@ class ValidateR4Provider (
         @ResourceParam resource: IBaseResource,
         @Validate.Profile parameterResourceProfile: String?
     ): MethodOutcome {
-        val profile = parameterResourceProfile ?: servletRequest.getParameter("profile")
-
+        var profile = parameterResourceProfile ?: servletRequest.getParameter("profile")
+        profile = java.net.URLDecoder.decode(profile, StandardCharsets.UTF_8.name());
         val operationOutcome = parseAndValidateResource(resource, profile)
         val methodOutcome = MethodOutcome()
         methodOutcome.operationOutcome = operationOutcome

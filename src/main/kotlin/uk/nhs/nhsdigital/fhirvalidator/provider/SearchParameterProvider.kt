@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
 import uk.nhs.nhsdigital.fhirvalidator.service.ImplementationGuideParser
 import uk.nhs.nhsdigital.fhirvalidator.service.SearchParameterSupport
+import java.nio.charset.StandardCharsets
 
 @Component
 class SearchParameterProvider (@Qualifier("R4") private val fhirContext: FhirContext, private val searchParameterSupport : SearchParameterSupport) : IResourceProvider {
@@ -28,7 +29,8 @@ class SearchParameterProvider (@Qualifier("R4") private val fhirContext: FhirCon
     @Search
     fun search(@RequiredParam(name = SearchParameter.SP_URL) url: TokenParam): List<SearchParameter> {
         val list = mutableListOf<SearchParameter>()
-        val searchParameter =  searchParameterSupport.getSearchParameterByUrl(url.value)
+        var decodeUri = java.net.URLDecoder.decode(url.value, StandardCharsets.UTF_8.name());
+        val searchParameter =  searchParameterSupport.getSearchParameterByUrl(decodeUri)
         if (searchParameter != null) list.add(searchParameter)
         return list
     }

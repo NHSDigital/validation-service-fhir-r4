@@ -11,6 +11,7 @@ import org.hl7.fhir.utilities.npm.NpmPackage
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
 import uk.nhs.nhsdigital.fhirvalidator.service.ImplementationGuideParser
+import java.nio.charset.StandardCharsets
 
 @Component
 class NamingSystemProvider (@Qualifier("R4") private val fhirContext: FhirContext, private val npmPackages: List<NpmPackage>) : IResourceProvider {
@@ -29,6 +30,7 @@ class NamingSystemProvider (@Qualifier("R4") private val fhirContext: FhirContex
     @Search
     fun search(@RequiredParam(name = NamingSystem.SP_VALUE) value: TokenParam): List<NamingSystem> {
         val list = mutableListOf<NamingSystem>()
+        var decodeUri = java.net.URLDecoder.decode(value.value, StandardCharsets.UTF_8.name());
         for (npmPackage in npmPackages) {
             if (!npmPackage.name().equals("hl7.fhir.r4.core")) {
                 for (resource in implementationGuideParser!!.getResourcesOfTypeFromPackage(
@@ -36,7 +38,7 @@ class NamingSystemProvider (@Qualifier("R4") private val fhirContext: FhirContex
                     NamingSystem::class.java
                 )) {
                     for (uniqueId in resource.uniqueId)
-                    if (uniqueId.value.equals(value.value)) {
+                    if (uniqueId.value.equals(decodeUri)) {
                         list.add(resource)
                     }
                 }
