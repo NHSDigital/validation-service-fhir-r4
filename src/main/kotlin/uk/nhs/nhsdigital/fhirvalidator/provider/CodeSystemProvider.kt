@@ -89,7 +89,7 @@ class CodeSystemProvider (@Qualifier("R4") private val fhirContext: FhirContext,
                     if (lookupCodeResult.codeSystemVersion != null) {
                         input.addParameter(
                             Parameters.ParametersParameterComponent().setName("version")
-                                .setValue(StringType(lookupCodeResult.codeSystemVersion))
+                                .setValue(StringType(java.net.URLDecoder.decode(lookupCodeResult.codeSystemVersion, StandardCharsets.UTF_8.name())))
                         )
                     }
                     if (lookupCodeResult.searchedForCode != null) {

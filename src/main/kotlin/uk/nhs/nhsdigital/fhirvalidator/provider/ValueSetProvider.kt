@@ -81,7 +81,7 @@ class ValueSetProvider (@Qualifier("R4") private val fhirContext: FhirContext,
         if (code != null) {
             val conceptValidaton = ConceptValidationOptions()
             var validationResult: CodeValidationResult? =
-                supportChain.validateCode(this.validationSupportContext, conceptValidaton, system, code, display, url)
+                supportChain.validateCode(this.validationSupportContext, conceptValidaton, java.net.URLDecoder.decode(system, StandardCharsets.UTF_8.name()), code, display, java.net.URLDecoder.decode(url, StandardCharsets.UTF_8.name()))
 
             if (validationResult != null) {
                 //logger.info(validationResult?.code)

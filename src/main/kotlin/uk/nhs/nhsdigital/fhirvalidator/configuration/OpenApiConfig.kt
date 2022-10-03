@@ -21,6 +21,7 @@ import org.springframework.context.annotation.Configuration
 
 @Configuration
 class OpenApiConfig {
+    var FHIRSERVER = "FHIR Validation Server"
     @Bean
     fun customOpenAPI(
         fhirServerProperties: FHIRServerProperties,
@@ -40,6 +41,7 @@ class OpenApiConfig {
         oas.path("/FHIR/R4/metadata",PathItem()
             .get(
                 Operation()
+                    .addTagsItem(FHIRSERVER)
                     .summary("server-capabilities: Fetch the server FHIR CapabilityStatement").responses(getApiResponses())))
         oas.path("/FHIR/R4/CapabilityStatement",getPathItem("CapabilityStatement", "Capability Statement", "url", "https://fhir.nhs.uk/CapabilityStatement/apim-medicines-api-example" ))
         oas.path("/FHIR/R4/CodeSystem",getPathItem("CodeSystem", "Code System", "url", "https://fhir.nhs.uk/CodeSystem/NHSD-API-ErrorOrWarningCode" ))
@@ -47,7 +49,9 @@ class OpenApiConfig {
         val lookupItem = PathItem()
             .get(
                 Operation()
+                    .addTagsItem(FHIRSERVER)
                     .summary("Given a code/system, or a Coding, get additional details about the concept, including definition, status, designations, and properties. One of the products of this operation is a full decomposition of a code from a structured terminology.")
+                    .description("[lookup](https://www.hl7.org/fhir/R4/operation-codesystem-lookup.html)")
                     .responses(getApiResponses())
                     .addParametersItem(Parameter()
                         .name("code")
@@ -56,7 +60,7 @@ class OpenApiConfig {
                         .style(Parameter.StyleEnum.SIMPLE)
                         .description("The code that is to be located. If a code is provided, a system must be provided")
                         .schema(StringSchema().format("code"))
-                        .example("122298005"))
+                        .example("15517911000001104"))
                     .addParametersItem(Parameter()
                         .name("system")
                         .`in`("query")
@@ -116,16 +120,26 @@ class OpenApiConfig {
         val validateCodeItem = PathItem()
             .get(
                 Operation()
+                    .addTagsItem(FHIRSERVER)
                     .summary("Validate that a coded value is in the set of codes allowed by a value set.")
+                    .description("[validate-code](https://www.hl7.org/fhir/R4/operation-valueset-validate-code.html)")
                     .responses(getApiResponses())
+                    .addParametersItem(Parameter()
+                        .name("url")
+                        .`in`("query")
+                        .required(false)
+                        .style(Parameter.StyleEnum.SIMPLE)
+                        .description("Value set Canonical URL. The server must know the value set (e.g. it is defined explicitly in the server's value sets, or it is defined implicitly by some code system known to the server")
+                        .schema(StringSchema().format("uri"))
+                        .example("https://fhir.nhs.uk/ValueSet/NHSDigital-MedicationRequest-Code"))
                     .addParametersItem(Parameter()
                         .name("code")
                         .`in`("query")
                         .required(false)
                         .style(Parameter.StyleEnum.SIMPLE)
-                        .description("The code that is to be validated. If a code is provided, a system or a context must be provided (if a context is provided, then the server SHALL ensure that the code is not ambiguous without a system)")
+                        .description("The code that is to be validated. If a code is provided, a system or a context must be provided.")
                         .schema(StringSchema().format("code"))
-                        .example("122298005"))
+                        .example("15517911000001104"))
                     .addParametersItem(Parameter()
                         .name("system")
                         .`in`("query")
@@ -141,14 +155,16 @@ class OpenApiConfig {
                         .style(Parameter.StyleEnum.SIMPLE)
                         .description("The display associated with the code, if provided. If a display is provided a code must be provided. If no display is provided, the server cannot validate the display value, but may choose to return a recommended display name using the display parameter in the outcome. Whether displays are case sensitive is code system dependent")
                         .schema(StringSchema())
-                        .example("Astrovirus ribonucleic ALKALINE assay"))
+                        .example("Methotrexate 10mg/0.2ml solution for injection pre-filled syringes"))
             )
         oas.path("/FHIR/R4/ValueSet/\$validate-code",validateCodeItem)
 
         oas.path("/FHIR/R4/ValueSet/\$expand",PathItem()
             .get(
                 Operation()
+                    .addTagsItem(FHIRSERVER)
                     .summary("The definition of a value set is used to create a simple collection of codes suitable for use for data entry or validation.").responses(getApiResponses())
+                    .description("[expand](https://www.hl7.org/fhir/R4/operation-valueset-expand.html)")
                     .addParametersItem(Parameter()
                         .name("url")
                         .`in`("query")
@@ -160,16 +176,19 @@ class OpenApiConfig {
                     )
             .post(
                 Operation()
-                    .summary("The definition of a value set is used to create a simple collection of codes suitable for use for data entry or validation. Body should be a FHIR ValueSet").responses(getApiResponses())
-                .responses(getApiResponses())
-                .requestBody(RequestBody().content(Content().addMediaType("application/fhir+json",MediaType().schema(StringSchema()._default("{\"resourceType\":\"ValueSet\"}")))))
+                    .addTagsItem(FHIRSERVER)
+                    .summary("[expand](https://www.hl7.org/fhir/R4/operation-valueset-expand.html) The definition of a value set is used to create a simple collection of codes suitable for use for data entry or validation. Body should be a FHIR ValueSet").responses(getApiResponses())
+                    .responses(getApiResponses())
+                    .requestBody(RequestBody().content(Content().addMediaType("application/fhir+json",MediaType().schema(StringSchema()._default("{\"resourceType\":\"ValueSet\"}")))))
             )
         )
 
         val validateItem = PathItem()
             .post(
                 Operation()
+                    .addTagsItem(FHIRSERVER)
                     .summary("The validate operation checks whether the attached content would be acceptable either generally, as a create, an update or as a delete to an existing resource.")
+                    .description("[validate](https://www.hl7.org/fhir/R4/resource-operation-validate.html)")
                     .responses(getApiResponses())
                     .addParametersItem(Parameter()
                         .name("profile")
@@ -184,12 +203,7 @@ class OpenApiConfig {
         oas.path("/FHIR/R4/\$validate",validateItem)
 
         return oas
-          //  .path("FHIR/R4/CodeSystem",
-          //      PathItem().get(Operation().addParametersItem(
-          //          Parameter().name("url").required(true).`in`("token").description("The uri that identifies the code system")
-          //      )))
-           // .path("FHIR/R4/CodeSystem/\$lookup",
-           //     PathItem().get(Operation()))
+
     }
 
     fun getApiResponses() : ApiResponses {
@@ -206,6 +220,7 @@ class OpenApiConfig {
         val pathItem = PathItem()
             .get(
                 Operation()
+                    .addTagsItem(FHIRSERVER)
                     .summary("search-type")
                     .description("[search](http://www.hl7.org/fhir/search.html) for "+name +" instances.")
                     .responses(getApiResponses())

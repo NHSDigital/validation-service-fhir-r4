@@ -1,6 +1,7 @@
 package uk.nhs.nhsdigital.fhirvalidator.controller
 
 import ca.uhn.fhir.context.FhirContext
+import io.swagger.v3.oas.annotations.Hidden
 import uk.nhs.nhsdigital.fhirvalidator.service.VerifyOAS
 import uk.nhs.nhsdigital.fhirvalidator.util.createOperationOutcome
 import io.swagger.v3.oas.models.OpenAPI
@@ -14,6 +15,7 @@ import java.util.*
 
 
 @RestController
+@Hidden
 class VerifyController(
     @Qualifier("R4") private val fhirContext: FhirContext,
     private val verifyOAS:VerifyOAS
