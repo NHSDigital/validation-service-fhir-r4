@@ -9,6 +9,7 @@ import ca.uhn.fhir.context.support.ValidationSupportContext
 import ca.uhn.fhir.context.support.ValueSetExpansionOptions
 import ca.uhn.fhir.rest.annotation.*
 import ca.uhn.fhir.rest.param.DateParam
+import ca.uhn.fhir.rest.param.StringParam
 import ca.uhn.fhir.rest.param.TokenParam
 import ca.uhn.fhir.rest.server.IResourceProvider
 import ca.uhn.fhir.rest.server.exceptions.UnprocessableEntityException
@@ -100,7 +101,8 @@ class ValueSetProvider (@Qualifier("R4") private val fhirContext: FhirContext,
 
     @Operation(name = "\$expand", idempotent = true)
     fun expand(@ResourceParam valueSet: ValueSet?,
-               @OperationParam(name = ValueSet.SP_URL) url: TokenParam? ): ValueSet? {
+               @OperationParam(name = ValueSet.SP_URL) url: TokenParam?,
+                @OperationParam(name = "filter") filter: StringParam?): ValueSet? {
         if (url == null && valueSet == null) throw UnprocessableEntityException("Both resource and url can not be null")
         var valueSetR4: ValueSet?;
         if (url != null) {
@@ -110,6 +112,8 @@ class ValueSetProvider (@Qualifier("R4") private val fhirContext: FhirContext,
             valueSetR4 = valueSet;
         }
         if (valueSetR4 != null) {
+            var valueSetExpansionOptions = ValueSetExpansionOptions();
+            if (filter != null) valueSetExpansionOptions.filter = filter.value
             var expansion: ValueSetExpansionOutcome? =
                 supportChain.expandValueSet(this.validationSupportContext, ValueSetExpansionOptions(), valueSetR4)
             if (expansion != null) {
