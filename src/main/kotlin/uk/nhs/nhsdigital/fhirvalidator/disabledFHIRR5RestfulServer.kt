@@ -8,10 +8,9 @@ import uk.nhs.nhsdigital.fhirvalidator.interceptor.CapabilityStatementIntercepto
 import uk.nhs.nhsdigital.fhirvalidator.providerR5.CodeSystemProviderR5
 import uk.nhs.nhsdigital.fhirvalidator.providerR5.ValueSetProviderR5
 import java.util.*
-import javax.servlet.annotation.WebServlet
 
-@WebServlet("/FHIR/R5/*", loadOnStartup = 1)
-class FHIRR5RestfulServer(
+// disabled @WebServlet("/FHIR/R5/*", loadOnStartup = 1)
+class disabledFHIRR5RestfulServer(
     @Qualifier("R5") fhirContext: FhirContext,
     private val valueSetProviderR5: ValueSetProviderR5,
     private val codeSystemProviderR5: CodeSystemProviderR5

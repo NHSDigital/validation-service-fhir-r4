@@ -40,9 +40,18 @@ public class RemoteTerminologyServiceValidationSupport extends BaseValidationSup
 
         IGenericClient client = this.provideClient();
         IBaseParameters input = ParametersUtil.newInstance(this.getFhirContext());
-        ParametersUtil.addParameterToParameters(this.getFhirContext(), input, "valueSet", theValueSetToExpand);
-        if (theExpansionOptions.getFilter() != null && theExpansionOptions.getFilter().isEmpty()) {
-            ParametersUtil.addParameterToParameters(this.getFhirContext(), input, "filter", theExpansionOptions.getFilter());
+
+        if (theExpansionOptions.getFilter() != null && !theExpansionOptions.getFilter().isEmpty() && theValueSetToExpand instanceof ValueSet) {
+            // Probably delete this as the ValueSet is always R5
+            ParametersUtil.addParameterToParameters(this.getFhirContext(), input, "filter", new StringType().setValue(theExpansionOptions.getFilter()));
+            ParametersUtil.addParameterToParameters(this.getFhirContext(), input, "url", new UriType().setValue(((ValueSet) theValueSetToExpand).getUrl()));
+        }
+      //  } else if (theExpansionOptions.getFilter() != null && !theExpansionOptions.getFilter().isEmpty() && theValueSetToExpand instanceof org.hl7.fhir.r5.model.ValueSet) {
+      //      ParametersUtil.addParameterToParameters(this.getFhirContext(), input, "filter", new StringType().setValue(theExpansionOptions.getFilter()));
+      //      ParametersUtil.addParameterToParameters(this.getFhirContext(), input, "url", new UriType ().setValue(((org.hl7.fhir.r5.model.ValueSet)theValueSetToExpand).getUrl()));
+      //  }
+        else {
+            ParametersUtil.addParameterToParameters(this.getFhirContext(), input, "valueSet", theValueSetToExpand);
         }
         IBaseParameters output = client
                 .operation()

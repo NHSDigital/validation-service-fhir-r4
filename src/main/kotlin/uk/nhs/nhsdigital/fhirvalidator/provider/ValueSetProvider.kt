@@ -104,15 +104,16 @@ class ValueSetProvider (@Qualifier("R4") private val fhirContext: FhirContext,
                @OperationParam(name = ValueSet.SP_URL) url: TokenParam?,
                 @OperationParam(name = "filter") filter: StringParam?): ValueSet? {
         if (url == null && valueSet == null) throw UnprocessableEntityException("Both resource and url can not be null")
-        var valueSetR4: ValueSet?;
+        var valueSetR4: ValueSet? = null;
         if (url != null) {
             var valueSets = url?.let { search(it) }
-            valueSetR4= valueSets[0];
+            if (valueSets.size>0) valueSetR4= valueSets[0];
         } else {
             valueSetR4 = valueSet;
         }
         if (valueSetR4 != null) {
             var valueSetExpansionOptions = ValueSetExpansionOptions();
+            valueSetR4.expansion = null; // remove any previous expansion
             if (filter != null) valueSetExpansionOptions.filter = filter.value
             var expansion: ValueSetExpansionOutcome? =
                 supportChain.expandValueSet(this.validationSupportContext, valueSetExpansionOptions, valueSetR4)
