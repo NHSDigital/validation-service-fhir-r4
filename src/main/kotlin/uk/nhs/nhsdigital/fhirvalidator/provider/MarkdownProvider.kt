@@ -11,6 +11,7 @@ import uk.nhs.nhsdigital.fhirvalidator.service.CapabilityStatementApplier
 import uk.nhs.nhsdigital.fhirvalidator.service.MessageDefinitionApplier
 import uk.nhs.nhsdigital.fhirvalidator.service.OpenAPIParser
 import uk.nhs.nhsdigital.fhirvalidator.service.VerifyOAS
+import java.nio.charset.StandardCharsets
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 
@@ -30,7 +31,7 @@ class MarkdownProvider (
         servletResponse.setContentType("text/markdown")
         servletResponse.setCharacterEncoding("UTF-8")
         if (profile != null) {
-            servletResponse.writer.write(oasParser.generateMarkdown(profile.value))
+            servletResponse.writer.write(oasParser.generateMarkdown(java.net.URLDecoder.decode(profile.value, StandardCharsets.UTF_8.name())))
         }
         servletResponse.writer.flush()
         return

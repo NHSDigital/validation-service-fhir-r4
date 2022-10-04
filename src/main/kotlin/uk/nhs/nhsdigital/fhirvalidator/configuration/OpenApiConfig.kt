@@ -21,7 +21,8 @@ import org.springframework.context.annotation.Configuration
 
 @Configuration
 class OpenApiConfig {
-    var FHIRSERVER = "FHIR Validation Server"
+    var FHIRSERVER = "FHIR Conformance"
+    var OASVERIFICATION = "OAS v3 + FHIR Validation"
     @Bean
     fun customOpenAPI(
         fhirServerProperties: FHIRServerProperties,
@@ -33,7 +34,11 @@ class OpenApiConfig {
                 Info()
                     .title("NHS Digital Interoperability Standards - Conformance Support")
                     .version(fhirServerProperties.server.version)
-                    .description(fhirServerProperties.server.name)
+                    .description(fhirServerProperties.server.name
+                            + "\n "
+                            + "\n [UK Core Implementation Guide (0.5.1)](https://simplifier.net/guide/ukcoreimplementationguide0.5.0-stu1/home?version=current)"
+                            + "\n\n [NHS Digital Implementation Guide (2.6.0)](https://simplifier.net/guide/nhsdigital?version=2.6.0)"
+                        )
                     .termsOfService("http://swagger.io/terms/")
                     .license(License().name("Apache 2.0").url("http://springdoc.org"))
             )
@@ -172,24 +177,73 @@ class OpenApiConfig {
                         .style(Parameter.StyleEnum.SIMPLE)
                         .description("A canonical reference to a value set. The server must know the value set (e.g. it is defined explicitly in the server's value sets, or it is defined implicitly by some code system known to the server")
                         .schema(StringSchema().format("uri"))
-                        .example("https://fhir.nhs.uk/ValueSet/NHSDigital-MedicationRequest-Code"))
-                    .addParametersItem(Parameter()
+                        .example("https://fhir.hl7.org.uk/ValueSet/UKCore-EncounterType"))
+                 /*   .addParametersItem(Parameter()
                         .name("filter")
                         .`in`("query")
                         .required(false)
                         .style(Parameter.StyleEnum.SIMPLE)
                         .description("A text filter that is applied to restrict the codes that are returned (this is useful in a UI context).")
                         .schema(StringSchema())
-                        .example("Methotrexate"))
+                        .example("Methotrexate")) */
                     )
             .post(
                 Operation()
                     .addTagsItem(FHIRSERVER)
-                    .summary("[expand](https://www.hl7.org/fhir/R4/operation-valueset-expand.html) The definition of a value set is used to create a simple collection of codes suitable for use for data entry or validation. Body should be a FHIR ValueSet").responses(getApiResponses())
+                    .summary("The definition of a value set is used to create a simple collection of codes suitable for use for data entry or validation. Body should be a FHIR ValueSet").responses(getApiResponses())
+                    .description("[expand](https://www.hl7.org/fhir/R4/operation-valueset-expand.html)")
                     .responses(getApiResponses())
                     .requestBody(RequestBody().content(Content().addMediaType("application/fhir+json",MediaType().schema(StringSchema()._default("{\"resourceType\":\"ValueSet\"}")))))
             )
         )
+
+        val convertItem = PathItem()
+            .post(
+                Operation()
+                    .addTagsItem(FHIRSERVER)
+                    .summary("Switch between XML and JSON formats")
+                    .addParametersItem(Parameter()
+                        .name("Accept")
+                        .`in`("header")
+                        .required(true)
+                        .style(Parameter.StyleEnum.SIMPLE)
+                        .description("Select response format")
+                        .schema(StringSchema()._enum(listOf("application/fhir+xml","application/fhir+json"))))
+                    .responses(getApiResponsesXMLJSON())
+                    .requestBody(RequestBody().content(Content()
+                        .addMediaType("application/fhir+json",
+                            MediaType().schema(StringSchema()._default("{\"resourceType\":\"CapabilityStatement\"}")))
+                        .addMediaType("application/fhir+xml",MediaType().schema(StringSchema()))
+                        )))
+        oas.path("/FHIR/R4/\$convert",convertItem)
+
+        val capabilityStatementItem = PathItem()
+            .post(
+                Operation()
+                    .addTagsItem(FHIRSERVER)
+                    .summary("Converts a FHIR CapabilityStatement to openapi v3 format")
+                    .responses(getApiResponsesMarkdown())
+                    .requestBody(RequestBody().content(Content().addMediaType("application/fhir+json",MediaType().schema(StringSchema()._default("{\"resourceType\":\"CapabilityStatement\"}")))))
+            )
+        oas.path("/FHIR/R4/\$openapi",capabilityStatementItem)
+
+        val markdownItem = PathItem()
+            .get(
+                Operation()
+                    .addTagsItem(FHIRSERVER)
+                    .summary("Converts a FHIR profile to a simplifier compatible markdown format")
+                    .responses(getApiResponsesMarkdown())
+                    .addParametersItem(Parameter()
+                        .name("url")
+                        .`in`("query")
+                        .required(true)
+                        .style(Parameter.StyleEnum.SIMPLE)
+                        .description("The uri that identifies the resource.")
+                        .schema(StringSchema())
+                        .example("https://fhir.nhs.uk/StructureDefinition/NHSDigital-Organization"))
+                    //.requestBody(RequestBody().content(Content().addMediaType("application/fhir+json",MediaType().schema(StringSchema()._default("{\"resourceType\":\"Patient\"}")))))
+            )
+        oas.path("/FHIR/R4/\$markdown",markdownItem)
 
         val validateItem = PathItem()
             .post(
@@ -210,6 +264,18 @@ class OpenApiConfig {
             )
         oas.path("/FHIR/R4/\$validate",validateItem)
 
+        val verifyOASItem = PathItem()
+            .post(
+                Operation()
+                    .addTagsItem(OASVERIFICATION)
+                    .summary("Verifies a self contained OAS file for FHIR Conformance. Response format is the same as the FHIR \$validate operation")
+                    .description("This is a proof of concept.")
+                    .responses(getApiResponsesRAWJSON())
+                    .requestBody(RequestBody().content(Content()
+                        .addMediaType("application/x-yaml",MediaType().schema(StringSchema()))
+                        .addMediaType("application/json",MediaType().schema(StringSchema()))))
+            )
+        oas.path("/\$verifyOAS",verifyOASItem)
         return oas
 
     }
@@ -221,6 +287,41 @@ class OpenApiConfig {
         val exampleList = mutableListOf<Example>()
         exampleList.add(Example().value("{}"))
         response200.content = Content().addMediaType("application/fhir+json", MediaType().schema(StringSchema()._default("{}")))
+        val apiResponses = ApiResponses().addApiResponse("200",response200)
+        return apiResponses
+    }
+
+    fun getApiResponsesMarkdown() : ApiResponses {
+
+        val response200 = ApiResponse()
+        response200.description = "OK"
+        val exampleList = mutableListOf<Example>()
+        exampleList.add(Example().value("{}"))
+        response200.content = Content().addMediaType("text/markdown", MediaType().schema(StringSchema()._default("{}")))
+        val apiResponses = ApiResponses().addApiResponse("200",response200)
+        return apiResponses
+    }
+    fun getApiResponsesXMLJSON() : ApiResponses {
+
+        val response200 = ApiResponse()
+        response200.description = "OK"
+        val exampleList = mutableListOf<Example>()
+        exampleList.add(Example().value("{}"))
+        response200.content = Content()
+            .addMediaType("application/fhir+json", MediaType().schema(StringSchema()._default("{}")))
+            .addMediaType("application/fhir+xml", MediaType().schema(StringSchema()._default("<>")))
+        val apiResponses = ApiResponses().addApiResponse("200",response200)
+        return apiResponses
+    }
+
+    fun getApiResponsesRAWJSON() : ApiResponses {
+
+        val response200 = ApiResponse()
+        response200.description = "OK"
+        val exampleList = mutableListOf<Example>()
+        exampleList.add(Example().value("{}"))
+        response200.content = Content()
+            .addMediaType("application/json", MediaType().schema(StringSchema()._default("{}")))
         val apiResponses = ApiResponses().addApiResponse("200",response200)
         return apiResponses
     }

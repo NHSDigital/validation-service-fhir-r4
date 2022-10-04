@@ -115,7 +115,7 @@ class ValueSetProvider (@Qualifier("R4") private val fhirContext: FhirContext,
             var valueSetExpansionOptions = ValueSetExpansionOptions();
             if (filter != null) valueSetExpansionOptions.filter = filter.value
             var expansion: ValueSetExpansionOutcome? =
-                supportChain.expandValueSet(this.validationSupportContext, ValueSetExpansionOptions(), valueSetR4)
+                supportChain.expandValueSet(this.validationSupportContext, valueSetExpansionOptions, valueSetR4)
             if (expansion != null) {
                 if (expansion.valueSet is ValueSet) {
                     var newValueSet = expansion.valueSet as ValueSet

@@ -41,7 +41,9 @@ public class RemoteTerminologyServiceValidationSupport extends BaseValidationSup
         IGenericClient client = this.provideClient();
         IBaseParameters input = ParametersUtil.newInstance(this.getFhirContext());
         ParametersUtil.addParameterToParameters(this.getFhirContext(), input, "valueSet", theValueSetToExpand);
-
+        if (theExpansionOptions.getFilter() != null && theExpansionOptions.getFilter().isEmpty()) {
+            ParametersUtil.addParameterToParameters(this.getFhirContext(), input, "filter", theExpansionOptions.getFilter());
+        }
         IBaseParameters output = client
                 .operation()
                 .onType("ValueSet")
@@ -72,7 +74,6 @@ public class RemoteTerminologyServiceValidationSupport extends BaseValidationSup
             return null;
         } else {
             IBaseResource valueSet = theValueSet;
-
             String valueSetUrl = DefaultProfileValidationSupport.getConformanceResourceUrl(this.myCtx, theValueSet);
             // KGM this next section
             if (valueSet == null && StringUtils.isNotBlank(valueSetUrl)) valueSet = theValidationSupportContext.getRootValidationSupport().fetchValueSet(valueSetUrl);
