@@ -22,6 +22,7 @@ import org.springframework.context.annotation.Configuration
 @Configuration
 class OpenApiConfig {
     var FHIRSERVER = "FHIR Conformance"
+    var FHIRSERVER_R4B = "Medicine Definition Demo"
     var OASVERIFICATION = "OAS v3 + FHIR Validation"
     @Bean
     fun customOpenAPI(
@@ -286,6 +287,27 @@ class OpenApiConfig {
                     .requestBody(RequestBody().content(Content().addMediaType("application/fhir+json",MediaType().schema(StringSchema()._default("{\"resourceType\":\"Patient\"}")))))
             )
         oas.path("/FHIR/R4/\$validate",validateItem)
+
+        // FHIR R4B/R5
+
+
+        val medicineItem = PathItem()
+            .get(
+                Operation()
+                    .addTagsItem(FHIRSERVER_R4B)
+                    .summary("A medicinal product, being a substance or combination of substances that is intended to treat, prevent or diagnose a disease, or to restore, correct or modify physiological functions by exerting a pharmacological, immunological or metabolic action.")
+                    .description("[Medication Definition Module](https://www.hl7.org/fhir/medication-definition-module.html)")
+                    .responses(getApiResponses())
+                    .addParametersItem(Parameter()
+                        .name("name")
+                        .`in`("query")
+                        .required(false)
+                        .style(Parameter.StyleEnum.SIMPLE)
+                        .description("The full product name")
+                        .schema(StringSchema())
+                        .example("Aspirin"))
+            )
+        oas.path("/FHIR/R4B/MedicinalProductDefinition",medicineItem)
 
         val verifyOASItem = PathItem()
             .post(

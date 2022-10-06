@@ -1,6 +1,7 @@
 package uk.nhs.nhsdigital.fhirvalidator.configuration
 
 import ca.uhn.fhir.context.FhirContext
+import ca.uhn.fhir.context.FhirVersionEnum
 import ca.uhn.fhir.parser.StrictErrorHandler
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -24,7 +25,7 @@ open class ApplicationConfiguration {
 
     @Bean("R4B")
     open fun fhirR4BContext(): FhirContext {
-        val fhirContext = FhirContext.forR4()
+        val fhirContext = FhirContext.forR5()
         fhirContext.setParserErrorHandler(StrictErrorHandler())
         return fhirContext
     }
