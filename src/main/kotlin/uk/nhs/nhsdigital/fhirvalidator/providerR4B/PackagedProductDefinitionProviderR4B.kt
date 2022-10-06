@@ -24,17 +24,17 @@ import uk.nhs.nhsdigital.fhirvalidator.util.FhirSystems
 import java.text.SimpleDateFormat
 
 @Component
-class MedicinalProductDefinitionProviderR4B (@Qualifier("R5") private val fhirContext: FhirContext,
-                                             private val supportChain: ValidationSupportChain,
-                                             private val valueSetProvider: ValueSetProvider,
-                                             private val npmPackages: List<NpmPackage>) : IResourceProvider {
+class PackagedProductDefinitionProviderR4B (@Qualifier("R5") private val fhirContext: FhirContext,
+                                            private val supportChain: ValidationSupportChain,
+                                            private val valueSetProvider: ValueSetProvider,
+                                            private val npmPackages: List<NpmPackage>) : IResourceProvider {
     /**
      * The getResourceType method comes from IResourceProvider, and must
      * be overridden to indicate what type of resource this provider
      * supplies.
      */
-    override fun getResourceType(): Class<MedicinalProductDefinition> {
-        return MedicinalProductDefinition::class.java
+    override fun getResourceType(): Class<PackagedProductDefinition> {
+        return PackagedProductDefinition::class.java
     }
     private val validationSupportContext = ValidationSupportContext(supportChain)
 
@@ -44,13 +44,13 @@ class MedicinalProductDefinitionProviderR4B (@Qualifier("R5") private val fhirCo
 
     @Read
     @Throws(Exception::class)
-    fun getPatient(@IdParam internalId: IdType): MedicinalProductDefinition? {
+    fun getPatient(@IdParam internalId: IdType): PackagedProductDefinition? {
 
         var lookupCodeResult: IValidationSupport.LookupCodeResult? =
             supportChain.lookupCode(this.validationSupportContext,  FhirSystems.SNOMED_CT, internalId.getIdPart())
         if (lookupCodeResult != null) {
-            var medicinalProductDefinition = MedicinalProductDefinition()
-            medicinalProductDefinition.id = lookupCodeResult.searchedForCode
+            var packagedProductDefinition = PackagedProductDefinition()
+            packagedProductDefinition.id = lookupCodeResult.searchedForCode
 
 
 
@@ -58,10 +58,10 @@ class MedicinalProductDefinitionProviderR4B (@Qualifier("R5") private val fhirCo
                 var lookupCodeResultUK = lookupCodeResult as LookupCodeResultUK
                 for (property in lookupCodeResultUK.originalParameters.parameter) {
                     if (property.name.equals("code")) {
-                        medicinalProductDefinition.addIdentifier()
+                        packagedProductDefinition.addIdentifier()
                             .setSystem(FhirSystems.DMandD)
                             .setValue(property.value.toString())
-                        medicinalProductDefinition.addIdentifier()
+                        packagedProductDefinition.addIdentifier()
                             .setSystem(FhirSystems.SNOMED_CT)
                             .setValue(property.value.toString())
                     } else
@@ -72,15 +72,15 @@ class MedicinalProductDefinitionProviderR4B (@Qualifier("R5") private val fhirCo
                                 val valueType = property.part[0].value as CodeType
                                 if (valueType.value.equals("inactive")) {
                                     if (property.part[1].value is BooleanType && (property.part[1].value as org.hl7.fhir.r4.model.BooleanType).value) {
-                                        medicinalProductDefinition.status =
+                                        packagedProductDefinition.status =
                                             CodeableConcept().addCoding(Coding().setCode("retired"))
                                     } else {
-                                        medicinalProductDefinition.status =
+                                        packagedProductDefinition.status =
                                             CodeableConcept().addCoding(Coding().setCode("active"))
                                     }
                                 } else if (valueType.value.equals("effectiveTime")) {
                                     if (property.part[1].value is StringType) {
-                                        medicinalProductDefinition.statusDate = sdf.parse((property.part[1].value as StringType).value)
+                                        packagedProductDefinition.statusDate = sdf.parse((property.part[1].value as StringType).value)
                                     }
                                 }
                                 else
@@ -89,84 +89,78 @@ class MedicinalProductDefinitionProviderR4B (@Qualifier("R5") private val fhirCo
 
                                     when (code.value) {
                                         "10363801000001108" -> {
-                                            medicinalProductDefinition.addClassification(CodeableConcept().addCoding(
+                                            packagedProductDefinition.addCharacteristic(CodeableConcept().addCoding(
                                                 Coding().setSystem(FhirSystems.SNOMED_CT).setCode(code.value).setDisplay("Virtual medicinal product")
                                             ))
                                         }
                                         "10363901000001102" -> {
-                                            medicinalProductDefinition.addClassification(CodeableConcept().addCoding(
+                                            packagedProductDefinition.addCharacteristic(CodeableConcept().addCoding(
                                                 Coding().setSystem(FhirSystems.SNOMED_CT).setCode(code.value).setDisplay("Actual medicinal product")
                                             ))
                                         }
                                         "10364001000001104" -> {
-                                            medicinalProductDefinition.addClassification(CodeableConcept().addCoding(
+                                            packagedProductDefinition.addCharacteristic(CodeableConcept().addCoding(
                                                 Coding().setSystem(FhirSystems.SNOMED_CT).setCode(code.value).setDisplay("Actual medicinal product pack")
                                             ))
                                         }
                                         "8653601000001108" -> {
-                                            medicinalProductDefinition.addClassification(CodeableConcept().addCoding(
+                                            packagedProductDefinition.addCharacteristic(CodeableConcept().addCoding(
                                                 Coding().setSystem(FhirSystems.SNOMED_CT).setCode(code.value).setDisplay("Virtual medicinal product pack")
                                             ))
                                         }
                                         else -> {
-                                            val reference = Reference().setReference("MedicinalProductDefinition/"+code.value)
+                                            val reference = Reference()
                                             var lookupCode: IValidationSupport.LookupCodeResult? =
                                                 supportChain.lookupCode(this.validationSupportContext,  FhirSystems.SNOMED_CT, code.value)
-                                            if (lookupCode != null) reference.display = lookupCode.codeDisplay
-                                            var crossReference = MedicinalProductDefinition.MedicinalProductDefinitionCrossReferenceComponent()
-                                                .setProduct(CodeableReference().setReference(reference))
-                                            crossReference.type = CodeableConcept().addCoding(Coding().setCode(valueType.value))
                                             if (lookupCode != null) {
-                                                var codeType = setTypeCoding(lookupCode)
-                                                if (codeType != null) {
-                                                    crossReference.type.addCoding(codeType)
+                                                reference.display = lookupCode.codeDisplay
+                                                if (isProduct(lookupCode)) {
+                                                    reference.setReference("MedicinalProductDefinition/"+code.value)
                                                 }
+                                                reference.identifier = Identifier()
+                                                    .setType(CodeableConcept().addCoding(setTypeCoding(lookupCode)))
+                                                    .setSystem(FhirSystems.DMandD)
+                                                    .setValue(code.value)
+                                                packagedProductDefinition.addPackageFor(reference)
                                             }
-                                            medicinalProductDefinition.addCrossReference(crossReference)
+
                                         }
                                     }
 
                                 } else {
                                     for (part in property.part) {
-                                      //  System.out.println(property.name + " " +part.name + " = " + part.value )
+                                 //       System.out.println(property.name + " " +part.name + " = " + part.value )
                                     }
                                 }
                             }
                         } else {
                             for (part in property.part) {
-                          //      System.out.println(property.name + " " +part.name + " = " + part.value )
+                               // System.out.println(property.name + " " +part.name + " = " + part.value )
                             }
                         }
 
                     } else if (property.name.equals("designation") && property.hasPart() && property.part.size>2) {
-                        val name = MedicinalProductDefinition.MedicinalProductDefinitionNameComponent((property.part[2].value as StringType).value)
-                        val type = property.part[1].value as org.hl7.fhir.r4.model.Coding
-                        name.type = CodeableConcept().addCoding(Coding()
-                            .setSystem(type.system)
-                            .setCode(type.code)
-                            .setDisplay(type.display)
-                        )
-                        medicinalProductDefinition.addName(name)
+                        packagedProductDefinition.name = lookupCodeResult.codeDisplay
                     }
                     else {
-                 //       System.out.println(property.name)
+                       // System.out.println(property.name)
                     }
                 }
             }
-            if (isProduct(lookupCodeResult) )return medicinalProductDefinition
+            if (isPack(lookupCodeResult) )return packagedProductDefinition
         }
         return null;
     }
     @Search
     fun search(
-       // @OptionalParam(name = MedicinalProductDefinition.SP_IDENTIFIER) identifier : TokenParam?,
-        @OptionalParam(name = MedicinalProductDefinition.SP_NAME) name : StringParam?
-    ): List<MedicinalProductDefinition> {
-        val list = mutableListOf<MedicinalProductDefinition>()
+       // @OptionalParam(name = packagedProductDefinition.SP_IDENTIFIER) identifier : TokenParam?,
+        @OptionalParam(name = PackagedProductDefinition.SP_NAME) name : StringParam?
+    ): List<PackagedProductDefinition> {
+        val list = mutableListOf<PackagedProductDefinition>()
         if (name != null) {
             var valueSetR4: ValueSet? = null;
 
-            var valueSets = valueSetProvider.search(TokenParam().setValue("https://fhir.nhs.uk/ValueSet/NHSDigital-MedicationRequest-Code"))
+            var valueSets = valueSetProvider.search(TokenParam().setValue("https://fhir.nhs.uk/ValueSet/NHSDigital-MedicationDispense-Code"))
             if (valueSets.size>0) valueSetR4= valueSets[0];
 
             if (valueSetR4 != null) {
@@ -186,19 +180,19 @@ class MedicinalProductDefinitionProviderR4B (@Qualifier("R5") private val fhirCo
                     if (valueSetR4.hasExpansion() && valueSetR4.expansion.hasContains())
                     {
                         for (content in valueSetR4.expansion.contains) {
-                            var medicinalProductDefinition = MedicinalProductDefinition()
-                            medicinalProductDefinition.id = content.code
-                            medicinalProductDefinition.addName(MedicinalProductDefinition.MedicinalProductDefinitionNameComponent(content.display))
+                            var packagedProductDefinition = PackagedProductDefinition()
+                            packagedProductDefinition.id = content.code
+                            packagedProductDefinition.name = content.display
 
-                            medicinalProductDefinition.addIdentifier()
+                            packagedProductDefinition.addIdentifier()
                                 .setSystem(FhirSystems.DMandD)
                                 .setValue(content.code)
-                            medicinalProductDefinition.addIdentifier()
+                            packagedProductDefinition.addIdentifier()
                                 .setSystem(FhirSystems.SNOMED_CT)
                                 .setValue(content.code)
                             var lookupCode: IValidationSupport.LookupCodeResult? =
                                 supportChain.lookupCode(this.validationSupportContext,  FhirSystems.SNOMED_CT, content.code)
-                            if (lookupCode != null && isProduct(lookupCode) ) list.add(medicinalProductDefinition)
+                            if (lookupCode != null && isPack(lookupCode) ) list.add(packagedProductDefinition)
                         }
                     }
                 }
@@ -246,6 +240,44 @@ class MedicinalProductDefinitionProviderR4B (@Qualifier("R5") private val fhirCo
         }
         return false;
     }
+
+    fun isPack(lookupCodeResult: IValidationSupport.LookupCodeResult) : Boolean {
+        if (lookupCodeResult is LookupCodeResultUK ) {
+            var lookupCodeResultUK = lookupCodeResult as LookupCodeResultUK
+            for (property in lookupCodeResultUK.originalParameters.parameter) {
+                if (property.name.equals("property") && property.hasPart() && property.part.size>1) {
+                    if (property.part[0].name.equals("code")) {
+                        if (property.part[0].value is CodeType) {
+                            val valueType = property.part[0].value as CodeType
+
+                            if ((valueType.value.equals("parent") || valueType.value.equals("child")) && property.part[1].value is CodeType) {
+                                var code = property.part[1].value as CodeType
+
+                                when (code.value) {
+                                    "10363801000001108" -> {
+                                        return false
+                                    }
+                                    "10363901000001102" -> {
+                                        return false
+                                    }
+                                    "10364001000001104" -> {
+                                        return true
+                                    }
+                                    "8653601000001108" -> {
+                                        return true
+                                    }
+
+                                }
+
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
     fun setTypeCoding(lookupCodeResult: IValidationSupport.LookupCodeResult) : Coding? {
         if (lookupCodeResult is LookupCodeResultUK ) {
             var lookupCodeResultUK = lookupCodeResult as LookupCodeResultUK

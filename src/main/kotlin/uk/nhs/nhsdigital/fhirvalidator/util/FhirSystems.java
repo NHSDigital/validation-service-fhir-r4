@@ -33,6 +33,8 @@ public final class FhirSystems {
 
     public static final String SNOMED_CT = "http://snomed.info/sct";
 
+    public static final String DMandD= "https://dmd.nhs.uk";
+
     public static final String ISO_EHR_EVENTS = "http://terminology.hl7.org/CodeSystem/iso-21089-lifecycle";
 
     public static final String FHIR_RESOURCE_TYPE = "http://hl7.org/fhir/resource-types";
