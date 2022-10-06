@@ -22,6 +22,13 @@ open class ApplicationConfiguration {
         return fhirContext
     }
 
+    @Bean("R4B")
+    open fun fhirR4BContext(): FhirContext {
+        val fhirContext = FhirContext.forR4()
+        fhirContext.setParserErrorHandler(StrictErrorHandler())
+        return fhirContext
+    }
+
     @Bean("STU3")
     open fun fhirSTU3Context(): FhirContext {
         val fhirContext = FhirContext.forDstu3()

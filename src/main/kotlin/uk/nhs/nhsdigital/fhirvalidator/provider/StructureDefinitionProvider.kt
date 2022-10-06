@@ -1,8 +1,10 @@
 package uk.nhs.nhsdigital.fhirvalidator.provider
 
 import ca.uhn.fhir.context.FhirContext
+import ca.uhn.fhir.rest.annotation.OptionalParam
 import ca.uhn.fhir.rest.annotation.RequiredParam
 import ca.uhn.fhir.rest.annotation.Search
+import ca.uhn.fhir.rest.param.StringParam
 import ca.uhn.fhir.rest.param.TokenParam
 import ca.uhn.fhir.rest.server.IResourceProvider
 import ca.uhn.fhir.validation.FhirValidator
@@ -32,14 +34,40 @@ class StructureDefinitionProvider (
 
 
     @Search
-    fun search(@RequiredParam(name = StructureDefinition.SP_URL) url: TokenParam): List<StructureDefinition> {
+    fun search(@OptionalParam(name = StructureDefinition.SP_URL) url: TokenParam?,
+               @OptionalParam(name = StructureDefinition.SP_NAME) name: StringParam?,
+               @OptionalParam(name = StructureDefinition.SP_BASE) base: TokenParam?
+    ): List<StructureDefinition> {
         val list = mutableListOf<StructureDefinition>()
-        var decodeUri = java.net.URLDecoder.decode(url.value, StandardCharsets.UTF_8.name());
         for (resource in supportChain.fetchAllStructureDefinitions()) {
-            val structureDefinition = resource as StructureDefinition
-            if (structureDefinition.url.equals(decodeUri)) {
-                resource.setId(decodeUri);
-
+            var structureDefinition = resource as StructureDefinition
+            if (
+                ((url != null)
+                        && structureDefinition.url.equals(
+                    URLDecoder.decode(
+                        url.value,
+                        StandardCharsets.UTF_8.name()
+                    )
+                )) ||
+                ((base != null)
+                        && structureDefinition.hasBaseDefinition()
+                        && structureDefinition.baseDefinition.equals(
+                    URLDecoder.decode(
+                        base.value,
+                        StandardCharsets.UTF_8.name()
+                    )
+                )) ||
+                ((name != null) && (structureDefinition.name.contains(name.value)
+                        ||
+                        ((structureDefinition.title != null) && structureDefinition.title.contains(name.value))))
+            ) {
+                if (structureDefinition.id == null) structureDefinition.id = structureDefinition.name
+                if (url == null) {
+                    // dirty clone
+                    structureDefinition = fhirContext.newJsonParser().parseResource(
+                        fhirContext.newJsonParser().encodeResourceToString(structureDefinition)) as StructureDefinition
+                    structureDefinition.snapshot = null
+                }
                 list.add(structureDefinition)
             }
         }
