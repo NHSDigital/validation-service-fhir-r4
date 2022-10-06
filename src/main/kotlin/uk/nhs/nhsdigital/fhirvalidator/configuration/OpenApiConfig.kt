@@ -22,7 +22,7 @@ import org.springframework.context.annotation.Configuration
 @Configuration
 class OpenApiConfig {
     var FHIRSERVER = "FHIR Conformance"
-    var FHIRSERVER_R4B = "Medicine Definition Demo"
+    var FHIRSERVER_R4B = "Medication Definition Module Demo"
     var OASVERIFICATION = "OAS v3 + FHIR Validation"
     @Bean
     fun customOpenAPI(
@@ -295,7 +295,7 @@ class OpenApiConfig {
             .get(
                 Operation()
                     .addTagsItem(FHIRSERVER_R4B)
-                    .summary("A medicinal product, being a substance or combination of substances that is intended to treat, prevent or diagnose a disease, or to restore, correct or modify physiological functions by exerting a pharmacological, immunological or metabolic action.")
+                    .summary("EXPERIMENTAL A medicinal product, being a substance or combination of substances that is intended to treat, prevent or diagnose a disease, or to restore, correct or modify physiological functions by exerting a pharmacological, immunological or metabolic action.")
                     .description("[Medication Definition Module](https://www.hl7.org/fhir/medication-definition-module.html)")
                     .responses(getApiResponses())
                     .addParametersItem(Parameter()
@@ -305,9 +305,27 @@ class OpenApiConfig {
                         .style(Parameter.StyleEnum.SIMPLE)
                         .description("The full product name")
                         .schema(StringSchema())
-                        .example("Aspirin"))
+                        .example("Methotrexate"))
             )
         oas.path("/FHIR/R4B/MedicinalProductDefinition",medicineItem)
+
+        val medicineReadItem = PathItem()
+            .get(
+                Operation()
+                    .addTagsItem(FHIRSERVER_R4B)
+                    .summary("EXPERIMENTAL A medicinal product, being a substance or combination of substances that is intended to treat, prevent or diagnose a disease, or to restore, correct or modify physiological functions by exerting a pharmacological, immunological or metabolic action.")
+                    .description("[Medication Definition Module](https://www.hl7.org/fhir/medication-definition-module.html)")
+                    .responses(getApiResponses())
+                    .addParametersItem(Parameter()
+                        .name("id")
+                        .`in`("path")
+                        .required(false)
+                        .style(Parameter.StyleEnum.SIMPLE)
+                        .description("The product dm+d/SNOMED CT code")
+                        .schema(StringSchema())
+                        .example("15517911000001104"))
+            )
+        oas.path("/FHIR/R4B/MedicinalProductDefinition/{id}",medicineReadItem)
 
         val verifyOASItem = PathItem()
             .post(
