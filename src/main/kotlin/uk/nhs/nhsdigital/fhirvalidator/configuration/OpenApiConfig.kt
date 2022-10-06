@@ -284,7 +284,10 @@ class OpenApiConfig {
                         .description("The uri that identifies the profile. If no profile uri is supplied, NHS Digital defaults will be used.")
                         .schema(StringSchema().format("token"))
                         .example("https://fhir.hl7.org.uk/StructureDefinition/UKCore-Patient"))
-                    .requestBody(RequestBody().content(Content().addMediaType("application/fhir+json",MediaType().schema(StringSchema()._default("{\"resourceType\":\"Patient\"}")))))
+                    .requestBody(RequestBody().content(Content()
+                        .addMediaType("application/fhir+json",MediaType().schema(StringSchema()._default("{\"resourceType\":\"Patient\"}")))
+                        .addMediaType("application/fhir+xml",MediaType().schema(StringSchema()))
+                    ))
             )
         oas.path("/FHIR/R4/\$validate",validateItem)
 
