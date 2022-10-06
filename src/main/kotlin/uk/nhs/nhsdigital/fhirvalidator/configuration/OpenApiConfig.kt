@@ -209,7 +209,7 @@ class OpenApiConfig {
                         .style(Parameter.StyleEnum.SIMPLE)
                         .description("(EXPERIMENTAL - ValueSet must be on the terminology server) A text filter that is applied to restrict the codes that are returned (this is useful in a UI context).")
                         .schema(StringSchema())
-                        .example("Methotrexate"))
+                        .example("Methotrexate 5mg"))
                     )
             .post(
                 Operation()
@@ -308,7 +308,7 @@ class OpenApiConfig {
                         .style(Parameter.StyleEnum.SIMPLE)
                         .description("The full product name")
                         .schema(StringSchema())
-                        .example("Methotrexate"))
+                        .example("Methotrexate 5mg"))
             )
         oas.path("/FHIR/R5/MedicinalProductDefinition",medicineItem)
 
@@ -344,7 +344,7 @@ class OpenApiConfig {
                         .style(Parameter.StyleEnum.SIMPLE)
                         .description("A name for this package.")
                         .schema(StringSchema())
-                        .example("Methotrexate"))
+                        .example("Methotrexate 5mg"))
             )
         oas.path("/FHIR/R5/PackagedProductDefinition",medicinePackItem)
 
