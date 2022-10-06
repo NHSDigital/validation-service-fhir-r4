@@ -51,7 +51,7 @@ class MedicinalProductDefinitionProviderR4B (@Qualifier("R5") private val fhirCo
             var medicinalProductDefinition = MedicinalProductDefinition()
             medicinalProductDefinition.id = lookupCodeResult.searchedForCode
 
-            medicinalProductDefinition.addName(MedicinalProductDefinition.MedicinalProductDefinitionNameComponent(lookupCodeResult.codeDisplay))
+
 
             if (lookupCodeResult is LookupCodeResultUK ) {
                 var lookupCodeResultUK = lookupCodeResult as LookupCodeResultUK
@@ -137,7 +137,17 @@ class MedicinalProductDefinitionProviderR4B (@Qualifier("R5") private val fhirCo
                             }
                         }
 
-                    } else {
+                    } else if (property.name.equals("designation") && property.hasPart() && property.part.size>2) {
+                        val name = MedicinalProductDefinition.MedicinalProductDefinitionNameComponent((property.part[2].value as StringType).value)
+                        val type = property.part[1].value as org.hl7.fhir.r4.model.Coding
+                        name.type = CodeableConcept().addCoding(Coding()
+                            .setSystem(type.system)
+                            .setCode(type.code)
+                            .setDisplay(type.display)
+                        )
+                        medicinalProductDefinition.addName(name)
+                    }
+                    else {
                         System.out.println(property.name)
                     }
                 }

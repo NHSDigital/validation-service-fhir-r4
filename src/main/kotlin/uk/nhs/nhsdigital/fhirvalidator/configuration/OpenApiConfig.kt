@@ -23,7 +23,7 @@ import org.springframework.context.annotation.Configuration
 class OpenApiConfig {
     var FHIRSERVER = "FHIR Conformance"
     var FHIRSERVER_R4B = "Medication Definition Module Demo"
-    var OASVERIFICATION = "OAS v3 + FHIR Validation"
+    var OASVERIFICATION = "OAS FHIR Conformance"
     @Bean
     fun customOpenAPI(
         fhirServerProperties: FHIRServerProperties,
@@ -307,7 +307,7 @@ class OpenApiConfig {
                         .schema(StringSchema())
                         .example("Methotrexate"))
             )
-        oas.path("/FHIR/R4B/MedicinalProductDefinition",medicineItem)
+        oas.path("/FHIR/R5/MedicinalProductDefinition",medicineItem)
 
         val medicineReadItem = PathItem()
             .get(
@@ -325,7 +325,7 @@ class OpenApiConfig {
                         .schema(StringSchema())
                         .example("15517911000001104"))
             )
-        oas.path("/FHIR/R4B/MedicinalProductDefinition/{id}",medicineReadItem)
+        oas.path("/FHIR/R5/MedicinalProductDefinition/{id}",medicineReadItem)
 
         val verifyOASItem = PathItem()
             .post(

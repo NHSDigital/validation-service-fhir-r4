@@ -9,7 +9,7 @@ import uk.nhs.nhsdigital.fhirvalidator.providerR4B.MedicinalProductDefinitionPro
 import java.util.*
 import javax.servlet.annotation.WebServlet
 
-@WebServlet("/FHIR/R4B/*", loadOnStartup = 1)
+@WebServlet("/FHIR/R5/*", loadOnStartup = 1)
 class FHIRR4BRestfulServer(
     @Qualifier("R5") fhirContext: FhirContext,
     private val medicinalProductDefinitionProviderR4B: MedicinalProductDefinitionProviderR4B
