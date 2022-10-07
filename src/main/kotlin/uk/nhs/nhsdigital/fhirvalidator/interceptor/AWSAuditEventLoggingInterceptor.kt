@@ -10,6 +10,7 @@ import ca.uhn.fhir.rest.api.server.RequestDetails
 import ca.uhn.fhir.rest.server.exceptions.BaseServerResponseException
 import ca.uhn.fhir.rest.server.servlet.ServletRequestDetails
 import org.apache.commons.lang3.StringUtils
+import org.hl7.fhir.instance.model.api.IBaseResource
 import org.hl7.fhir.r4.model.*
 import org.slf4j.LoggerFactory
 import uk.nhs.nhsdigital.fhirvalidator.configuration.FHIRServerProperties
@@ -58,7 +59,12 @@ class AWSAuditEventLoggingInterceptor(
                 fhirResource = String(requestContents, Constants.CHARSET_UTF8)
                 if (!fhirResource.isEmpty()) {
                     try {
-                        val baseResource = ctx.newJsonParser().parseResource(fhirResource)
+                        var baseResource : IBaseResource? = null
+                        try {
+                            baseResource = ctx.newJsonParser().parseResource(fhirResource)
+                        } catch (ex : Exception) {
+                            baseResource = ctx.newXmlParser().parseResource(fhirResource)
+                        }
                         if (baseResource is QuestionnaireResponse) {
                             patientId = baseResource.subject.reference
                         }
@@ -103,7 +109,12 @@ class AWSAuditEventLoggingInterceptor(
                     fhirResource = String(requestContents, Constants.CHARSET_UTF8)
                     if (!fhirResource.isEmpty()) {
                         try {
-                            val baseResource = ctx.newJsonParser().parseResource(fhirResource)
+                            var baseResource : IBaseResource? = null
+                            try {
+                                baseResource = ctx.newJsonParser().parseResource(fhirResource)
+                            } catch (ex : Exception) {
+                                baseResource = ctx.newXmlParser().parseResource(fhirResource)
+                            }
                             if (baseResource is QuestionnaireResponse) {
                                 patientId = baseResource.subject.reference
                             }
