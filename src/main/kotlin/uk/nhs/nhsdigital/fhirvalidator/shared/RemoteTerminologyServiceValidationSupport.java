@@ -29,8 +29,7 @@ public class RemoteTerminologyServiceValidationSupport extends BaseValidationSup
     public RemoteTerminologyServiceValidationSupport(FhirContext theFhirContext) {
 
         super(theFhirContext);
-
-        theFhirContext.getRestfulClientFactory().setConnectTimeout(30000); // Oh yes
+        theFhirContext.getRestfulClientFactory().setConnectTimeout(2*60*1000); // Oh yes
         System.out.println(theFhirContext.getRestfulClientFactory().getConnectTimeout());
     }
 
@@ -42,17 +41,12 @@ public class RemoteTerminologyServiceValidationSupport extends BaseValidationSup
         IBaseParameters input = ParametersUtil.newInstance(this.getFhirContext());
 
         if (theExpansionOptions.getFilter() != null && !theExpansionOptions.getFilter().isEmpty() && theValueSetToExpand instanceof ValueSet) {
-            // Probably delete this as the ValueSet is always R5
             ParametersUtil.addParameterToParameters(this.getFhirContext(), input, "filter", new StringType().setValue(theExpansionOptions.getFilter()));
-            ParametersUtil.addParameterToParameters(this.getFhirContext(), input, "url", new UriType().setValue(((ValueSet) theValueSetToExpand).getUrl()));
+         //   ParametersUtil.addParameterToParameters(this.getFhirContext(), input, "url", new UriType().setValue(((ValueSet) theValueSetToExpand).getUrl()));
         }
-      //  } else if (theExpansionOptions.getFilter() != null && !theExpansionOptions.getFilter().isEmpty() && theValueSetToExpand instanceof org.hl7.fhir.r5.model.ValueSet) {
-      //      ParametersUtil.addParameterToParameters(this.getFhirContext(), input, "filter", new StringType().setValue(theExpansionOptions.getFilter()));
-      //      ParametersUtil.addParameterToParameters(this.getFhirContext(), input, "url", new UriType ().setValue(((org.hl7.fhir.r5.model.ValueSet)theValueSetToExpand).getUrl()));
-      //  }
-        else {
-            ParametersUtil.addParameterToParameters(this.getFhirContext(), input, "valueSet", theValueSetToExpand);
-        }
+
+        ParametersUtil.addParameterToParameters(this.getFhirContext(), input, "valueSet", theValueSetToExpand);
+
         IBaseParameters output = client
                 .operation()
                 .onType("ValueSet")

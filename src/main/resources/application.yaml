@@ -16,7 +16,7 @@ fhir:
   server:
     name: NHS Digital FHIR Validator
     baseUrl: https://test.validation.fhir.nhs.uk
-    version: 2.6.4
+    version: 2.6.5
 
 ###Remote terminology validation:
 

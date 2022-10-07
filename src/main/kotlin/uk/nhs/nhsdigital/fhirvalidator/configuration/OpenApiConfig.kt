@@ -201,7 +201,7 @@ open class OpenApiConfig {
                         .style(Parameter.StyleEnum.SIMPLE)
                         .description("A canonical reference to a value set. The server must know the value set (e.g. it is defined explicitly in the server's value sets, or it is defined implicitly by some code system known to the server")
                         .schema(StringSchema().format("uri"))
-                        .example("https://fhir.hl7.org.uk/ValueSet/UKCore-EncounterType"))
+                        .example("https://fhir.hl7.org.uk/ValueSet/UKCore-MedicationPrecondition"))
                     .addParametersItem(Parameter()
                         .name("filter")
                         .`in`("query")
@@ -209,7 +209,7 @@ open class OpenApiConfig {
                         .style(Parameter.StyleEnum.SIMPLE)
                         .description("(EXPERIMENTAL - ValueSet must be on the terminology server) A text filter that is applied to restrict the codes that are returned (this is useful in a UI context).")
                         .schema(StringSchema())
-                        .example("Methotrexate 5mg"))
+                        .example("Otalgia"))
                     )
             .post(
                 Operation()
