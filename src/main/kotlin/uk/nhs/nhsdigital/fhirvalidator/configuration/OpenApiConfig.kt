@@ -103,7 +103,7 @@ class OpenApiConfig {
                         .style(Parameter.StyleEnum.SIMPLE)
                         .description("The requested language for display (see \$expand.displayLanguage)")
                         .schema(StringSchema().format("code")))
-                    .addParametersItem(Parameter()
+              /*      .addParametersItem(Parameter()
                         .name("property")
                         .`in`("query")
                         .required(false)
@@ -111,9 +111,9 @@ class OpenApiConfig {
                         .explode(true)
                         .description("A property that the client wishes to be returned in the output. If no properties are specified, the server chooses what to return.")
                         .schema(StringSchema().format("code").maxItems(10))
-                        .example("code display property fullySpecifiedName")
+                        .example("code display property fullySpecifiedName")) */
                     )
-            )
+
         oas.path("/FHIR/R4/CodeSystem/\$lookup",lookupItem)
 
         oas.path("/FHIR/R4/ConceptMap",getPathItem("ConceptMap", "Concept Map", "url" , "https://fhir.nhs.uk/ConceptMap/eps-issue-code-to-fhir-issue-type"))
@@ -362,7 +362,7 @@ class OpenApiConfig {
                         .style(Parameter.StyleEnum.SIMPLE)
                         .description("The product pack dm+d/SNOMED CT code")
                         .schema(StringSchema())
-                        .example("2274211000001101"))
+                        .example("1029811000001106"))
             )
         oas.path("/FHIR/R5/PackagedProductDefinition/{id}",medicinePackReadItem)
 

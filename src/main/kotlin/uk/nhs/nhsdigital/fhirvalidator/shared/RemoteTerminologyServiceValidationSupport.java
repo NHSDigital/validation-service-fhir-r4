@@ -221,6 +221,8 @@ public class RemoteTerminologyServiceValidationSupport extends BaseValidationSup
         if (StringUtils.isNotBlank(theDisplayLanguage)) {
             ParametersUtil.addParameterToParametersString(this.getFhirContext(), input, "displayLanguage", theDisplayLanguage);
         }
+        // Default to full response
+        ParametersUtil.addParameterToParametersCode(this.getFhirContext(), input, "property", "*");
 
         IBaseParameters output = (IBaseParameters)((IOperationUnnamed)client.operation().onType(resourceType)).named("lookup").withParameters(input).execute();
         if (output != null && output instanceof Parameters) {

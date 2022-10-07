@@ -14,10 +14,10 @@ import org.hl7.fhir.r4.model.CodeType
 import org.hl7.fhir.r4.model.ValueSet
 import org.hl7.fhir.r4.model.StringType
 import org.hl7.fhir.r5.model.*
-import org.hl7.fhir.utilities.npm.NpmPackage
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
 import uk.nhs.nhsdigital.fhirvalidator.provider.ValueSetProvider
+import uk.nhs.nhsdigital.fhirvalidator.service.CodingSupport
 import uk.nhs.nhsdigital.fhirvalidator.service.ImplementationGuideParser
 import uk.nhs.nhsdigital.fhirvalidator.shared.LookupCodeResultUK
 import uk.nhs.nhsdigital.fhirvalidator.util.FhirSystems
@@ -27,7 +27,7 @@ import java.text.SimpleDateFormat
 class PackagedProductDefinitionProviderR4B (@Qualifier("R5") private val fhirContext: FhirContext,
                                             private val supportChain: ValidationSupportChain,
                                             private val valueSetProvider: ValueSetProvider,
-                                            private val npmPackages: List<NpmPackage>) : IResourceProvider {
+                                            private val coding: CodingSupport) : IResourceProvider {
     /**
      * The getResourceType method comes from IResourceProvider, and must
      * be overridden to indicate what type of resource this provider
@@ -46,8 +46,8 @@ class PackagedProductDefinitionProviderR4B (@Qualifier("R5") private val fhirCon
     @Throws(Exception::class)
     fun getPatient(@IdParam internalId: IdType): PackagedProductDefinition? {
 
-        var lookupCodeResult: IValidationSupport.LookupCodeResult? =
-            supportChain.lookupCode(this.validationSupportContext,  FhirSystems.SNOMED_CT, internalId.getIdPart())
+        var lookupCodeResult: IValidationSupport.LookupCodeResult? = coding.lookupCode(internalId.getIdPart())
+
         if (lookupCodeResult != null) {
             var packagedProductDefinition = PackagedProductDefinition()
             packagedProductDefinition.id = lookupCodeResult.searchedForCode
@@ -83,42 +83,45 @@ class PackagedProductDefinitionProviderR4B (@Qualifier("R5") private val fhirCon
                                         packagedProductDefinition.statusDate = sdf.parse((property.part[1].value as StringType).value)
                                     }
                                 }
+                                else if (valueType.value.equals("609096000")) {
+                                    processSubProperty(property,packagedProductDefinition)
+                                }
                                 else
                                 if ((valueType.value.equals("parent") || valueType.value.equals("child")) && property.part[1].value is CodeType) {
                                     var code = property.part[1].value as CodeType
 
                                     when (code.value) {
                                         "10363801000001108" -> {
-                                            packagedProductDefinition.addCharacteristic(CodeableConcept().addCoding(
+                                            packagedProductDefinition.setType(CodeableConcept().addCoding(
                                                 Coding().setSystem(FhirSystems.SNOMED_CT).setCode(code.value).setDisplay("Virtual medicinal product")
                                             ))
                                         }
                                         "10363901000001102" -> {
-                                            packagedProductDefinition.addCharacteristic(CodeableConcept().addCoding(
+                                            packagedProductDefinition.setType(CodeableConcept().addCoding(
                                                 Coding().setSystem(FhirSystems.SNOMED_CT).setCode(code.value).setDisplay("Actual medicinal product")
                                             ))
                                         }
                                         "10364001000001104" -> {
-                                            packagedProductDefinition.addCharacteristic(CodeableConcept().addCoding(
+                                            packagedProductDefinition.setType(CodeableConcept().addCoding(
                                                 Coding().setSystem(FhirSystems.SNOMED_CT).setCode(code.value).setDisplay("Actual medicinal product pack")
                                             ))
                                         }
                                         "8653601000001108" -> {
-                                            packagedProductDefinition.addCharacteristic(CodeableConcept().addCoding(
+                                            packagedProductDefinition.setType(CodeableConcept().addCoding(
                                                 Coding().setSystem(FhirSystems.SNOMED_CT).setCode(code.value).setDisplay("Virtual medicinal product pack")
                                             ))
                                         }
                                         else -> {
                                             val reference = Reference()
                                             var lookupCode: IValidationSupport.LookupCodeResult? =
-                                                supportChain.lookupCode(this.validationSupportContext,  FhirSystems.SNOMED_CT, code.value)
+                                                coding.lookupCode( code.value)
                                             if (lookupCode != null) {
                                                 reference.display = lookupCode.codeDisplay
-                                                if (isProduct(lookupCode)) {
+                                                if (coding.isProduct(lookupCode)) {
                                                     reference.setReference("MedicinalProductDefinition/"+code.value)
                                                 }
                                                 reference.identifier = Identifier()
-                                                    .setType(CodeableConcept().addCoding(setTypeCoding(lookupCode)))
+                                                    .setType(CodeableConcept().addCoding(coding.setTypeCoding(lookupCode)))
                                                     .setSystem(FhirSystems.DMandD)
                                                     .setValue(code.value)
                                                 packagedProductDefinition.addPackageFor(reference)
@@ -147,10 +150,44 @@ class PackagedProductDefinitionProviderR4B (@Qualifier("R5") private val fhirCon
                     }
                 }
             }
-            if (isPack(lookupCodeResult) )return packagedProductDefinition
+            if (coding.isPack(lookupCodeResult) )return packagedProductDefinition
         }
         return null;
     }
+
+    private fun processSubProperty(property: org.hl7.fhir.r4.model.Parameters.ParametersParameterComponent?, packagedProductDefinition: PackagedProductDefinition) {
+       // System.out.println(property)
+        if (property?.part?.size!! >1
+            && property.part[1].name.equals("subproperty")
+            && property.part[1].part.size>1) {
+
+            when ((property.part[1].part[0].value as CodeType).code) {
+                "10362601000001103"-> {
+                    val reference = Reference()
+                    val codeType = coding.getCodeableConcept((property.part[1].part[1].value as CodeType).code)
+                    if (codeType != null) {
+                        reference.display = codeType.codingFirstRep.display
+                        reference.reference = "MedicinalProductDefinition/"+codeType.codingFirstRep.code
+                        val identifier = Identifier().setType(
+                            CodeableConcept().addCoding(
+                                Coding().setSystem(FhirSystems.SNOMED_CT).setCode("10363801000001108")
+                                    .setDisplay("Virtual medicinal product")
+                            )
+                        ).setSystem(codeType.codingFirstRep.system).setValue(codeType.codingFirstRep.code)
+                        reference.identifier = identifier
+                        packagedProductDefinition.addPackageFor(reference)
+                    }
+                }
+                else -> {
+                    System.out.println((property.part[1].part[0].value as CodeType).code)
+                    packagedProductDefinition.addCharacteristic(
+                        coding.getCodeableConcept((property.part[1].part[1].value as CodeType).code)
+                    )
+                }
+            }
+        }
+    }
+
     @Search
     fun search(
        // @OptionalParam(name = packagedProductDefinition.SP_IDENTIFIER) identifier : TokenParam?,
@@ -191,8 +228,8 @@ class PackagedProductDefinitionProviderR4B (@Qualifier("R5") private val fhirCon
                                 .setSystem(FhirSystems.SNOMED_CT)
                                 .setValue(content.code)
                             var lookupCode: IValidationSupport.LookupCodeResult? =
-                                supportChain.lookupCode(this.validationSupportContext,  FhirSystems.SNOMED_CT, content.code)
-                            if (lookupCode != null && isPack(lookupCode) ) list.add(packagedProductDefinition)
+                                coding.lookupCode( content.code)
+                            if (lookupCode != null && coding.isPack(lookupCode) ) list.add(packagedProductDefinition)
                         }
                     }
                 }
@@ -202,121 +239,6 @@ class PackagedProductDefinitionProviderR4B (@Qualifier("R5") private val fhirCon
             }
         }
         return list
-    }
-
-    fun isProduct(lookupCodeResult: IValidationSupport.LookupCodeResult) : Boolean {
-        if (lookupCodeResult is LookupCodeResultUK ) {
-            var lookupCodeResultUK = lookupCodeResult as LookupCodeResultUK
-            for (property in lookupCodeResultUK.originalParameters.parameter) {
-                if (property.name.equals("property") && property.hasPart() && property.part.size>1) {
-                    if (property.part[0].name.equals("code")) {
-                        if (property.part[0].value is CodeType) {
-                            val valueType = property.part[0].value as CodeType
-
-                            if ((valueType.value.equals("parent") || valueType.value.equals("child")) && property.part[1].value is CodeType) {
-                                var code = property.part[1].value as CodeType
-
-                                when (code.value) {
-                                    "10363801000001108" -> {
-                                        return true
-                                    }
-                                    "10363901000001102" -> {
-                                        return true
-                                    }
-                                    "10364001000001104" -> {
-                                        return false
-                                    }
-                                    "8653601000001108" -> {
-                                        return false
-                                    }
-
-                                }
-
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        return false;
-    }
-
-    fun isPack(lookupCodeResult: IValidationSupport.LookupCodeResult) : Boolean {
-        if (lookupCodeResult is LookupCodeResultUK ) {
-            var lookupCodeResultUK = lookupCodeResult as LookupCodeResultUK
-            for (property in lookupCodeResultUK.originalParameters.parameter) {
-                if (property.name.equals("property") && property.hasPart() && property.part.size>1) {
-                    if (property.part[0].name.equals("code")) {
-                        if (property.part[0].value is CodeType) {
-                            val valueType = property.part[0].value as CodeType
-
-                            if ((valueType.value.equals("parent") || valueType.value.equals("child")) && property.part[1].value is CodeType) {
-                                var code = property.part[1].value as CodeType
-
-                                when (code.value) {
-                                    "10363801000001108" -> {
-                                        return false
-                                    }
-                                    "10363901000001102" -> {
-                                        return false
-                                    }
-                                    "10364001000001104" -> {
-                                        return true
-                                    }
-                                    "8653601000001108" -> {
-                                        return true
-                                    }
-
-                                }
-
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        return false;
-    }
-
-    fun setTypeCoding(lookupCodeResult: IValidationSupport.LookupCodeResult) : Coding? {
-        if (lookupCodeResult is LookupCodeResultUK ) {
-            var lookupCodeResultUK = lookupCodeResult as LookupCodeResultUK
-            for (property in lookupCodeResultUK.originalParameters.parameter) {
-                    if (property.name.equals("property") && property.hasPart() && property.part.size>1) {
-                        if (property.part[0].name.equals("code")) {
-                            if (property.part[0].value is CodeType) {
-                                val valueType = property.part[0].value as CodeType
-
-                                    if ((valueType.value.equals("parent") || valueType.value.equals("child")) && property.part[1].value is CodeType) {
-                                        var code = property.part[1].value as CodeType
-
-                                        when (code.value) {
-                                            "10363801000001108" -> {
-                                                return Coding().setSystem(FhirSystems.SNOMED_CT).setCode(code.value).setDisplay("Virtual medicinal product")
-                                            }
-                                            "10363901000001102" -> {
-                                                 return Coding().setSystem(FhirSystems.SNOMED_CT).setCode(code.value).setDisplay("Actual medicinal product")
-                                            }
-                                            "10364001000001104" -> {
-
-                                                return Coding().setSystem(FhirSystems.SNOMED_CT).setCode(code.value).setDisplay("Actual medicinal product pack")
-
-                                            }
-                                            "8653601000001108" -> {
-
-                                                return Coding().setSystem(FhirSystems.SNOMED_CT).setCode(code.value).setDisplay("Virtual medicinal product pack")
-
-                                            }
-
-                                        }
-
-                                    }
-                            }
-                        }
-                    }
-            }
-        }
-        return null;
     }
 
 }

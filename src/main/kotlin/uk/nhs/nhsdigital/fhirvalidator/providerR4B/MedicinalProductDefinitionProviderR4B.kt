@@ -11,6 +11,7 @@ import ca.uhn.fhir.rest.server.IResourceProvider
 import ca.uhn.fhir.rest.server.exceptions.UnprocessableEntityException
 import org.hl7.fhir.common.hapi.validation.support.ValidationSupportChain
 import org.hl7.fhir.r4.model.CodeType
+import org.hl7.fhir.r4.model.Parameters
 import org.hl7.fhir.r4.model.ValueSet
 import org.hl7.fhir.r4.model.StringType
 import org.hl7.fhir.r5.model.*
@@ -18,6 +19,7 @@ import org.hl7.fhir.utilities.npm.NpmPackage
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
 import uk.nhs.nhsdigital.fhirvalidator.provider.ValueSetProvider
+import uk.nhs.nhsdigital.fhirvalidator.service.CodingSupport
 import uk.nhs.nhsdigital.fhirvalidator.service.ImplementationGuideParser
 import uk.nhs.nhsdigital.fhirvalidator.shared.LookupCodeResultUK
 import uk.nhs.nhsdigital.fhirvalidator.util.FhirSystems
@@ -27,7 +29,8 @@ import java.text.SimpleDateFormat
 class MedicinalProductDefinitionProviderR4B (@Qualifier("R5") private val fhirContext: FhirContext,
                                              private val supportChain: ValidationSupportChain,
                                              private val valueSetProvider: ValueSetProvider,
-                                             private val npmPackages: List<NpmPackage>) : IResourceProvider {
+                                             private val coding: CodingSupport
+                                             ) : IResourceProvider {
     /**
      * The getResourceType method comes from IResourceProvider, and must
      * be overridden to indicate what type of resource this provider
@@ -47,7 +50,7 @@ class MedicinalProductDefinitionProviderR4B (@Qualifier("R5") private val fhirCo
     fun getPatient(@IdParam internalId: IdType): MedicinalProductDefinition? {
 
         var lookupCodeResult: IValidationSupport.LookupCodeResult? =
-            supportChain.lookupCode(this.validationSupportContext,  FhirSystems.SNOMED_CT, internalId.getIdPart())
+            coding.lookupCode(internalId.getIdPart())
         if (lookupCodeResult != null) {
             var medicinalProductDefinition = MedicinalProductDefinition()
             medicinalProductDefinition.id = lookupCodeResult.searchedForCode
@@ -83,6 +86,12 @@ class MedicinalProductDefinitionProviderR4B (@Qualifier("R5") private val fhirCo
                                         medicinalProductDefinition.statusDate = sdf.parse((property.part[1].value as StringType).value)
                                     }
                                 }
+                                else if (valueType.value.equals("609096000")) {
+                                    processSubProperty(property,medicinalProductDefinition)
+                                }
+                               /* else if (valueType.value.equals("10362801000001104")) {
+                                    processIngredient(property,medicinalProductDefinition)
+                                }*/
                                 else
                                 if ((valueType.value.equals("parent") || valueType.value.equals("child")) && property.part[1].value is CodeType) {
                                     var code = property.part[1].value as CodeType
@@ -111,13 +120,14 @@ class MedicinalProductDefinitionProviderR4B (@Qualifier("R5") private val fhirCo
                                         else -> {
                                             val reference = Reference().setReference("MedicinalProductDefinition/"+code.value)
                                             var lookupCode: IValidationSupport.LookupCodeResult? =
-                                                supportChain.lookupCode(this.validationSupportContext,  FhirSystems.SNOMED_CT, code.value)
+                                                coding.lookupCode( code.value)
                                             if (lookupCode != null) reference.display = lookupCode.codeDisplay
                                             var crossReference = MedicinalProductDefinition.MedicinalProductDefinitionCrossReferenceComponent()
                                                 .setProduct(CodeableReference().setReference(reference))
-                                            crossReference.type = CodeableConcept().addCoding(Coding().setCode(valueType.value))
+                                            crossReference.type = CodeableConcept()
+                                                //.addCoding(Coding().setCode(valueType.value))
                                             if (lookupCode != null) {
-                                                var codeType = setTypeCoding(lookupCode)
+                                                var codeType = coding.setTypeCoding(lookupCode)
                                                 if (codeType != null) {
                                                     crossReference.type.addCoding(codeType)
                                                 }
@@ -153,10 +163,47 @@ class MedicinalProductDefinitionProviderR4B (@Qualifier("R5") private val fhirCo
                     }
                 }
             }
-            if (isProduct(lookupCodeResult) )return medicinalProductDefinition
+            if (coding.isProduct(lookupCodeResult) )return medicinalProductDefinition
         }
         return null;
     }
+
+
+    private fun processSubProperty(
+        property: Parameters.ParametersParameterComponent?,
+        medicinalProductDefinition: MedicinalProductDefinition
+    ) {
+        if (property?.part?.size!! >1
+            && property.part[1].name.equals("subproperty")
+            && property.part[1].part.size>1) {
+
+            when ((property.part[1].part[0].value as CodeType).code) {
+                "10362801000001104" -> {
+
+                    medicinalProductDefinition.addIngredient(
+                        coding.getCodeableConcept((property.part[1].part[1].value as CodeType).code)
+                    )
+                }
+                //VMP ontology form and route
+                "13088501000001100" ->  {
+                    medicinalProductDefinition.addRoute(
+                        coding.getCodeableConcept((property.part[1].part[1].value as CodeType).code)
+                    )
+                }
+                else -> {
+                 //   System.out.println((property.part[1].part[0].value as CodeType).code)
+                    medicinalProductDefinition.addCharacteristic(
+                        MedicinalProductDefinition.MedicinalProductDefinitionCharacteristicComponent()
+                            .setType(
+                                coding.getCodeableConcept((property.part[1].part[0].value as CodeType).code))
+                            .setValue(
+                        coding.getCodeableConcept((property.part[1].part[1].value as CodeType).code))
+                    )
+                }
+            }
+        }
+    }
+
     @Search
     fun search(
        // @OptionalParam(name = MedicinalProductDefinition.SP_IDENTIFIER) identifier : TokenParam?,
@@ -197,8 +244,8 @@ class MedicinalProductDefinitionProviderR4B (@Qualifier("R5") private val fhirCo
                                 .setSystem(FhirSystems.SNOMED_CT)
                                 .setValue(content.code)
                             var lookupCode: IValidationSupport.LookupCodeResult? =
-                                supportChain.lookupCode(this.validationSupportContext,  FhirSystems.SNOMED_CT, content.code)
-                            if (lookupCode != null && isProduct(lookupCode) ) list.add(medicinalProductDefinition)
+                                coding.lookupCode( content.code)
+                            if (lookupCode != null && coding.isProduct(lookupCode) ) list.add(medicinalProductDefinition)
                         }
                     }
                 }
@@ -208,83 +255,6 @@ class MedicinalProductDefinitionProviderR4B (@Qualifier("R5") private val fhirCo
             }
         }
         return list
-    }
-
-    fun isProduct(lookupCodeResult: IValidationSupport.LookupCodeResult) : Boolean {
-        if (lookupCodeResult is LookupCodeResultUK ) {
-            var lookupCodeResultUK = lookupCodeResult as LookupCodeResultUK
-            for (property in lookupCodeResultUK.originalParameters.parameter) {
-                if (property.name.equals("property") && property.hasPart() && property.part.size>1) {
-                    if (property.part[0].name.equals("code")) {
-                        if (property.part[0].value is CodeType) {
-                            val valueType = property.part[0].value as CodeType
-
-                            if ((valueType.value.equals("parent") || valueType.value.equals("child")) && property.part[1].value is CodeType) {
-                                var code = property.part[1].value as CodeType
-
-                                when (code.value) {
-                                    "10363801000001108" -> {
-                                        return true
-                                    }
-                                    "10363901000001102" -> {
-                                        return true
-                                    }
-                                    "10364001000001104" -> {
-                                        return false
-                                    }
-                                    "8653601000001108" -> {
-                                        return false
-                                    }
-
-                                }
-
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        return false;
-    }
-    fun setTypeCoding(lookupCodeResult: IValidationSupport.LookupCodeResult) : Coding? {
-        if (lookupCodeResult is LookupCodeResultUK ) {
-            var lookupCodeResultUK = lookupCodeResult as LookupCodeResultUK
-            for (property in lookupCodeResultUK.originalParameters.parameter) {
-                    if (property.name.equals("property") && property.hasPart() && property.part.size>1) {
-                        if (property.part[0].name.equals("code")) {
-                            if (property.part[0].value is CodeType) {
-                                val valueType = property.part[0].value as CodeType
-
-                                    if ((valueType.value.equals("parent") || valueType.value.equals("child")) && property.part[1].value is CodeType) {
-                                        var code = property.part[1].value as CodeType
-
-                                        when (code.value) {
-                                            "10363801000001108" -> {
-                                                return Coding().setSystem(FhirSystems.SNOMED_CT).setCode(code.value).setDisplay("Virtual medicinal product")
-                                            }
-                                            "10363901000001102" -> {
-                                                 return Coding().setSystem(FhirSystems.SNOMED_CT).setCode(code.value).setDisplay("Actual medicinal product")
-                                            }
-                                            "10364001000001104" -> {
-
-                                                return Coding().setSystem(FhirSystems.SNOMED_CT).setCode(code.value).setDisplay("Actual medicinal product pack")
-
-                                            }
-                                            "8653601000001108" -> {
-
-                                                return Coding().setSystem(FhirSystems.SNOMED_CT).setCode(code.value).setDisplay("Virtual medicinal product pack")
-
-                                            }
-
-                                        }
-
-                                    }
-                            }
-                        }
-                    }
-            }
-        }
-        return null;
     }
 
 }
