@@ -185,11 +185,15 @@ class MedicinalProductDefinitionProviderR4B (@Qualifier("R5") private val fhirCo
                     )
                 }
                 //VMP ontology form and route
-                "13088501000001100" ->  {
+                "13088501000001100" , "13088401000001104" ->  {
                     medicinalProductDefinition.addRoute(
                         coding.getCodeableConcept((property.part[1].part[1].value as CodeType).code)
                     )
                 }
+                // Has NHS dm+d controlled drug category
+                "13089101000001102" ->  medicinalProductDefinition.setLegalStatusOfSupply(
+                    coding.getCodeableConcept((property.part[1].part[1].value as CodeType).code)
+                )
                 else -> {
                  //   System.out.println((property.part[1].part[0].value as CodeType).code)
                     medicinalProductDefinition.addCharacteristic(
