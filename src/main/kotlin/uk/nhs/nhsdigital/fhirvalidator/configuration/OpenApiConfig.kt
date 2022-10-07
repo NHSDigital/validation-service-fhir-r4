@@ -20,12 +20,12 @@ import org.springframework.context.annotation.Configuration
 
 
 @Configuration
-class OpenApiConfig {
+open class OpenApiConfig {
     var FHIRSERVER = "FHIR Conformance"
     var FHIRSERVER_R4B = "Medication Definition Module Demo"
     var OASVERIFICATION = "OAS FHIR Conformance"
     @Bean
-    fun customOpenAPI(
+    open fun customOpenAPI(
         fhirServerProperties: FHIRServerProperties,
        // restfulServer: FHIRR4RestfulServer
     ): OpenAPI? {

@@ -41,7 +41,7 @@ class CodingSupport(@Qualifier("R4") private val ctx: FhirContext?,
         return null
     }
 
-    fun setTypeCoding(lookupCodeResult: IValidationSupport.LookupCodeResult) : Coding? {
+    fun getTypeCoding(lookupCodeResult: IValidationSupport.LookupCodeResult) : Coding? {
         if (lookupCodeResult is LookupCodeResultUK ) {
             var lookupCodeResultUK = lookupCodeResult as LookupCodeResultUK
             for (property in lookupCodeResultUK.originalParameters.parameter) {

@@ -98,22 +98,22 @@ class MedicinalProductDefinitionProviderR4B (@Qualifier("R5") private val fhirCo
 
                                     when (code.value) {
                                         "10363801000001108" -> {
-                                            medicinalProductDefinition.addClassification(CodeableConcept().addCoding(
+                                            medicinalProductDefinition.setType(CodeableConcept().addCoding(
                                                 Coding().setSystem(FhirSystems.SNOMED_CT).setCode(code.value).setDisplay("Virtual medicinal product")
                                             ))
                                         }
                                         "10363901000001102" -> {
-                                            medicinalProductDefinition.addClassification(CodeableConcept().addCoding(
+                                            medicinalProductDefinition.setType(CodeableConcept().addCoding(
                                                 Coding().setSystem(FhirSystems.SNOMED_CT).setCode(code.value).setDisplay("Actual medicinal product")
                                             ))
                                         }
                                         "10364001000001104" -> {
-                                            medicinalProductDefinition.addClassification(CodeableConcept().addCoding(
+                                            medicinalProductDefinition.setType(CodeableConcept().addCoding(
                                                 Coding().setSystem(FhirSystems.SNOMED_CT).setCode(code.value).setDisplay("Actual medicinal product pack")
                                             ))
                                         }
                                         "8653601000001108" -> {
-                                            medicinalProductDefinition.addClassification(CodeableConcept().addCoding(
+                                            medicinalProductDefinition.setType(CodeableConcept().addCoding(
                                                 Coding().setSystem(FhirSystems.SNOMED_CT).setCode(code.value).setDisplay("Virtual medicinal product pack")
                                             ))
                                         }
@@ -127,7 +127,7 @@ class MedicinalProductDefinitionProviderR4B (@Qualifier("R5") private val fhirCo
                                             crossReference.type = CodeableConcept()
                                                 //.addCoding(Coding().setCode(valueType.value))
                                             if (lookupCode != null) {
-                                                var codeType = coding.setTypeCoding(lookupCode)
+                                                var codeType = coding.getTypeCoding(lookupCode)
                                                 if (codeType != null) {
                                                     crossReference.type.addCoding(codeType)
                                                 }
@@ -169,44 +169,6 @@ class MedicinalProductDefinitionProviderR4B (@Qualifier("R5") private val fhirCo
     }
 
 
-    private fun processSubProperty(
-        property: Parameters.ParametersParameterComponent?,
-        medicinalProductDefinition: MedicinalProductDefinition
-    ) {
-        if (property?.part?.size!! >1
-            && property.part[1].name.equals("subproperty")
-            && property.part[1].part.size>1) {
-
-            when ((property.part[1].part[0].value as CodeType).code) {
-                "10362801000001104" -> {
-
-                    medicinalProductDefinition.addIngredient(
-                        coding.getCodeableConcept((property.part[1].part[1].value as CodeType).code)
-                    )
-                }
-                //VMP ontology form and route
-                "13088501000001100" , "13088401000001104" ->  {
-                    medicinalProductDefinition.addRoute(
-                        coding.getCodeableConcept((property.part[1].part[1].value as CodeType).code)
-                    )
-                }
-                // Has NHS dm+d controlled drug category
-                "13089101000001102" ->  medicinalProductDefinition.setLegalStatusOfSupply(
-                    coding.getCodeableConcept((property.part[1].part[1].value as CodeType).code)
-                )
-                else -> {
-                 //   System.out.println((property.part[1].part[0].value as CodeType).code)
-                    medicinalProductDefinition.addCharacteristic(
-                        MedicinalProductDefinition.MedicinalProductDefinitionCharacteristicComponent()
-                            .setType(
-                                coding.getCodeableConcept((property.part[1].part[0].value as CodeType).code))
-                            .setValue(
-                        coding.getCodeableConcept((property.part[1].part[1].value as CodeType).code))
-                    )
-                }
-            }
-        }
-    }
 
     @Search
     fun search(
@@ -249,7 +211,10 @@ class MedicinalProductDefinitionProviderR4B (@Qualifier("R5") private val fhirCo
                                 .setValue(content.code)
                             var lookupCode: IValidationSupport.LookupCodeResult? =
                                 coding.lookupCode( content.code)
-                            if (lookupCode != null && coding.isProduct(lookupCode) ) list.add(medicinalProductDefinition)
+                            if (lookupCode != null && coding.isProduct(lookupCode) ) {
+                                medicinalProductDefinition.setType(CodeableConcept().addCoding(coding.getTypeCoding(lookupCode)))
+                                list.add(medicinalProductDefinition)
+                            }
                         }
                     }
                 }
@@ -259,6 +224,52 @@ class MedicinalProductDefinitionProviderR4B (@Qualifier("R5") private val fhirCo
             }
         }
         return list
+    }
+
+
+    private fun processSubProperty(
+        property: Parameters.ParametersParameterComponent?,
+        medicinalProductDefinition: MedicinalProductDefinition
+    ) {
+        if (property?.part?.size!! >1
+            && property.part[1].name.equals("subproperty")
+            && property.part[1].part.size>1) {
+
+            when ((property.part[1].part[0].value as CodeType).code) {
+                "10362801000001104" -> {
+
+                    medicinalProductDefinition.addIngredient(
+                        coding.getCodeableConcept((property.part[1].part[1].value as CodeType).code)
+                    )
+                }
+                //VMP ontology form and route
+                "13088401000001104" ->  {
+                    medicinalProductDefinition.addRoute(
+                        coding.getCodeableConcept((property.part[1].part[1].value as CodeType).code)
+                    )
+                }
+                //VMP ontology form and route
+                "13088501000001100"  ->  {
+                    medicinalProductDefinition.setCombinedPharmaceuticalDoseForm(
+                        coding.getCodeableConcept((property.part[1].part[1].value as CodeType).code)
+                    )
+                }
+                // Has NHS dm+d controlled drug category
+                "13089101000001102" ->  medicinalProductDefinition.addSpecialMeasures(
+                    coding.getCodeableConcept((property.part[1].part[1].value as CodeType).code)
+                )
+                else -> {
+                    //   System.out.println((property.part[1].part[0].value as CodeType).code)
+                    medicinalProductDefinition.addCharacteristic(
+                        MedicinalProductDefinition.MedicinalProductDefinitionCharacteristicComponent()
+                            .setType(
+                                coding.getCodeableConcept((property.part[1].part[0].value as CodeType).code))
+                            .setValue(
+                                coding.getCodeableConcept((property.part[1].part[1].value as CodeType).code))
+                    )
+                }
+            }
+        }
     }
 
 }

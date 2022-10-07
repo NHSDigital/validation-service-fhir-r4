@@ -121,7 +121,7 @@ class PackagedProductDefinitionProviderR4B (@Qualifier("R5") private val fhirCon
                                                     reference.setReference("MedicinalProductDefinition/"+code.value)
                                                 }
                                                 reference.identifier = Identifier()
-                                                    .setType(CodeableConcept().addCoding(coding.setTypeCoding(lookupCode)))
+                                                    .setType(CodeableConcept().addCoding(coding.getTypeCoding(lookupCode)))
                                                     .setSystem(FhirSystems.DMandD)
                                                     .setValue(code.value)
                                                 packagedProductDefinition.addPackageFor(reference)
@@ -155,38 +155,7 @@ class PackagedProductDefinitionProviderR4B (@Qualifier("R5") private val fhirCon
         return null;
     }
 
-    private fun processSubProperty(property: org.hl7.fhir.r4.model.Parameters.ParametersParameterComponent?, packagedProductDefinition: PackagedProductDefinition) {
-       // System.out.println(property)
-        if (property?.part?.size!! >1
-            && property.part[1].name.equals("subproperty")
-            && property.part[1].part.size>1) {
 
-            when ((property.part[1].part[0].value as CodeType).code) {
-                "10362601000001103"-> {
-                    val reference = Reference()
-                    val codeType = coding.getCodeableConcept((property.part[1].part[1].value as CodeType).code)
-                    if (codeType != null) {
-                        reference.display = codeType.codingFirstRep.display
-                        reference.reference = "MedicinalProductDefinition/"+codeType.codingFirstRep.code
-                        val identifier = Identifier().setType(
-                            CodeableConcept().addCoding(
-                                Coding().setSystem(FhirSystems.SNOMED_CT).setCode("10363801000001108")
-                                    .setDisplay("Virtual medicinal product")
-                            )
-                        ).setSystem(codeType.codingFirstRep.system).setValue(codeType.codingFirstRep.code)
-                        reference.identifier = identifier
-                        packagedProductDefinition.addPackageFor(reference)
-                    }
-                }
-                else -> {
-                    System.out.println((property.part[1].part[0].value as CodeType).code)
-                    packagedProductDefinition.addCharacteristic(
-                        coding.getCodeableConcept((property.part[1].part[1].value as CodeType).code)
-                    )
-                }
-            }
-        }
-    }
 
     @Search
     fun search(
@@ -229,7 +198,10 @@ class PackagedProductDefinitionProviderR4B (@Qualifier("R5") private val fhirCon
                                 .setValue(content.code)
                             var lookupCode: IValidationSupport.LookupCodeResult? =
                                 coding.lookupCode( content.code)
-                            if (lookupCode != null && coding.isPack(lookupCode) ) list.add(packagedProductDefinition)
+                            if (lookupCode != null && coding.isPack(lookupCode) ) {
+                                packagedProductDefinition.setType(CodeableConcept().addCoding(coding.getTypeCoding(lookupCode)))
+                                list.add(packagedProductDefinition)
+                            }
                         }
                     }
                 }
@@ -239,6 +211,39 @@ class PackagedProductDefinitionProviderR4B (@Qualifier("R5") private val fhirCon
             }
         }
         return list
+    }
+
+    private fun processSubProperty(property: org.hl7.fhir.r4.model.Parameters.ParametersParameterComponent?, packagedProductDefinition: PackagedProductDefinition) {
+        // System.out.println(property)
+        if (property?.part?.size!! >1
+            && property.part[1].name.equals("subproperty")
+            && property.part[1].part.size>1) {
+
+            when ((property.part[1].part[0].value as CodeType).code) {
+                "10362601000001103"-> {
+                    val reference = Reference()
+                    val codeType = coding.getCodeableConcept((property.part[1].part[1].value as CodeType).code)
+                    if (codeType != null) {
+                        reference.display = codeType.codingFirstRep.display
+                        reference.reference = "MedicinalProductDefinition/"+codeType.codingFirstRep.code
+                        val identifier = Identifier().setType(
+                            CodeableConcept().addCoding(
+                                Coding().setSystem(FhirSystems.SNOMED_CT).setCode("10363801000001108")
+                                    .setDisplay("Virtual medicinal product")
+                            )
+                        ).setSystem(codeType.codingFirstRep.system).setValue(codeType.codingFirstRep.code)
+                        reference.identifier = identifier
+                        packagedProductDefinition.addPackageFor(reference)
+                    }
+                }
+                else -> {
+                    System.out.println((property.part[1].part[0].value as CodeType).code)
+                    packagedProductDefinition.addCharacteristic(
+                        coding.getCodeableConcept((property.part[1].part[1].value as CodeType).code)
+                    )
+                }
+            }
+        }
     }
 
 }
