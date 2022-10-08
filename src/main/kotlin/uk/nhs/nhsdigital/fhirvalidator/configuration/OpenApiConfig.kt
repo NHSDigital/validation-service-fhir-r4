@@ -6,6 +6,7 @@ import io.swagger.v3.oas.models.PathItem
 import io.swagger.v3.oas.models.examples.Example
 import io.swagger.v3.oas.models.info.License
 import io.swagger.v3.oas.models.info.Info
+import io.swagger.v3.oas.models.media.BooleanSchema
 import io.swagger.v3.oas.models.media.Content
 import io.swagger.v3.oas.models.media.MediaType
 
@@ -51,6 +52,35 @@ open class OpenApiConfig {
                     .summary("server-capabilities: Fetch the server FHIR CapabilityStatement").responses(getApiResponses())))
         oas.path("/FHIR/R4/CapabilityStatement",getPathItem("CapabilityStatement", "Capability Statement", "url", "https://fhir.nhs.uk/CapabilityStatement/apim-medicines-api-example" ))
         oas.path("/FHIR/R4/CodeSystem",getPathItem("CodeSystem", "Code System", "url", "https://fhir.nhs.uk/CodeSystem/NHSD-API-ErrorOrWarningCode" ))
+
+        val eclItem = PathItem()
+            .get(
+                Operation()
+                    .addTagsItem(FHIRSERVER)
+                    .summary("Expand a SNOMED CT ecl statement.")
+                    .description("This internally uses ValueSet [expand](https://www.hl7.org/fhir/R4/operation-valueset-expand.html) operation.")
+                    .responses(getApiResponses())
+                    .addParametersItem(Parameter()
+                        .name("ecl")
+                        .`in`("query")
+                        .required(true)
+                        .style(Parameter.StyleEnum.SIMPLE)
+                        .description("(EXPERIMENTAL) A text filter that is applied to restrict the codes that are returned (this is useful in a UI context).")
+                        .schema(StringSchema())
+                        .example("< 19829001 |Disorder of lung| AND < 301867009 |Edema of trunk|"))
+                    .addParametersItem(Parameter()
+                        .name("count")
+                        .`in`("query")
+                        .required(false)
+                        .style(Parameter.StyleEnum.SIMPLE)
+                        .description("(EXPERIMENTAL) A text filter that is applied to restrict the codes that are returned (this is useful in a UI context).")
+                        .schema(StringSchema())
+                        .example("10"))
+
+            )
+
+        oas.path("/FHIR/R4/CodeSystem/\$expandEcl",eclItem)
+
 
         val lookupItem = PathItem()
             .get(
@@ -115,6 +145,78 @@ open class OpenApiConfig {
                     )
 
         oas.path("/FHIR/R4/CodeSystem/\$lookup",lookupItem)
+
+        val searchItem = PathItem()
+            .get(
+                Operation()
+                    .addTagsItem(FHIRSERVER)
+                    .summary("Search SNOMED CT for a term.")
+                    .description("This internally uses ValueSet [expand](https://www.hl7.org/fhir/R4/operation-valueset-expand.html) operation.")
+                    .responses(getApiResponses())
+                    .addParametersItem(Parameter()
+                        .name("filter")
+                        .`in`("query")
+                        .required(true)
+                        .style(Parameter.StyleEnum.SIMPLE)
+                        .description("(EXPERIMENTAL) A text filter that is applied to restrict the codes that are returned (this is useful in a UI context).")
+                        .schema(StringSchema())
+                        .example("Otalgia"))
+                    .addParametersItem(Parameter()
+                        .name("count")
+                        .`in`("query")
+                        .required(false)
+                        .style(Parameter.StyleEnum.SIMPLE)
+                        .description("(EXPERIMENTAL) A text filter that is applied to restrict the codes that are returned (this is useful in a UI context).")
+                        .schema(StringSchema())
+                        .example("10"))
+                    .addParametersItem(Parameter()
+                        .name("includeDesignations")
+                        .`in`("query")
+                        .required(false)
+                        .style(Parameter.StyleEnum.SIMPLE)
+                        .description("(EXPERIMENTAL) A text filter that is applied to restrict the codes that are returned (this is useful in a UI context).")
+                        .schema(BooleanSchema())
+                        .example("true"))
+
+            )
+
+        oas.path("/FHIR/R4/CodeSystem/\$searchSCT",searchItem)
+
+        val subsumesItem = PathItem()
+            .get(
+                Operation()
+                    .addTagsItem(FHIRSERVER)
+                    .summary("Test the subsumption relationship between code A and code B given the semantics of subsumption in the underlying code system ")
+                    .description("[subsumes](https://hl7.org/fhir/R4/codesystem-operation-subsumes.html)")
+                    .responses(getApiResponses())
+                    .addParametersItem(Parameter()
+                        .name("codeA")
+                        .`in`("query")
+                        .required(true)
+                        .style(Parameter.StyleEnum.SIMPLE)
+                        .description("The \"A\" code that is to be tested.")
+                        .schema(StringSchema().format("code"))
+                        .example("15517911000001104"))
+                    .addParametersItem(Parameter()
+                        .name("codeB")
+                        .`in`("query")
+                        .required(true)
+                        .style(Parameter.StyleEnum.SIMPLE)
+                        .description("The \"B\" code that is to be tested.")
+                        .schema(StringSchema().format("code"))
+                        .example("15513411000001100"))
+                    .addParametersItem(Parameter()
+                        .name("system")
+                        .`in`("query")
+                        .required(true)
+                        .style(Parameter.StyleEnum.SIMPLE)
+                        .description("The code system in which subsumption testing is to be performed. This must be provided unless the operation is invoked on a code system instance")
+                        .schema(StringSchema())
+                        .example("http://snomed.info/sct"))
+
+            )
+
+        oas.path("/FHIR/R4/CodeSystem/\$subsumes",subsumesItem)
 
         oas.path("/FHIR/R4/ConceptMap",getPathItem("ConceptMap", "Concept Map", "url" , "https://fhir.nhs.uk/ConceptMap/eps-issue-code-to-fhir-issue-type"))
         oas.path("/FHIR/R4/MessageDefinition",getPathItem("MessageDefinition", "Message Definition", "url" , "https://fhir.nhs.uk/MessageDefinition/prescription-order"))

@@ -12,6 +12,7 @@ import org.hl7.fhir.r4.model.*
 import org.hl7.fhir.utilities.npm.NpmPackage
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
+import uk.nhs.nhsdigital.fhirvalidator.service.CodingSupport
 import uk.nhs.nhsdigital.fhirvalidator.service.ImplementationGuideParser
 import uk.nhs.nhsdigital.fhirvalidator.shared.LookupCodeResultUK
 import java.nio.charset.StandardCharsets
@@ -19,7 +20,9 @@ import java.nio.charset.StandardCharsets
 @Component
 class CodeSystemProvider (@Qualifier("R4") private val fhirContext: FhirContext,
                           private val supportChain: ValidationSupportChain,
-                          private val npmPackages: List<NpmPackage>) : IResourceProvider {
+                          private val npmPackages: List<NpmPackage>,
+                          private val codingSupport: CodingSupport
+) : IResourceProvider {
     /**
      * The getResourceType method comes from IResourceProvider, and must
      * be overridden to indicate what type of resource this provider
@@ -51,6 +54,28 @@ class CodeSystemProvider (@Qualifier("R4") private val fhirContext: FhirContext,
             }
         }
         return list
+    }
+
+    @Operation(name = "\$subsumes", idempotent = true)
+    fun subsumes (  @OperationParam(name = "codeA") codeA: String?,
+                    @OperationParam(name = "codeB") codeB: String?,
+                    @OperationParam(name = "system") system: String?) : Parameters? {
+        return codingSupport.subsumes(codeA,codeB,java.net.URLDecoder.decode(system, StandardCharsets.UTF_8.name()))
+    }
+
+    @Operation(name = "\$searchSCT", idempotent = true)
+    fun subsumes (  @OperationParam(name = "filter") filter: String?,
+                    @OperationParam(name = "count") count: IntegerType?,
+                    @OperationParam(name = "includeDesignations") includeDesignations: BooleanType?
+                   ) : Parameters? {
+        return codingSupport.search(filter,count,includeDesignations)
+    }
+
+    @Operation(name = "\$expandEcl", idempotent = true)
+    fun eclExpand (  @OperationParam(name = "ecl", min = 1) filter: String?,
+                    @OperationParam(name = "count") count: IntegerType?
+    ) : Parameters? {
+        return codingSupport.expandEcl(filter,count)
     }
 
     @Operation(name = "\$lookup", idempotent = true)
