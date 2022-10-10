@@ -57,7 +57,7 @@ class ValidateR4Provider (
         @Validate.Profile parameterResourceProfile: String?
     ): MethodOutcome {
         var profile = parameterResourceProfile ?: servletRequest.getParameter("profile")
-        profile = java.net.URLDecoder.decode(profile, StandardCharsets.UTF_8.name());
+        if (profile!= null) profile = java.net.URLDecoder.decode(profile, StandardCharsets.UTF_8.name());
         val operationOutcome = parseAndValidateResource(resource, profile)
         val methodOutcome = MethodOutcome()
         methodOutcome.operationOutcome = operationOutcome

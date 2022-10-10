@@ -18,6 +18,8 @@ public final class FhirSystems {
 
     public static final String NHS_GMC_NUMBER = "https://fhir.hl7.org.uk/Id/gmc-number";
 
+    public static final String NHS_NUMBER = "https://fhir.nhs.uk/Id/nhs-number";
+
     public static final String ODS_CODE = "https://fhir.nhs.uk/Id/ods-organization-code";
 
     public static final String VIRTUALLY_CONNECTION_TYPE = "http://fhir.virtuallyhealthcare.co.uk/ConnectionType";
