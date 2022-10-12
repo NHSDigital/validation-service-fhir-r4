@@ -1,5 +1,7 @@
 package uk.nhs.nhsdigital.fhirvalidator.provider
 
+import ca.uhn.fhir.context.FhirContext
+import ca.uhn.fhir.context.support.IValidationSupport
 import ca.uhn.fhir.parser.DataFormatException
 import ca.uhn.fhir.rest.annotation.Operation
 import ca.uhn.fhir.rest.annotation.ResourceParam
@@ -9,28 +11,45 @@ import ca.uhn.fhir.validation.FhirValidator
 import ca.uhn.fhir.validation.ValidationOptions
 import mu.KLogging
 import org.hl7.fhir.instance.model.api.IBaseResource
-import org.hl7.fhir.r4.model.Bundle
-import org.hl7.fhir.r4.model.OperationOutcome
-import org.hl7.fhir.r4.model.ResourceType
+import org.hl7.fhir.r4.context.SimpleWorkerContext
+import org.hl7.fhir.r4.hapi.ctx.HapiWorkerContext
+import org.hl7.fhir.r4.model.*
+import org.hl7.fhir.r4.utils.FHIRPathEngine
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
 import uk.nhs.nhsdigital.fhirvalidator.controller.VerifyController
 import uk.nhs.nhsdigital.fhirvalidator.service.CapabilityStatementApplier
 import uk.nhs.nhsdigital.fhirvalidator.service.MessageDefinitionApplier
 import uk.nhs.nhsdigital.fhirvalidator.service.VerifyOAS
 import uk.nhs.nhsdigital.fhirvalidator.util.createOperationOutcome
+import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
 import javax.servlet.http.HttpServletRequest
 
 @Component
 class ValidateR4Provider (
-                        private val validator: FhirValidator,
-                        private val messageDefinitionApplier: MessageDefinitionApplier,
-                        private val capabilityStatementApplier: CapabilityStatementApplier,
-                        private val verifyOAS: VerifyOAS
+    @Qualifier("R4") private val fhirContext: FhirContext,
+    @Qualifier("SupportChain") private val supportChain: IValidationSupport,
+    private val validator: FhirValidator,
+    private val messageDefinitionApplier: MessageDefinitionApplier,
+    private val capabilityStatementApplier: CapabilityStatementApplier
 
 ) {
     companion object : KLogging()
 
+    @Operation(name = "\$fhirpathEvaluate", idempotent = true)
+    @Throws(Exception::class)
+    fun fhirpathEvaluate(
+        @ResourceParam resource: IBaseResource?
+    ): List<IBaseResource>? {
+        // This is code to explore fhirpath it is not meant to work.
+        var hapiWorkerContext = HapiWorkerContext(fhirContext,supportChain)
+        var fhirPathEngine = FHIRPathEngine(hapiWorkerContext)
+        val result = fhirPathEngine.evaluate(resource as Resource,"identifier.where(system='https://fhir.nhs.uk/Id/nhs-number').exists().not() or (identifier.where(system='https://fhir.nhs.uk/Id/nhs-number').exists()  and identifier.where(system='https://fhir.nhs.uk/Id/nhs-number').value.matches('^([456789]{1}[0-9]{9})\$'))")
+
+        if (result is List<*>) return null
+        return ArrayList<IBaseResource>()
+    }
     @Operation(name = "\$convert", idempotent = true)
     @Throws(Exception::class)
     fun convertJson(
@@ -57,7 +76,7 @@ class ValidateR4Provider (
         @Validate.Profile parameterResourceProfile: String?
     ): MethodOutcome {
         var profile = parameterResourceProfile ?: servletRequest.getParameter("profile")
-        if (profile!= null) profile = java.net.URLDecoder.decode(profile, StandardCharsets.UTF_8.name());
+        if (profile!= null) profile = URLDecoder.decode(profile, StandardCharsets.UTF_8.name());
         val operationOutcome = parseAndValidateResource(resource, profile)
         val methodOutcome = MethodOutcome()
         methodOutcome.operationOutcome = operationOutcome
@@ -83,7 +102,7 @@ class ValidateR4Provider (
             val operationOutcomeIssues = operationOutcomeList.filterNotNull().flatMap { it.issue }
             return createOperationOutcome(operationOutcomeIssues)
         } catch (e: DataFormatException) {
-            VerifyController.logger.error("Caught parser error", e)
+            logger.error("Caught parser error", e)
             createOperationOutcome(e.message ?: "Invalid JSON", null)
         }
     }
