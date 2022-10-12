@@ -374,6 +374,28 @@ open class OpenApiConfig {
             )
         oas.path("/FHIR/R4/\$markdown",markdownItem)
 
+        val fhirPathItem = PathItem()
+            .post(
+                Operation()
+                    .addTagsItem(FHIRSERVER)
+                    .summary("Experimental fhir path expression evaluation")
+                    .description("[fhir path](https://www.hl7.org/fhir/R4/fhirpath.html)")
+                    .responses(getApiResponsesXMLJSON())
+                    .addParametersItem(Parameter()
+                        .name("expression")
+                        .`in`("query")
+                        .required(false)
+                        .style(Parameter.StyleEnum.SIMPLE)
+                        .description("FHIRPath expression")
+                        .schema(StringSchema())
+                        .example("identifier.where(system='https://fhir.nhs.uk/Id/nhs-number')"))
+                    .requestBody(RequestBody().content(Content()
+                        .addMediaType("application/fhir+json",MediaType().schema(StringSchema()._default("{\"resourceType\":\"Patient\"}")))
+                        .addMediaType("application/fhir+xml",MediaType().schema(StringSchema()))
+                    ))
+            )
+        oas.path("/FHIR/R4/\$fhirpathEvaluate",fhirPathItem)
+
         val validateItem = PathItem()
             .post(
                 Operation()

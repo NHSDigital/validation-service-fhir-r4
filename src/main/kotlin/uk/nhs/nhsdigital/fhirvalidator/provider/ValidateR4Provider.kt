@@ -3,9 +3,7 @@ package uk.nhs.nhsdigital.fhirvalidator.provider
 import ca.uhn.fhir.context.FhirContext
 import ca.uhn.fhir.context.support.IValidationSupport
 import ca.uhn.fhir.parser.DataFormatException
-import ca.uhn.fhir.rest.annotation.Operation
-import ca.uhn.fhir.rest.annotation.ResourceParam
-import ca.uhn.fhir.rest.annotation.Validate
+import ca.uhn.fhir.rest.annotation.*
 import ca.uhn.fhir.rest.api.MethodOutcome
 import ca.uhn.fhir.validation.FhirValidator
 import ca.uhn.fhir.validation.ValidationOptions
@@ -40,16 +38,37 @@ class ValidateR4Provider (
     @Operation(name = "\$fhirpathEvaluate", idempotent = true)
     @Throws(Exception::class)
     fun fhirpathEvaluate(
-        @ResourceParam resource: IBaseResource?
-    ): List<IBaseResource>? {
+        servletRequest: HttpServletRequest,
+        @ResourceParam resource: IBaseResource?,
+        @OperationParam(name="expression") expressionUrl : String?
+    ): Parameters {
         // This is code to explore fhirpath it is not meant to work.
+        var expression = expressionUrl ?: servletRequest.getParameter("expression")
+        val returnResult = Parameters()
+        if (expression==null) return returnResult
         var hapiWorkerContext = HapiWorkerContext(fhirContext,supportChain)
         var fhirPathEngine = FHIRPathEngine(hapiWorkerContext)
-        val result = fhirPathEngine.evaluate(resource as Resource,"identifier.where(system='https://fhir.nhs.uk/Id/nhs-number').exists().not() or (identifier.where(system='https://fhir.nhs.uk/Id/nhs-number').exists()  and identifier.where(system='https://fhir.nhs.uk/Id/nhs-number').value.matches('^([456789]{1}[0-9]{9})\$'))")
+       // var expression = "identifier.where(system='https://fhir.nhs.uk/Id/nhs-number').exists().not() or (identifier.where(system='https://fhir.nhs.uk/Id/nhs-number').exists()  and identifier.where(system='https://fhir.nhs.uk/Id/nhs-number').value.matches('^([456789]{1}[0-9]{9})\$'))"
+        var result = fhirPathEngine.evaluate(resource as Resource,URLDecoder.decode(expression, StandardCharsets.UTF_8.name()))
 
-        if (result is List<*>) return null
-        return ArrayList<IBaseResource>()
+
+        if (result is List<*>)
+        {
+            for(base in result) {
+                if (base is Type) {
+                    returnResult.addParameter(Parameters.ParametersParameterComponent()
+                        .setName("result")
+                        .addPart(Parameters.ParametersParameterComponent().setName("expression").setValue(StringType().setValue(expression)))
+                        .addPart(Parameters.ParametersParameterComponent().setName("result").setValue(base as Type?))
+                    )
+                }
+
+            }
+        }
+
+        return returnResult
     }
+
     @Operation(name = "\$convert", idempotent = true)
     @Throws(Exception::class)
     fun convertJson(
