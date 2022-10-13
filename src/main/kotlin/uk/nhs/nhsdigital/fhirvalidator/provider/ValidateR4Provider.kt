@@ -49,7 +49,10 @@ class ValidateR4Provider (
         var hapiWorkerContext = HapiWorkerContext(fhirContext,supportChain)
         var fhirPathEngine = FHIRPathEngine(hapiWorkerContext)
        // var expression = "identifier.where(system='https://fhir.nhs.uk/Id/nhs-number').exists().not() or (identifier.where(system='https://fhir.nhs.uk/Id/nhs-number').exists()  and identifier.where(system='https://fhir.nhs.uk/Id/nhs-number').value.matches('^([456789]{1}[0-9]{9})\$'))"
-        var result = fhirPathEngine.evaluate(resource as Resource,URLDecoder.decode(expression, StandardCharsets.UTF_8.name()))
+        var decode = URLDecoder.decode(expression, StandardCharsets.UTF_8.name())
+        System.out.println(expression)
+        System.out.println(decode)
+        var result = fhirPathEngine.evaluate(resource as Resource,decode)
 
 
         if (result is List<*>)
