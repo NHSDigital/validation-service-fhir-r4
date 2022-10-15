@@ -90,6 +90,7 @@ class ValueSetProviderR5 (@Qualifier("R5") private val fhirContext: FhirContext,
                     when (validationResult.severity) {
                         IValidationSupport.IssueSeverity.ERROR -> input.issueFirstRep.severity = OperationOutcome.IssueSeverity.ERROR;
                         IValidationSupport.IssueSeverity.WARNING -> input.issueFirstRep.severity = OperationOutcome.IssueSeverity.WARNING;
+                        else -> {}
                     }
                 }
                 input.issueFirstRep.diagnostics = validationResult.message
@@ -103,10 +104,16 @@ class ValueSetProviderR5 (@Qualifier("R5") private val fhirContext: FhirContext,
     fun expand(@ResourceParam valueSet: ValueSet?,
                @OperationParam(name = ValueSet.SP_URL) url: TokenParam? ): ValueSet? {
         if (url == null && valueSet == null) throw UnprocessableEntityException("Both resource and url can not be null")
-        var valueSetR4: ValueSet?;
+        var valueSetR4: ValueSet? = null
         if (url != null) {
             var valueSets = url?.let { search(it) }
-            valueSetR4= valueSets[0];
+            if (valueSets != null) {
+                if (valueSets.isNotEmpty())  {
+                    if (valueSetR4 != null) {
+                        valueSetR4= valueSets[0]
+                    }
+                }
+            }
         } else {
             valueSetR4 = valueSet;
         }

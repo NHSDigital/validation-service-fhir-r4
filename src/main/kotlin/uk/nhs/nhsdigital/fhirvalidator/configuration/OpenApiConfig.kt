@@ -27,7 +27,7 @@ open class OpenApiConfig {
     var OASVERIFICATION = "OAS FHIR Conformance"
     @Bean
     open fun customOpenAPI(
-        fhirServerProperties: FHIRServerProperties,
+        fhirServerProperties: FHIRServerProperties
        // restfulServer: FHIRR4RestfulServer
     ): OpenAPI? {
 
@@ -262,7 +262,8 @@ open class OpenApiConfig {
                         .style(Parameter.StyleEnum.SIMPLE)
                         .description("Value set Canonical URL. The server must know the value set (e.g. it is defined explicitly in the server's value sets, or it is defined implicitly by some code system known to the server")
                         .schema(StringSchema().format("uri"))
-                        .example("https://fhir.nhs.uk/ValueSet/NHSDigital-MedicationRequest-Code"))
+                        //.example("https://fhir.nhs.uk/ValueSet/NHSDigital-MedicationRequest-Code")
+                        )
                     .addParametersItem(Parameter()
                         .name("code")
                         .`in`("query")
