@@ -63,20 +63,7 @@ class CodeSystemProvider (@Qualifier("R4") private val fhirContext: FhirContext,
         return codingSupport.subsumes(codeA,codeB,java.net.URLDecoder.decode(system, StandardCharsets.UTF_8.name()))
     }
 
-    @Operation(name = "\$searchSCT", idempotent = true)
-    fun subsumes (  @OperationParam(name = "filter") filter: String?,
-                    @OperationParam(name = "count") count: IntegerType?,
-                    @OperationParam(name = "includeDesignations") includeDesignations: BooleanType?
-                   ) : Parameters? {
-        return codingSupport.search(filter,count,includeDesignations)
-    }
 
-    @Operation(name = "\$expandEcl", idempotent = true)
-    fun eclExpand (  @OperationParam(name = "ecl", min = 1) filter: String?,
-                    @OperationParam(name = "count") count: IntegerType?
-    ) : Parameters? {
-        return codingSupport.expandEcl(filter,count)
-    }
 
     @Operation(name = "\$lookup", idempotent = true)
     fun validateCode (
