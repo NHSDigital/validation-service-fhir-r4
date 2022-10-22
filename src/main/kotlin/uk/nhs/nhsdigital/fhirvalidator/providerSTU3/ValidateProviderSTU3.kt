@@ -25,23 +25,6 @@ class ValidateProviderSTU3 (
 ) {
     companion object : KLogging()
 
-    @Operation(name = "\$convert", idempotent = true)
-    @Throws(Exception::class)
-    fun convertJson(
-        @ResourceParam resource: IBaseResource?
-    ): IBaseResource? {
-        return resource
-    }
-
-    @Operation(name = "\$convertR4", idempotent = true)
-    @Throws(java.lang.Exception::class)
-    fun convertR4(
-        @ResourceParam resource: IBaseResource?
-    ): IBaseResource? {
-        val convertor = VersionConvertor_30_40(BaseAdvisor_30_40())
-        val resourceR3 = resource as Resource
-        return convertor.convertResource(resourceR3)
-    }
 
     @Validate
     fun validate(
@@ -57,7 +40,6 @@ class ValidateProviderSTU3 (
         methodOutcome.operationOutcome = operationOutcome
         return methodOutcome
     }
-
 
 
     fun parseAndValidateResource(inputResource: IBaseResource, profile: String?): OperationOutcome {

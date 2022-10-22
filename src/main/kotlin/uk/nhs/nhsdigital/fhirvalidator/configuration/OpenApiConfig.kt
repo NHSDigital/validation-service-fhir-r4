@@ -592,6 +592,26 @@ open class OpenApiConfig {
 
         oas.path("/FHIR/R4/\$markdown",markdownItem)
 
+        val convertR4Item = PathItem()
+            .post(
+                Operation()
+                    .addTagsItem(HIDDEN)
+                    .summary("Convert to FHIR R4 (Structure only)")
+                    .addParametersItem(Parameter()
+                        .name("Accept")
+                        .`in`("header")
+                        .required(true)
+                        .style(Parameter.StyleEnum.SIMPLE)
+                        .description("Select response format")
+                        .schema(StringSchema()._enum(listOf("application/fhir+xml","application/fhir+json"))))
+                    .responses(getApiResponsesXMLJSON())
+                    .requestBody(RequestBody().content(Content()
+                        .addMediaType("application/fhir+json",
+                            MediaType().schema(StringSchema()._default("{\"resourceType\":\"CapabilityStatement\"}")))
+                        .addMediaType("application/fhir+xml",MediaType().schema(StringSchema()))
+                    )))
+        oas.path("/FHIR/STU3/\$convertR4",convertR4Item)
+
         val capabilityStatementItem = PathItem()
             .post(
                 Operation()
