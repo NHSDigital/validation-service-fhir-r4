@@ -17,6 +17,7 @@ import org.hl7.fhir.dstu3.model.Resource
 import org.hl7.fhir.dstu3.model.ResourceType
 import org.springframework.stereotype.Component
 import uk.nhs.nhsdigital.fhirvalidator.util.createSTU3OperationOutcome
+import uk.nhs.nhsdigital.fhirvalidator.util.createSTU3OperationOutcomeR4
 import javax.servlet.http.HttpServletRequest
 
 @Component
@@ -35,7 +36,8 @@ class ValidateProviderSTU3 (
         val profile = parameterResourceProfile ?: servletRequest.getParameter("profile")
         val convertor = VersionConvertor_30_40(BaseAdvisor_30_40())
         val resourceR3 = resource as Resource
-        val operationOutcome = parseAndValidateResource(convertor.convertResource(resourceR3), profile)
+        val resourceR4 = convertor.convertResource(resourceR3)
+        val operationOutcome = parseAndValidateResource(resourceR4, profile)
         val methodOutcome = MethodOutcome()
         methodOutcome.operationOutcome = operationOutcome
         return methodOutcome
@@ -47,22 +49,19 @@ class ValidateProviderSTU3 (
             val resources = getResourcesToValidate(inputResource)
             val operationOutcomeList = resources.map { validateResource(it, profile) }
             val operationOutcomeIssues = operationOutcomeList.filterNotNull().flatMap { it.issue }
-            return createSTU3OperationOutcome(operationOutcomeIssues)
+            return createSTU3OperationOutcomeR4(operationOutcomeIssues)
         } catch (e: DataFormatException) {
          //   VerifyController.logger.error("Caught parser error", e)
             createSTU3OperationOutcome(e.message ?: "Invalid JSON", null)
         }
     }
 
-    fun validateResource(resource: IBaseResource, profile: String?): OperationOutcome? {
+    fun validateResource(resource: IBaseResource, profile: String?): org.hl7.fhir.r4.model.OperationOutcome? {
         if (profile != null) return validator.validateWithResult(resource, ValidationOptions().addProfile(profile))
-            .toOperationOutcome() as? OperationOutcome
-       // capabilityStatementApplier.applyCapabilityStatementProfiles(resource)
-       // val messageDefinitionErrors = messageDefinitionApplier.applyMessageDefinition(resource)
-       // if (messageDefinitionErrors != null) {
-       //     return messageDefinitionErrors
-       // }
-        return validator.validateWithResult(resource).toOperationOutcome() as? OperationOutcome
+            .toOperationOutcome() as? org.hl7.fhir.r4.model.OperationOutcome
+
+        val operationOutcome = validator.validateWithResult(resource).toOperationOutcome()
+        return operationOutcome as org.hl7.fhir.r4.model.OperationOutcome
     }
 
     fun getResourcesToValidate(inputResource: IBaseResource?): List<IBaseResource> {
