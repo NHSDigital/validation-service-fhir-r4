@@ -30,34 +30,33 @@ fun createSTU3OperationOutcomeR3(issues: List<org.hl7.fhir.dstu3.model.Operation
 
 fun createSTU3OperationOutcomeR4(issues: List<OperationOutcome.OperationOutcomeIssueComponent>): org.hl7.fhir.dstu3.model.OperationOutcome {
     val operationOutcome = org.hl7.fhir.dstu3.model.OperationOutcome()
-    issues.forEach { operationOutcome.addIssue(
-        org.hl7.fhir.dstu3.model.OperationOutcome.OperationOutcomeIssueComponent()
-            .setDiagnostics(it.diagnostics)
-            .setCode(getCode(it.code))
-            .setSeverity(getSeverity(it.severity))
-    ) }
+    issues.forEach {
+        if (!("STU3" in it.diagnostics)) {
+            operationOutcome.addIssue(
+                getIssue(it)
+            )
+        }
+    }
     return operationOutcome
 }
 
-fun getSeverity(severity: OperationOutcome.IssueSeverity?): org.hl7.fhir.dstu3.model.OperationOutcome.IssueSeverity? {
-    when (severity) {
-        OperationOutcome.IssueSeverity.ERROR -> org.hl7.fhir.dstu3.model.OperationOutcome.IssueSeverity.ERROR
-        OperationOutcome.IssueSeverity.FATAL -> org.hl7.fhir.dstu3.model.OperationOutcome.IssueSeverity.FATAL
-        OperationOutcome.IssueSeverity.INFORMATION -> org.hl7.fhir.dstu3.model.OperationOutcome.IssueSeverity.INFORMATION
-        OperationOutcome.IssueSeverity.WARNING -> org.hl7.fhir.dstu3.model.OperationOutcome.IssueSeverity.WARNING
+fun getIssue(r4issue : OperationOutcome.OperationOutcomeIssueComponent) :org.hl7.fhir.dstu3.model.OperationOutcome.OperationOutcomeIssueComponent {
+    var r3issue = org.hl7.fhir.dstu3.model.OperationOutcome.OperationOutcomeIssueComponent()
+        .setDiagnostics(r4issue.diagnostics)
+    when (r4issue.severity) {
+        OperationOutcome.IssueSeverity.ERROR -> r3issue.severity = org.hl7.fhir.dstu3.model.OperationOutcome.IssueSeverity.ERROR
+        OperationOutcome.IssueSeverity.FATAL -> r3issue.severity =  org.hl7.fhir.dstu3.model.OperationOutcome.IssueSeverity.FATAL
+        OperationOutcome.IssueSeverity.INFORMATION -> r3issue.severity =  org.hl7.fhir.dstu3.model.OperationOutcome.IssueSeverity.INFORMATION
+        OperationOutcome.IssueSeverity.WARNING -> r3issue.severity =  org.hl7.fhir.dstu3.model.OperationOutcome.IssueSeverity.WARNING
         else -> {}
     }
-    return null
+    r3issue.code = org.hl7.fhir.dstu3.model.OperationOutcome.IssueType.fromCode(r4issue.code.toCode())
+
+    return r3issue
 }
 
-fun getCode(issue: OperationOutcome.IssueType) : org.hl7.fhir.dstu3.model.OperationOutcome.IssueType? {
-    when (issue) {
-        OperationOutcome.IssueType.INFORMATIONAL -> return  org.hl7.fhir.dstu3.model.OperationOutcome.IssueType.INFORMATIONAL
-        OperationOutcome.IssueType.BUSINESSRULE -> return  org.hl7.fhir.dstu3.model.OperationOutcome.IssueType.BUSINESSRULE
-        OperationOutcome.IssueType.CODEINVALID -> return  org.hl7.fhir.dstu3.model.OperationOutcome.IssueType.CODEINVALID
-    }
-    return null
-}
+
+
 
 fun createOperationOutcomeIssue(diagnostics: String, expression: String?): OperationOutcome.OperationOutcomeIssueComponent {
     val issue = OperationOutcome.OperationOutcomeIssueComponent()
