@@ -9,16 +9,13 @@ import ca.uhn.fhir.validation.FhirValidator
 import ca.uhn.fhir.validation.ValidationOptions
 import mu.KLogging
 import org.hl7.fhir.instance.model.api.IBaseResource
-import org.hl7.fhir.r4.context.SimpleWorkerContext
 import org.hl7.fhir.r4.hapi.ctx.HapiWorkerContext
 import org.hl7.fhir.r4.model.*
 import org.hl7.fhir.r4.utils.FHIRPathEngine
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
-import uk.nhs.nhsdigital.fhirvalidator.controller.VerifyController
 import uk.nhs.nhsdigital.fhirvalidator.service.CapabilityStatementApplier
 import uk.nhs.nhsdigital.fhirvalidator.service.MessageDefinitionApplier
-import uk.nhs.nhsdigital.fhirvalidator.service.VerifyOAS
 import uk.nhs.nhsdigital.fhirvalidator.util.createOperationOutcome
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
