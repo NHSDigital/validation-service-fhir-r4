@@ -118,7 +118,8 @@ class AWSAuditEventLoggingInterceptor(
                             if (baseResource is QuestionnaireResponse) {
                                 patientId = baseResource.subject.reference
                             }
-                        } finally {
+                        } catch (finalEx : Exception) {
+
                         }
                     }
                 }

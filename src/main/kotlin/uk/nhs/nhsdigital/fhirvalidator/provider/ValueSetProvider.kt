@@ -128,9 +128,7 @@ class ValueSetProvider (@Qualifier("R4") private val fhirContext: FhirContext,
             var valueSets = url.let { search(it) }
             if (valueSets != null) {
                 if (valueSets.isNotEmpty())  {
-                    if (valueSetR4 != null) {
-                        valueSetR4= valueSets[0]
-                    }
+                    valueSetR4= valueSets[0]
                 }
             };
         } else {
