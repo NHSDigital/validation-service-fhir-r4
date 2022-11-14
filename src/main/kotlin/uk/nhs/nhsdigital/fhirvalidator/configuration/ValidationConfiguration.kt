@@ -88,6 +88,7 @@ open class ValidationConfiguration(
             Predicate { it.startsWith("http://snomed.info/sct")
                     || it.startsWith("https://dmd.nhs.uk")
                     || it.startsWith("http://read.info")
+                    || it.startsWith("http://hl7.org/fhir/sid/icd")
             }
         )
     }
