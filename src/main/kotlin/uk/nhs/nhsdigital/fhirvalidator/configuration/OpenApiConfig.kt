@@ -174,7 +174,18 @@ open class OpenApiConfig {
                     .description("Computationally friendly name of the structure definition")
                     .schema(StringSchema())
                 )
+                .addParametersItem(Parameter()
+                    .name("type")
+                    .`in`("query")
+                    .required(false)
+                    .style(Parameter.StyleEnum.SIMPLE)
+                    .description("Type defined or constrained by this structure")
+                    .schema(StringSchema())
+                    .example("Patient")
+                )
         )
+
+
         oas.path("/FHIR/R4/MessageDefinition",getPathItem(VALIDATION,"MessageDefinition", "Message Definition", "url" , "https://fhir.nhs.uk/MessageDefinition/prescription-order", ""))
 
 

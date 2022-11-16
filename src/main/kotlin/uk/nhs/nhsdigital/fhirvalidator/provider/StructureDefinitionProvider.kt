@@ -6,7 +6,9 @@ import ca.uhn.fhir.rest.annotation.RequiredParam
 import ca.uhn.fhir.rest.annotation.Search
 import ca.uhn.fhir.rest.param.StringParam
 import ca.uhn.fhir.rest.param.TokenParam
+import ca.uhn.fhir.rest.param.UriParam
 import ca.uhn.fhir.rest.server.IResourceProvider
+import ca.uhn.fhir.rest.server.exceptions.UnprocessableEntityException
 import ca.uhn.fhir.validation.FhirValidator
 import org.hl7.fhir.common.hapi.validation.support.ValidationSupportChain
 import org.hl7.fhir.r4.model.StructureDefinition
@@ -16,6 +18,7 @@ import org.springframework.stereotype.Component
 import uk.nhs.nhsdigital.fhirvalidator.service.ImplementationGuideParser
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
+import javax.servlet.http.HttpServletRequest
 
 @Component
 class StructureDefinitionProvider (
@@ -34,10 +37,17 @@ class StructureDefinitionProvider (
 
 
     @Search
-    fun search(@OptionalParam(name = StructureDefinition.SP_URL) url: TokenParam?,
-               @OptionalParam(name = StructureDefinition.SP_NAME) name: StringParam?,
-               @OptionalParam(name = StructureDefinition.SP_BASE) base: TokenParam?
+    fun search(
+        httpRequest : HttpServletRequest,
+        @OptionalParam(name = StructureDefinition.SP_URL) url: TokenParam?,
+        @OptionalParam(name = StructureDefinition.SP_NAME) name: StringParam?,
+        @OptionalParam(name = StructureDefinition.SP_BASE) base: TokenParam?,
+        @OptionalParam(name = StructureDefinition.SP_TYPE) type: UriParam?
     ): List<StructureDefinition> {
+        val params = httpRequest.parameterMap
+        System.out.println(params.size)
+        if (params.size == 0) throw UnprocessableEntityException("One parameter must be supplied.")
+        if (params.size != 1) throw UnprocessableEntityException("Only one parameter can be supplied.")
         val list = mutableListOf<StructureDefinition>()
         for (resource in supportChain.fetchAllStructureDefinitions()) {
             var structureDefinition = resource as StructureDefinition
@@ -46,6 +56,13 @@ class StructureDefinitionProvider (
                         && structureDefinition.url.equals(
                     URLDecoder.decode(
                         url.value,
+                        StandardCharsets.UTF_8.name()
+                    )
+                )) ||
+                ((type != null)
+                        && structureDefinition.type.equals(
+                    URLDecoder.decode(
+                        type.value,
                         StandardCharsets.UTF_8.name()
                     )
                 )) ||
