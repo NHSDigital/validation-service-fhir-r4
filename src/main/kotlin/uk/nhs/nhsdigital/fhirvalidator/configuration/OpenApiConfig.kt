@@ -183,6 +183,15 @@ open class OpenApiConfig {
                     .schema(StringSchema())
                     .example("Patient")
                 )
+                .addParametersItem(Parameter()
+                    .name("ext-context")
+                    .`in`("query")
+                    .required(false)
+                    .style(Parameter.StyleEnum.SIMPLE)
+                    .description("The system is the URL for the context-type: e.g. http://hl7.org/fhir/extension-context-type#element|CodeableConcept.text")
+                    .schema(StringSchema())
+                    .example("Patient")
+                )
         )
 
 

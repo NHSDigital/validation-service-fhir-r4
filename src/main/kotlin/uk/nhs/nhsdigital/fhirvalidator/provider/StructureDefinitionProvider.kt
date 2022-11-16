@@ -42,7 +42,8 @@ class StructureDefinitionProvider (
         @OptionalParam(name = StructureDefinition.SP_URL) url: TokenParam?,
         @OptionalParam(name = StructureDefinition.SP_NAME) name: StringParam?,
         @OptionalParam(name = StructureDefinition.SP_BASE) base: TokenParam?,
-        @OptionalParam(name = StructureDefinition.SP_TYPE) type: UriParam?
+        @OptionalParam(name = StructureDefinition.SP_TYPE) type: UriParam?,
+        @OptionalParam(name = StructureDefinition.SP_EXT_CONTEXT) contextType: UriParam?
     ): List<StructureDefinition> {
         val params = httpRequest.parameterMap
         System.out.println(params.size)
@@ -86,6 +87,20 @@ class StructureDefinitionProvider (
                     structureDefinition.snapshot = null
                 }
                 list.add(structureDefinition)
+            }
+            if (contextType!= null && structureDefinition.hasContext() ) {
+                for (context in structureDefinition.context) {
+                    if (context.hasType() && context.expressionElement.value.equals(contextType.value))  {
+                        if (structureDefinition.id == null) structureDefinition.id = structureDefinition.name
+                        if (url == null) {
+                            // dirty clone
+                            structureDefinition = fhirContext.newJsonParser().parseResource(
+                                fhirContext.newJsonParser().encodeResourceToString(structureDefinition)) as StructureDefinition
+                            structureDefinition.snapshot = null
+                        }
+                        list.add(structureDefinition)
+                    }
+                }
             }
         }
         return list
