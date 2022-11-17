@@ -4,12 +4,14 @@ import ca.uhn.fhir.context.FhirContext
 import ca.uhn.fhir.context.support.IValidationSupport
 import ca.uhn.fhir.rest.api.EncodingEnum
 import ca.uhn.fhir.rest.server.RestfulServer
+import ca.uhn.fhir.rest.server.interceptor.CorsInterceptor
 import org.hl7.fhir.utilities.npm.NpmPackage
 import org.springframework.beans.factory.annotation.Qualifier
+import org.springframework.web.cors.CorsConfiguration
 import uk.nhs.nhsdigital.fhirvalidator.configuration.FHIRServerProperties
+import uk.nhs.nhsdigital.fhirvalidator.interceptor.AWSAuditEventLoggingInterceptor
 import uk.nhs.nhsdigital.fhirvalidator.interceptor.CapabilityStatementInterceptor
 import uk.nhs.nhsdigital.fhirvalidator.provider.*
-import uk.nhs.nhsdigital.fhirvalidator.interceptor.AWSAuditEventLoggingInterceptor
 import java.util.*
 import javax.servlet.annotation.WebServlet
 
@@ -55,6 +57,26 @@ class FHIRR4RestfulServer(
         registerProvider(codeSystemProvider)
 
         registerInterceptor(CapabilityStatementInterceptor(this.fhirContext,npmPackages, supportChain, fhirServerProperties))
+
+        val config = CorsConfiguration()
+        config.addAllowedHeader("x-fhir-starter")
+        config.addAllowedHeader("Origin")
+        config.addAllowedHeader("Accept")
+        config.addAllowedHeader("X-Requested-With")
+        config.addAllowedHeader("Content-Type")
+        config.addAllowedHeader("Authorization")
+        config.addAllowedHeader("x-api-key")
+
+        config.addAllowedOrigin("*")
+
+        config.addExposedHeader("Location")
+        config.addExposedHeader("Content-Location")
+        config.allowedMethods = Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
+        // Create the interceptor and register it
+
+
+        val interceptor = CorsInterceptor(config)
+        interceptorService.registerInterceptor(interceptor)
 
         val awsAuditEventLoggingInterceptor =
             AWSAuditEventLoggingInterceptor(
