@@ -6,7 +6,9 @@ import org.springframework.boot.context.properties.ConstructorBinding
 @ConstructorBinding
 @ConfigurationProperties(prefix = "fhir")
 data class FHIRServerProperties(
-    var server: Server
+    var server: Server,
+    var igC: String?,
+    var ig: String?
 ) {
     data class Server(
         var baseUrl: String,
