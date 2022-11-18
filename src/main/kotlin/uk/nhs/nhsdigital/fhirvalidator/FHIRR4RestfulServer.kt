@@ -58,25 +58,6 @@ class FHIRR4RestfulServer(
 
         registerInterceptor(CapabilityStatementInterceptor(this.fhirContext,npmPackages, supportChain, fhirServerProperties))
 
-        val config = CorsConfiguration()
-        config.addAllowedHeader("x-fhir-starter")
-        config.addAllowedHeader("Origin")
-        config.addAllowedHeader("Accept")
-        config.addAllowedHeader("X-Requested-With")
-        config.addAllowedHeader("Content-Type")
-        config.addAllowedHeader("Authorization")
-        config.addAllowedHeader("x-api-key")
-
-        config.addAllowedOrigin("*")
-
-        config.addExposedHeader("Location")
-        config.addExposedHeader("Content-Location")
-        config.allowedMethods = Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
-        // Create the interceptor and register it
-
-
-        val interceptor = CorsInterceptor(config)
-        interceptorService.registerInterceptor(interceptor)
 
         val awsAuditEventLoggingInterceptor =
             AWSAuditEventLoggingInterceptor(
