@@ -25,17 +25,20 @@ import org.springframework.context.annotation.Configuration
 
 @Configuration
 open class OpenApiConfig {
-    var VALIDATION = "FHIR Validation"
-    val SVCM = "FHIR Terminology"
-    val SVCM_95 = "Query Value Set"
-    val SVCM_96 = "Query Code System"
-    val SVCM_97 = "Expand Value Set"
+   var VALIDATION = "Validation"
+    var UTILITY = "Utility"
+    var EXPANSION = "ValueSet Expansion (inc. Filtering)"
+    var CONFORMANCE = "FHIR Package Queries"
+   // val SVCM = "FHIR Terminology"
+  //  val SVCM_95 = "Query Value Set"
+  //  val SVCM_96 = "Query Code System"
+  //  val SVCM_97 = "Expand Value Set"
     val SVCM_98 = "Lookup Code"
-    val SVCM_99 = "Validate Code"
-    val SVCM_100 = "Query Concept Map"
-    val SVCM_101 = "Translate Code"
-    var MEDICATION_DEFINITION = "FHIR Medication Definition (R5 Demonstration)"
-    var HIDDEN = "Others API - Including experimental"
+   // val SVCM_99 = "Validate Code"
+   // val SVCM_100 = "Query Concept Map"
+   // val SVCM_101 = "Translate Code"
+    var MEDICATION_DEFINITION = "Experimental - FHIR R5 Medication Definition"
+    var EXPERIMENTAL = "Experimental"
 
     @Bean
     open fun customOpenAPI(
@@ -46,7 +49,7 @@ open class OpenApiConfig {
         val oas = OpenAPI()
             .info(
                 Info()
-                    .title("IOPS - Conformance Support")
+                    .title("Conformance Support (R4)")
                     .version(fhirServerProperties.server.version)
                     .description(fhirServerProperties.server.name
                             + "\n "
@@ -65,9 +68,18 @@ open class OpenApiConfig {
 
         oas.addTagsItem(io.swagger.v3.oas.models.tags.Tag()
             .name(VALIDATION)
-            .description("[HL7 FHIR Validation](https://www.hl7.org/fhir/R4/validation.html)")
+            .description("[Validation](https://www.hl7.org/fhir/R4/validation.html)")
         )
 
+        oas.addTagsItem(io.swagger.v3.oas.models.tags.Tag()
+            .name(EXPANSION)
+            .description("[expand](https://www.hl7.org/fhir/R4/operation-valueset-expand.html)")
+        )
+        oas.addTagsItem(io.swagger.v3.oas.models.tags.Tag()
+            .name(SVCM_98)
+            .description("[lookup](https://www.hl7.org/fhir/R4/operation-codesystem-lookup.html)")
+        )
+/*
         oas.addTagsItem(io.swagger.v3.oas.models.tags.Tag()
             .name(SVCM)
             .description("[HL7 FHIR Terminology](https://www.hl7.org/fhir/R4/terminologies-systems.html)")
@@ -75,14 +87,17 @@ open class OpenApiConfig {
                 .description("")
                 .url(""))
         )
+  */
+
+        /*
         oas.addTagsItem(getTerminologyTag("95",SVCM_95))
         oas.addTagsItem(getTerminologyTag("96",SVCM_96))
         oas.addTagsItem(getTerminologyTag("97",SVCM_97))
         oas.addTagsItem(getTerminologyTag("98",SVCM_98))
-        oas.addTagsItem(getTerminologyTag("99",SVCM_99))
+       // oas.addTagsItem(getTerminologyTag("99",SVCM_99))
         oas.addTagsItem(getTerminologyTag("100",SVCM_100))
         oas.addTagsItem(getTerminologyTag("101",SVCM_101))
-
+*/
         val validateItem = PathItem()
             .post(
                 Operation()
@@ -122,7 +137,7 @@ open class OpenApiConfig {
         val fhirPathItem = PathItem()
             .post(
                 Operation()
-                    .addTagsItem(VALIDATION)
+                    .addTagsItem(UTILITY)
                     .summary("Experimental fhir path expression evaluation")
                     .description("[fhir path](https://www.hl7.org/fhir/R4/fhirpath.html)")
                     .responses(getApiResponsesXMLJSON())
@@ -143,7 +158,7 @@ open class OpenApiConfig {
         val convertItem = PathItem()
             .post(
                 Operation()
-                    .addTagsItem(VALIDATION)
+                    .addTagsItem(UTILITY)
                     .summary("Switch between XML and JSON formats")
                     .addParametersItem(Parameter()
                         .name("Accept")
@@ -161,7 +176,7 @@ open class OpenApiConfig {
         oas.path("/FHIR/R4/\$convert",convertItem)
 
         oas.path("/FHIR/R4/StructureDefinition",
-            getPathItem(VALIDATION,"StructureDefinition", "Structure Definition (profile)", "url", "https://fhir.hl7.org.uk/StructureDefinition/UKCore-Patient" ,"" )
+            getPathItem(CONFORMANCE,"StructureDefinition", "Structure Definition (profile)", "url", "https://fhir.hl7.org.uk/StructureDefinition/UKCore-Patient" ,"" )
                 .addParametersItem(Parameter()
                     .name("base")
                     .`in`("query")
@@ -199,13 +214,13 @@ open class OpenApiConfig {
         )
 
 
-        oas.path("/FHIR/R4/MessageDefinition",getPathItem(VALIDATION,"MessageDefinition", "Message Definition", "url" , "https://fhir.nhs.uk/MessageDefinition/prescription-order", ""))
+        oas.path("/FHIR/R4/MessageDefinition",getPathItem(CONFORMANCE,"MessageDefinition", "Message Definition", "url" , "https://fhir.nhs.uk/MessageDefinition/prescription-order", ""))
 
 
         // SVCM
 
         // ITI-95 Query Value Set
-        var pathItem = getPathItem(getTerminologyTagName(SVCM_95),"ValueSet", "Value Set", "url" , "https://fhir.nhs.uk/ValueSet/NHSDigital-MedicationRequest-Code",
+        var pathItem = getPathItem(getTerminologyTagName(CONFORMANCE),"ValueSet", "Value Set", "url" , "https://fhir.nhs.uk/ValueSet/NHSDigital-MedicationRequest-Code",
         "This transaction is used by the Terminology Consumer to find value sets based on criteria it\n" +
                 "provides in the query parameters of the request message, or to retrieve a specific value set. The\n" +
                 "request is received by the Terminology Repository. The Terminology Repository processes the\n" +
@@ -214,7 +229,7 @@ open class OpenApiConfig {
 
         // ITI 96 Query Code System
 
-        pathItem = getPathItem(getTerminologyTagName(SVCM_96),"CodeSystem", "Code System", "url", "https://fhir.nhs.uk/CodeSystem/NHSD-API-ErrorOrWarningCode",
+        pathItem = getPathItem(getTerminologyTagName(CONFORMANCE),"CodeSystem", "Code System", "url", "https://fhir.nhs.uk/CodeSystem/NHSD-API-ErrorOrWarningCode",
         "This transaction is used by the Terminology Consumer to solicit information about code systems " +
                 "whose data match data provided in the query parameters on the request message. The request is " +
                 "received by the Terminology Repository. The Terminology Repository processes the request and " +
@@ -225,7 +240,7 @@ open class OpenApiConfig {
         oas.path("/FHIR/R4/ValueSet/\$expand",PathItem()
             .get(
                 Operation()
-                    .addTagsItem(getTerminologyTagName(SVCM_97))
+                    .addTagsItem(getTerminologyTagName(EXPANSION))
                     .summary("Expand a Value Set")
                     .description("This transaction is used by the Terminology Consumer to expand a given ValueSet to return the\n" +
                             "full list of concepts available in that ValueSet. The request is received by the Terminology\n" +
@@ -253,7 +268,7 @@ open class OpenApiConfig {
             )
             .post(
                 Operation()
-                    .addTagsItem(getTerminologyTagName(SVCM_97))
+                    .addTagsItem(getTerminologyTagName(EXPANSION))
                     .summary("The definition of a value set is used to create a simple collection of codes suitable for use for data entry or validation. Body should be a FHIR ValueSet").responses(getApiResponses())
                     .description("[expand](https://www.hl7.org/fhir/R4/operation-valueset-expand.html)")
                     .responses(getApiResponsesXMLJSON())
@@ -266,7 +281,7 @@ open class OpenApiConfig {
         val eclItem = PathItem()
             .get(
                 Operation()
-                    .addTagsItem(getTerminologyTagName(SVCM_97))
+                    .addTagsItem(getTerminologyTagName(EXPANSION))
                     .summary("Expand a SNOMED CT ecl statement.")
                     .description("This internally uses ValueSet [expand](https://www.hl7.org/fhir/R4/operation-valueset-expand.html) operation.")
                     .responses(getApiResponses())
@@ -294,7 +309,7 @@ open class OpenApiConfig {
         val searchItem = PathItem()
             .get(
                 Operation()
-                    .addTagsItem(getTerminologyTagName(SVCM_97))
+                    .addTagsItem(getTerminologyTagName(EXPANSION))
                     .summary("Search SNOMED CT for a term.")
                     .description("This internally uses ValueSet [expand](https://www.hl7.org/fhir/R4/operation-valueset-expand.html) operation.")
                     .responses(getApiResponses())
@@ -400,7 +415,7 @@ open class OpenApiConfig {
         val validateCodeItem = PathItem()
             .get(
                 Operation()
-                    .addTagsItem(getTerminologyTagName(SVCM_99))
+                    .addTagsItem(getTerminologyTagName(VALIDATION))
                     .summary("Validate that a coded value is in the set of codes allowed by a value set.")
                     .description("This transaction is used by the Terminology Consumer to validate the existence of a given code " +
                             "in a value set or code system. The request is received by the Terminology Repository. The " +
@@ -445,7 +460,7 @@ open class OpenApiConfig {
 
         // Query Concept Map [ITI-100]
 
-        oas.path("/FHIR/R4/ConceptMap",getPathItem(getTerminologyTagName(SVCM_100),"ConceptMap", "Concept Map", "url" , "https://fhir.nhs.uk/ConceptMap/eps-issue-code-to-fhir-issue-type",
+        oas.path("/FHIR/R4/ConceptMap",getPathItem(getTerminologyTagName(CONFORMANCE),"ConceptMap", "Concept Map", "url" , "https://fhir.nhs.uk/ConceptMap/eps-issue-code-to-fhir-issue-type",
             "This transaction is used by the Terminology Consumer that supports the Translate Option to " +
                     "solicit information about concept maps whose data match data provided in the query parameters " +
                     "on the request message. The request is received by the Terminology Repository that supports the " +
@@ -459,7 +474,7 @@ open class OpenApiConfig {
         val subsumesItem = PathItem()
             .get(
                 Operation()
-                    .addTagsItem(SVCM)
+                    .addTagsItem(EXPERIMENTAL)
                     .summary("Test the subsumption relationship between code A and code B given the semantics of subsumption in the underlying code system ")
                     .description("[subsumes](https://hl7.org/fhir/R4/codesystem-operation-subsumes.html)")
                     .responses(getApiResponses())
@@ -573,21 +588,21 @@ open class OpenApiConfig {
         oas.path("/FHIR/R4/metadata",PathItem()
             .get(
                 Operation()
-                    .addTagsItem(HIDDEN)
+                    .addTagsItem(CONFORMANCE)
                     .summary("server-capabilities: Fetch the server FHIR CapabilityStatement").responses(getApiResponses())))
 
-        oas.path("/FHIR/R4/CapabilityStatement",getPathItem(HIDDEN, "CapabilityStatement", "Capability Statement", "url", "https://fhir.nhs.uk/CapabilityStatement/apim-medicines-api-example" ,"" ))
-        oas.path("/FHIR/R4/NamingSystem",getPathItem(HIDDEN,"NamingSystem", "Naming System", "value", "https://fhir.hl7.org.uk/Id/gmc-number", "" ))
+        oas.path("/FHIR/R4/CapabilityStatement",getPathItem(CONFORMANCE, "CapabilityStatement", "Capability Statement", "url", "https://fhir.nhs.uk/CapabilityStatement/apim-medicines-api-example" ,"" ))
+        oas.path("/FHIR/R4/NamingSystem",getPathItem(CONFORMANCE,"NamingSystem", "Naming System", "value", "https://fhir.hl7.org.uk/Id/gmc-number", "" ))
         oas.path("/FHIR/R4/OperationDefinition",
-            getPathItem(HIDDEN,"OperationDefinition", "Operation Definition", "url", "https://fhir.nhs.uk/OperationDefinition/MessageHeader-process-message", "" )
+            getPathItem(CONFORMANCE,"OperationDefinition", "Operation Definition", "url", "https://fhir.nhs.uk/OperationDefinition/MessageHeader-process-message", "" )
         )
-        oas.path("/FHIR/R4/SearchParameter",getPathItem(HIDDEN,"SearchParameter", "Search Parameter", "url" , "https://fhir.nhs.uk/SearchParameter/immunization-procedure-code", ""))
-        oas.path("/FHIR/R4/StructureMap",getPathItem(HIDDEN, "StructureMap", "Structure Map", "url" , "http://fhir.nhs.uk/StructureMap/MedicationRepeatInformation-Extension-3to4", ""))
+        oas.path("/FHIR/R4/SearchParameter",getPathItem(CONFORMANCE,"SearchParameter", "Search Parameter", "url" , "https://fhir.nhs.uk/SearchParameter/immunization-procedure-code", ""))
+        oas.path("/FHIR/R4/StructureMap",getPathItem(CONFORMANCE, "StructureMap", "Structure Map", "url" , "http://fhir.nhs.uk/StructureMap/MedicationRepeatInformation-Extension-3to4", ""))
 
         val verifyOASItem = PathItem()
             .post(
                 Operation()
-                    .addTagsItem(HIDDEN)
+                    .addTagsItem(EXPERIMENTAL)
                     .summary("Verifies a self contained OAS file for FHIR Conformance. Response format is the same as the FHIR \$validate operation")
                     .description("This is a proof of concept.")
                     .responses(getApiResponsesRAWJSON())
@@ -600,7 +615,7 @@ open class OpenApiConfig {
         val markdownItem = PathItem()
             .get(
                 Operation()
-                    .addTagsItem(HIDDEN)
+                    .addTagsItem(EXPERIMENTAL)
                     .summary("Converts a FHIR profile to a simplifier compatible markdown format")
                     .responses(getApiResponsesMarkdown())
                     .addParametersItem(Parameter()
@@ -619,7 +634,7 @@ open class OpenApiConfig {
         val convertR4Item = PathItem()
             .post(
                 Operation()
-                    .addTagsItem(HIDDEN)
+                    .addTagsItem(UTILITY)
                     .summary("Convert to FHIR R4 (Structure only)")
                     .addParametersItem(Parameter()
                         .name("Accept")
@@ -639,7 +654,7 @@ open class OpenApiConfig {
         val capabilityStatementItem = PathItem()
             .post(
                 Operation()
-                    .addTagsItem(HIDDEN)
+                    .addTagsItem(EXPERIMENTAL)
                     .summary("Converts a FHIR CapabilityStatement to openapi v3 format")
                     .responses(getApiResponsesMarkdown())
                     .requestBody(RequestBody().content(Content().addMediaType("application/fhir+json",MediaType().schema(StringSchema()._default("{\"resourceType\":\"CapabilityStatement\"}")))))
@@ -650,14 +665,14 @@ open class OpenApiConfig {
 
     }
 
-    private fun getTerminologyTag(itiRef: String, itiDesc: String): io.swagger.v3.oas.models.tags.Tag? {
+    private fun getzTerminologyTag(itiRef: String, itiDesc: String): io.swagger.v3.oas.models.tags.Tag? {
         return io.swagger.v3.oas.models.tags.Tag()
             .name(getTerminologyTagName(itiDesc))
             .description("[HL7 FHIR Terminology](https://www.hl7.org/fhir/R4/terminologies-systems.html) \n" +
                     "[IHE Profile: Sharing Valuesets, Codes, and Maps (SVCM) ITI-"+itiRef+"](https://profiles.ihe.net/ITI/TF/Volume1/ch-51.html)")
     }
     private fun getTerminologyTagName(itiDesc: String): String {
-        return SVCM+" - "+itiDesc
+        return itiDesc
     }
 
 
