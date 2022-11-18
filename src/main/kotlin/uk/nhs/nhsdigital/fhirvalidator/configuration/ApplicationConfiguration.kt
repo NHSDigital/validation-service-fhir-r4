@@ -55,8 +55,9 @@ open class ApplicationConfiguration {
         config.addAllowedHeader("*")
         config.addAllowedMethod("*")
         source.registerCorsConfiguration("/**", config)
-        val bean: FilterRegistrationBean<*> = FilterRegistrationBean<Filter>(/* filter = */ CorsFilter())
+        val bean: FilterRegistrationBean<*> = FilterRegistrationBean<Filter>(CorsFilter())
         bean.order = 0
         return bean
     }
+
 }

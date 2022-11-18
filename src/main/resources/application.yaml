@@ -14,9 +14,9 @@ management:
 
 fhir:
   server:
-    name: NHS Digital FHIR Validator
-    baseUrl: https://test.validation.fhir.nhs.uk
-    version: 2.6.17
+    name: IOPS FHIR Testing
+    baseUrl: https://3cdzg7kbj4.execute-api.eu-west-2.amazonaws.com/poc/Conformance
+    version: 2.6.19
 
 ###Remote terminology validation:
 
