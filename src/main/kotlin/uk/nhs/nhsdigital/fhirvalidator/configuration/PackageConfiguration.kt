@@ -21,14 +21,21 @@ import java.util.*
 
 @Configuration
 open class PackageConfiguration(val objectMapper: ObjectMapper,
-val messageProperties: MessageProperties) {
+val messageProperties: MessageProperties,
+    val fhirServerProperties: FHIRServerProperties) {
     companion object : KLogging()
 
     @Bean
     open fun getPackages(): List<NpmPackage> {
-        val configurationInputStream = ClassPathResource("manifest.json").inputStream
-        val manifest = objectMapper.readValue(configurationInputStream, Array<SimplifierPackage>::class.java)
+        var manifest : Array<SimplifierPackage>? = null
+        if (fhirServerProperties.ig != null   ) {
+           manifest = arrayOf(SimplifierPackage(fhirServerProperties.ig!!.name, fhirServerProperties.ig!!.version))
+        } else {
+            val configurationInputStream = ClassPathResource("manifest.json").inputStream
+            manifest = objectMapper.readValue(configurationInputStream, Array<SimplifierPackage>::class.java)
+        }
         val packages = arrayListOf<NpmPackage>()
+        if (manifest == null) throw UnprocessableEntityException("Error processing IG manifest")
         for (packageNpm in manifest ) {
             val packageName = packageNpm.packageName + "-" + packageNpm.version+ ".tgz"
 

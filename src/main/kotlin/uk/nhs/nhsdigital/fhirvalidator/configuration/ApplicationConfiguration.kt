@@ -47,7 +47,7 @@ open class ApplicationConfiguration {
     }
 
     @Bean
-    fun corsFilter(): FilterRegistrationBean<*>? {
+    open fun corsFilter(): FilterRegistrationBean<*>? {
         val source = UrlBasedCorsConfigurationSource()
         val config = CorsConfiguration()
         config.allowCredentials = true

@@ -8,7 +8,7 @@ import java.io.FileInputStream
 import java.util.*
 
 @Configuration
-class MessageProperties {
+open class MessageProperties {
     private val log = LoggerFactory.getLogger(MessageProperties::class.java)
 
 
