@@ -53,7 +53,7 @@ open class OpenApiConfig {
                     .version(fhirServerProperties.server.version)
                     .description(fhirServerProperties.server.name
                             + "\n "
-                            + "\n [UK Core Implementation Guide (0.5.1)](https://simplifier.net/guide/ukcoreimplementationguide0.5.0-stu1/home?version=current)"
+                            + "\n [UK Core Implementation Guide (1.0.0-pre-release)](https://simplifier.net/guide/ukcoreimplementationguide0.5.0-stu1/home?version=current)"
                             + "\n\n [NHS Digital Implementation Guide (2.6.0)](https://simplifier.net/guide/nhsdigital?version=2.6.0)"
                         )
                     .termsOfService("http://swagger.io/terms/")
