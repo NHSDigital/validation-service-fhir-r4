@@ -21,31 +21,59 @@ import kotlin.streams.toList
 
 
 @Configuration
-open class PackageConfiguration(val objectMapper: ObjectMapper, val fhirServerProperties: FHIRServerProperties) {
+open class PackageConfiguration(val objectMapper: ObjectMapper, val fhirServerProperties: FHIRServerProperties,
+val messageProperties: MessageProperties) {
     companion object : KLogging()
-
-
 
     @Bean
     open fun getPackages(): List<NpmPackage> {
+        val configurationInputStream = ClassPathResource("manifest.json").inputStream
+        val manifest = objectMapper.readValue(configurationInputStream, Array<SimplifierPackage>::class.java)
+        val packages = arrayListOf<NpmPackage>()
+        for (packageNpm in manifest ) {
+            var packageName= packageNpm.packageName + "-" + packageNpm.version+ ".tgz"
 
+            var inputStream: InputStream? = null
+            try {
+                inputStream = ClassPathResource(packageName).inputStream
+            } catch (ex : Exception) {
+                if (ex.message != null) logger.info(ex.message)
+            }
+            if (inputStream == null) {
+                val downloadedPackages = downloadPackage(packageNpm.packageName,packageNpm.version)
+                packages.addAll(downloadedPackages)
+            } else {
+                logger.info("Using local cache for {} - {}",packageNpm.packageName, packageNpm.version)
+                packages.add(NpmPackage.fromPackage(inputStream))
+            }
+        }
+        return packages
+        /*
         if (fhirServerProperties.ig != null && !fhirServerProperties.ig!!.isEmpty()) {
             return downloadPackage(fhirServerProperties.ig!!)
         }
-        val inputStream = ClassPathResource("manifest.json").inputStream
-        val packages = objectMapper.readValue(inputStream, Array<SimplifierPackage>::class.java)
         return Arrays.stream(packages)
             .map { "${it.packageName}-${it.version}.tgz" }
             .map { ClassPathResource(it).inputStream }
             .map { NpmPackage.fromPackage(it) }
             .toList()
+
+         */
     }
 
-    open fun downloadPackage(igPackage : String) : List<NpmPackage> {
-        logger.info("Downloading {}",igPackage)
-        val lstValues: List<String> = igPackage.split("#")
-        if (lstValues.size != 2) throw UnprocessableEntityException("IG invalid format. Was "+igPackage)
-        val inputStream = readFromUrl("https://packages.simplifier.net/"+lstValues[0]+"/"+lstValues[1])
+    open fun downloadPackage(name : String, version : String) : List<NpmPackage> {
+        logger.info("Downloading from AWS Cache {} - {}",name, version)
+        // Try self first
+        var inputStream : InputStream
+        try {
+            val packUrl =  "https://fhir.nhs.uk/ImplementationGuide/" + name+"-" + version
+            inputStream = readFromUrl(messageProperties.getNPMFhirServer() + "/FHIR/R4/ImplementationGuide/\$package?url="+packUrl )
+        } catch (ex : Exception) {
+            logger.info("Package not found in AWS Cache trying simplifier "+name+ "-"+version)
+            if (ex.message!=null) logger.info(ex.message)
+            inputStream = readFromUrl("https://packages.simplifier.net/" + name + "/" + version)
+        }
+        if (inputStream == null) logger.info("Failed to download  {} - {}",name, version)
         val packages = arrayListOf<NpmPackage>()
         val npmPackage = NpmPackage.fromPackage(inputStream)
 
@@ -53,18 +81,18 @@ open class PackageConfiguration(val objectMapper: ObjectMapper, val fhirServerPr
 
         if (dependency.isJsonArray) logger.info("isJsonArray")
         if (dependency.isJsonObject) {
-            logger.info("isJsonObject")
             val obj = dependency.asJsonObject
-
             val entrySet: Set<Map.Entry<String?, JsonElement?>> = obj.entrySet()
             for (entry in entrySet) {
                 logger.info(entry.key + " version =  " + entry.value)
                 if (entry.key != "hl7.fhir.r4.core") {
                     val version = entry.value?.asString?.replace("\"","")
-                    val packs = downloadPackage(entry.key+"#"+version)
-                    if (packs.size>0) {
-                        for (pack in packs) {
-                            packages.add(pack)
+                    if (entry.key != null && version != null) {
+                        val packs = downloadPackage(entry.key!!, version)
+                        if (packs.size > 0) {
+                            for (pack in packs) {
+                                packages.add(pack)
+                            }
                         }
                     }
                 }
@@ -104,7 +132,6 @@ open class PackageConfiguration(val objectMapper: ObjectMapper, val fhirServerPr
 
     @Bean
     open fun getCoreSearchParamters(@Qualifier("R4") ctx: FhirContext) : Bundle? {
-
         // TODO could maybe get this from packages
         val u = URL("http://hl7.org/fhir/R4/search-parameters.json")
         try {
