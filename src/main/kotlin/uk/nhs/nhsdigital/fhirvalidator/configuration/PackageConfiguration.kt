@@ -20,122 +20,12 @@ import java.util.*
 
 
 @Configuration
-open class PackageConfiguration(val objectMapper: ObjectMapper,
-val messageProperties: MessageProperties,
-    val fhirServerProperties: FHIRServerProperties) {
+open class PackageConfiguration(
+
+  ) {
     companion object : KLogging()
 
-    @Bean
-    open fun getPackages(): List<NpmPackage> {
-        var manifest : Array<SimplifierPackage>? = null
-        if (fhirServerProperties.ig != null   ) {
-           manifest = arrayOf(SimplifierPackage(fhirServerProperties.ig!!.name, fhirServerProperties.ig!!.version))
-        } else {
-            val configurationInputStream = ClassPathResource("manifest.json").inputStream
-            manifest = objectMapper.readValue(configurationInputStream, Array<SimplifierPackage>::class.java)
-        }
-        val packages = arrayListOf<NpmPackage>()
-        if (manifest == null) throw UnprocessableEntityException("Error processing IG manifest")
-        for (packageNpm in manifest ) {
-            val packageName = packageNpm.packageName + "-" + packageNpm.version+ ".tgz"
 
-            var inputStream: InputStream? = null
-            try {
-                inputStream = ClassPathResource(packageName).inputStream
-            } catch (ex : Exception) {
-                if (ex.message != null) logger.info(ex.message)
-            }
-            if (inputStream == null) {
-                val downloadedPackages = downloadPackage(packageNpm.packageName,packageNpm.version)
-                packages.addAll(downloadedPackages)
-            } else {
-                logger.info("Using local cache for {} - {}",packageNpm.packageName, packageNpm.version)
-                packages.add(NpmPackage.fromPackage(inputStream))
-            }
-        }
-        return packages
-        /*
-        if (fhirServerProperties.ig != null && !fhirServerProperties.ig!!.isEmpty()) {
-            return downloadPackage(fhirServerProperties.ig!!)
-        }
-        return Arrays.stream(packages)
-            .map { "${it.packageName}-${it.version}.tgz" }
-            .map { ClassPathResource(it).inputStream }
-            .map { NpmPackage.fromPackage(it) }
-            .toList()
-
-         */
-    }
-
-    open fun downloadPackage(name : String, version : String) : List<NpmPackage> {
-        logger.info("Downloading from AWS Cache {} - {}",name, version)
-        // Try self first
-        var inputStream : InputStream
-        try {
-            val packUrl =  "https://fhir.nhs.uk/ImplementationGuide/" + name+"-" + version
-            inputStream = readFromUrl(messageProperties.getNPMFhirServer() + "/FHIR/R4/ImplementationGuide/\$package?url="+packUrl )
-        } catch (ex : Exception) {
-            logger.info("Package not found in AWS Cache trying simplifier "+name+ "-"+version)
-            if (ex.message!=null) logger.info(ex.message)
-            inputStream = readFromUrl("https://packages.simplifier.net/" + name + "/" + version)
-        }
-        if (inputStream == null) logger.info("Failed to download  {} - {}",name, version)
-        val packages = arrayListOf<NpmPackage>()
-        val npmPackage = NpmPackage.fromPackage(inputStream)
-
-        val dependency= npmPackage.npm.get("dependencies")
-
-        if (dependency.isJsonArray) logger.info("isJsonArray")
-        if (dependency.isJsonObject) {
-            val obj = dependency.asJsonObject
-            val entrySet: Set<Map.Entry<String?, JsonElement?>> = obj.entrySet()
-            for (entry in entrySet) {
-                logger.info(entry.key + " version =  " + entry.value)
-                if (entry.key != "hl7.fhir.r4.core") {
-                    val entryVersion = entry.value?.asString?.replace("\"","")
-                    if (entry.key != null && entryVersion != null) {
-                        val packs = downloadPackage(entry.key!!, entryVersion)
-                        if (packs.size > 0) {
-                            for (pack in packs) {
-                                packages.add(pack)
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        packages.add(npmPackage)
-        if (dependency.isJsonNull) logger.info("isNull")
-        if (dependency.isJsonPrimitive) logger.info("isJsonPrimitive")
-
-        return packages
-    }
-
-    fun readFromUrl(url: String): InputStream {
-
-        val myUrl =  URL(url)
-
-        var retry = 2
-        while (retry > 0) {
-            val conn = myUrl.openConnection() as HttpURLConnection
-
-
-            conn.requestMethod = "GET"
-
-            try {
-                conn.connect()
-                return conn.inputStream
-            } catch (ex: FileNotFoundException) {
-                retry--
-                if (retry < 1) throw UnprocessableEntityException(ex.message)
-            } catch (ex: IOException) {
-                retry--
-                if (retry < 1) throw UnprocessableEntityException(ex.message)
-
-            }
-        }
-        throw UnprocessableEntityException("Number of retries exhausted")
-    }
 
     @Bean
     open fun getCoreSearchParamters(@Qualifier("R4") ctx: FhirContext) : Bundle? {
