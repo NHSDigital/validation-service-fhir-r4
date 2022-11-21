@@ -4,7 +4,7 @@
     "version": "1.0.0-pre-release"
   },
   {
-    "packageName": "uk.nhsdigital.r4",
-    "version": "2.6.0"
+    "packageName": "uk.nhsdigital.r4.test",
+    "version": "2.7.4-prerelease"
   }
 ]
