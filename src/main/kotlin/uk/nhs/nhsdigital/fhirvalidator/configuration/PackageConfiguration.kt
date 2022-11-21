@@ -17,11 +17,10 @@ import java.net.HttpURLConnection
 import java.net.URL
 import java.nio.charset.Charset
 import java.util.*
-import kotlin.streams.toList
 
 
 @Configuration
-open class PackageConfiguration(val objectMapper: ObjectMapper, val fhirServerProperties: FHIRServerProperties,
+open class PackageConfiguration(val objectMapper: ObjectMapper,
 val messageProperties: MessageProperties) {
     companion object : KLogging()
 
@@ -31,7 +30,7 @@ val messageProperties: MessageProperties) {
         val manifest = objectMapper.readValue(configurationInputStream, Array<SimplifierPackage>::class.java)
         val packages = arrayListOf<NpmPackage>()
         for (packageNpm in manifest ) {
-            var packageName= packageNpm.packageName + "-" + packageNpm.version+ ".tgz"
+            val packageName = packageNpm.packageName + "-" + packageNpm.version+ ".tgz"
 
             var inputStream: InputStream? = null
             try {
@@ -86,9 +85,9 @@ val messageProperties: MessageProperties) {
             for (entry in entrySet) {
                 logger.info(entry.key + " version =  " + entry.value)
                 if (entry.key != "hl7.fhir.r4.core") {
-                    val version = entry.value?.asString?.replace("\"","")
-                    if (entry.key != null && version != null) {
-                        val packs = downloadPackage(entry.key!!, version)
+                    val entryVersion = entry.value?.asString?.replace("\"","")
+                    if (entry.key != null && entryVersion != null) {
+                        val packs = downloadPackage(entry.key!!, entryVersion)
                         if (packs.size > 0) {
                             for (pack in packs) {
                                 packages.add(pack)
@@ -107,7 +106,7 @@ val messageProperties: MessageProperties) {
 
     fun readFromUrl(url: String): InputStream {
 
-        var myUrl: URL =  URL(url)
+        val myUrl =  URL(url)
 
         var retry = 2
         while (retry > 0) {
@@ -120,7 +119,8 @@ val messageProperties: MessageProperties) {
                 conn.connect()
                 return conn.inputStream
             } catch (ex: FileNotFoundException) {
-                null
+                retry--
+                if (retry < 1) throw UnprocessableEntityException(ex.message)
             } catch (ex: IOException) {
                 retry--
                 if (retry < 1) throw UnprocessableEntityException(ex.message)

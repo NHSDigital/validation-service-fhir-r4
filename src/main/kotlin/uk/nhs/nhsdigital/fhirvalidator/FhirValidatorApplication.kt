@@ -17,10 +17,10 @@ open class FhirValidatorApplication : ApplicationRunner {
     companion object : KLogging()
 
     override fun run(args: ApplicationArguments?) {
-        logger.info("EXECUTING THE APPLICATION");
+        logger.debug("EXECUTING THE APPLICATION")
         if (args != null) {
             for (opt in args.optionNames) {
-                FhirValidatorApplication.logger.info("args: {}", opt)
+                FhirValidatorApplication.logger.debug("args: {}", opt)
             }
         }
     }
@@ -29,9 +29,9 @@ open class FhirValidatorApplication : ApplicationRunner {
 }
 
 fun main(args: Array<String>) {
-    FhirValidatorApplication.logger.info("STARTING THE APPLICATION");
+    FhirValidatorApplication.logger.debug("STARTING THE APPLICATION")
     for (i in 0 until args.size) {
-        FhirValidatorApplication.logger.info("args[{}]: {}", i, args[i])
+        FhirValidatorApplication.logger.debug("args[{}]: {}", i, args[i])
     }
     runApplication<FhirValidatorApplication>(*args)
 }
