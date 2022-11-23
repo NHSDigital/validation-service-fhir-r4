@@ -13,7 +13,8 @@ import uk.nhs.nhsdigital.fhirvalidator.service.SearchParameterSupport
 import java.nio.charset.StandardCharsets
 
 @Component
-class SearchParameterProvider (@Qualifier("R4") private val fhirContext: FhirContext, private val searchParameterSupport : SearchParameterSupport) : IResourceProvider {
+class SearchParameterProvider (@Qualifier("R4") private val fhirContext: FhirContext,
+                               private val searchParameterSupport : SearchParameterSupport) : IResourceProvider {
     /**
      * The getResourceType method comes from IResourceProvider, and must
      * be overridden to indicate what type of resource this provider

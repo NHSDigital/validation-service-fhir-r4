@@ -5,7 +5,9 @@ import ca.uhn.fhir.rest.annotation.RequiredParam
 import ca.uhn.fhir.rest.annotation.Search
 import ca.uhn.fhir.rest.param.TokenParam
 import ca.uhn.fhir.rest.server.IResourceProvider
+import org.hl7.fhir.common.hapi.validation.support.ValidationSupportChain
 import org.hl7.fhir.r4.model.Bundle
+import org.hl7.fhir.r4.model.MessageDefinition
 import org.hl7.fhir.r4.model.NamingSystem
 import org.hl7.fhir.utilities.npm.NpmPackage
 import org.springframework.beans.factory.annotation.Qualifier
@@ -14,7 +16,9 @@ import uk.nhs.nhsdigital.fhirvalidator.service.ImplementationGuideParser
 import java.nio.charset.StandardCharsets
 
 @Component
-class NamingSystemProvider (@Qualifier("R4") private val fhirContext: FhirContext, private val npmPackages: List<NpmPackage>) : IResourceProvider {
+class NamingSystemProvider (@Qualifier("R4") private val fhirContext: FhirContext,
+                            private val supportChain: ValidationSupportChain
+) : IResourceProvider {
     /**
      * The getResourceType method comes from IResourceProvider, and must
      * be overridden to indicate what type of resource this provider
@@ -28,22 +32,10 @@ class NamingSystemProvider (@Qualifier("R4") private val fhirContext: FhirContex
 
 
     @Search
-    fun search(@RequiredParam(name = NamingSystem.SP_VALUE) value: TokenParam): List<NamingSystem> {
+    fun search(@RequiredParam(name = NamingSystem.SP_VALUE) url: TokenParam): List<NamingSystem> {
         val list = mutableListOf<NamingSystem>()
-        var decodeUri = java.net.URLDecoder.decode(value.value, StandardCharsets.UTF_8.name());
-        for (npmPackage in npmPackages) {
-            if (!npmPackage.name().equals("hl7.fhir.r4.core")) {
-                for (resource in implementationGuideParser!!.getResourcesOfTypeFromPackage(
-                    npmPackage,
-                    NamingSystem::class.java
-                )) {
-                    for (uniqueId in resource.uniqueId)
-                    if (uniqueId.value.equals(decodeUri)) {
-                        list.add(resource)
-                    }
-                }
-            }
-        }
+        val resource = supportChain.fetchResource(NamingSystem::class.java,java.net.URLDecoder.decode(url.value, StandardCharsets.UTF_8.name()))
+        if (resource != null) list.add(resource)
         return list
     }
 }

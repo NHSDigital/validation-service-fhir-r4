@@ -27,7 +27,6 @@ import java.nio.charset.StandardCharsets
 @Component
 class ValueSetProvider (@Qualifier("R4") private val fhirContext: FhirContext,
                         private val supportChain: ValidationSupportChain,
-                        private val npmPackages: List<NpmPackage>,
                         private val codingSupport: CodingSupport
 ) : IResourceProvider {
     /**
@@ -47,20 +46,9 @@ class ValueSetProvider (@Qualifier("R4") private val fhirContext: FhirContext,
     @Search
     fun search(@RequiredParam(name = ValueSet.SP_URL) url: TokenParam): List<ValueSet> {
         val list = mutableListOf<ValueSet>()
-        var decodeUri = java.net.URLDecoder.decode(url.value, StandardCharsets.UTF_8.name());
-        for (npmPackage in npmPackages) {
-            if (!npmPackage.name().equals("hl7.fhir.r4.core")) {
-                for (resource in implementationGuideParser!!.getResourcesOfTypeFromPackage(
-                    npmPackage,
-                    ValueSet::class.java
-                )) {
-                    if (resource.url.equals(decodeUri)) {
-                        if (resource.id == null) resource.setId(decodeUri)
-                        list.add(resource)
-                    }
-                }
-            }
-        }
+        val resource = supportChain.fetchResource(ValueSet::class.java,java.net.URLDecoder.decode(url.value, StandardCharsets.UTF_8.name()))
+        if (resource != null) list.add(resource)
+
         return list
     }
 

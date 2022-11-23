@@ -20,7 +20,6 @@ import java.nio.charset.StandardCharsets
 @Component
 class CodeSystemProvider (@Qualifier("R4") private val fhirContext: FhirContext,
                           private val supportChain: ValidationSupportChain,
-                          private val npmPackages: List<NpmPackage>,
                           private val codingSupport: CodingSupport
 ) : IResourceProvider {
     /**
@@ -40,19 +39,12 @@ class CodeSystemProvider (@Qualifier("R4") private val fhirContext: FhirContext,
     fun search(@RequiredParam(name = CodeSystem.SP_URL) url: TokenParam): List<CodeSystem> {
         val list = mutableListOf<CodeSystem>()
         var decodeUri = java.net.URLDecoder.decode(url.value, StandardCharsets.UTF_8.name());
-        for (npmPackage in npmPackages) {
-            if (!npmPackage.name().equals("hl7.fhir.r4.core")) {
-                for (resource in implementationGuideParser!!.getResourcesOfTypeFromPackage(
-                    npmPackage,
-                    CodeSystem::class.java
-                )) {
-                    if (resource.url.equals(decodeUri)) {
-                        if (resource.id == null) resource.setId(decodeUri)
-                        list.add(resource)
-                    }
-                }
-            }
+        val resource = supportChain.fetchResource(CodeSystem::class.java,decodeUri)
+        if (resource != null) {
+            if (resource.id == null) resource.setId(decodeUri)
+            list.add(resource)
         }
+
         return list
     }
 

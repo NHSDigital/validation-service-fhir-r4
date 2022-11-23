@@ -7,17 +7,18 @@ import uk.nhs.nhsdigital.fhirvalidator.util.getResourcesOfType
 import org.hl7.fhir.common.hapi.validation.support.ValidationSupportChain
 import org.hl7.fhir.instance.model.api.IBaseResource
 import org.hl7.fhir.r4.model.*
-import org.hl7.fhir.utilities.npm.NpmPackage
 import org.springframework.stereotype.Service
 
 @Service
 class MessageDefinitionApplier(
     implementationGuideParser: ImplementationGuideParser,
-    npmPackages: List<NpmPackage>
+    supportChain: ValidationSupportChain
 ) {
+    val messageDefinitions = supportChain.fetchAllConformanceResources()?.filterIsInstance(MessageDefinition::class.java)
+    /*
     val messageDefinitions = npmPackages.flatMap {
         implementationGuideParser.getResourcesOfTypeFromPackage(it, MessageDefinition::class.java)
-    }
+    }*/
 
     fun applyMessageDefinition(resource: IBaseResource): OperationOutcome? {
         if (resource !is Bundle || resource.type != Bundle.BundleType.MESSAGE) {
@@ -49,14 +50,15 @@ class MessageDefinitionApplier(
     }
 
     private fun findMessageDefinition(messageType: Coding, messageDefinitionProfile: String?): MessageDefinition? {
+
         if (messageDefinitionProfile != null) {
             return messageDefinitions
-                .filter { it.eventCoding.system == messageType.system }
-                .firstOrNull { it.eventCoding.code == messageType.code &&  it.url == messageDefinitionProfile }
+                ?.filter { it.eventCoding.system == messageType.system }
+                ?.firstOrNull { it.eventCoding.code == messageType.code &&  it.url == messageDefinitionProfile }
         } else {
             return messageDefinitions
-                .filter { it.eventCoding.system == messageType.system }
-                .firstOrNull { it.eventCoding.code == messageType.code }
+                ?.filter { it.eventCoding.system == messageType.system }
+                ?.firstOrNull { it.eventCoding.code == messageType.code }
         }
     }
 
