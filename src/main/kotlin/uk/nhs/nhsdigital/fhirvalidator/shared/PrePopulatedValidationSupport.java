@@ -199,6 +199,7 @@ public class PrePopulatedValidationSupport extends BaseStaticResourceValidationS
             case "MessageDefinition":
             case "OperationDefinition":
             case "SearchParameter":
+            case "CapabilityStatement":
             case "ConceptMap":
             //case "ObservationDefinition": //TODO - ObservationDefinition doesn't have a "url" field so this breaks
                 addOtherConformanceResource(theResource);
