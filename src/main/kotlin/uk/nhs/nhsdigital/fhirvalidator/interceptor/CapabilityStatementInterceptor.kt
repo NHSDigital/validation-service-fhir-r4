@@ -46,10 +46,7 @@ class CapabilityStatementInterceptor(
 
         for (npmPackage in npmPackages) {
             if (!npmPackage.name().equals("hl7.fhir.r4.core")) {
-                for (resourceIG in implementationGuideParser!!.getResourcesOfTypeFromPackage(
-                    npmPackage,
-                    CapabilityStatement::class.java
-                )) {
+                for (resourceIG in supportChain.fetchAllConformanceResources()?.filterIsInstance<CapabilityStatement>()!!) {
                     for (restComponent in resourceIG.rest) {
                         for (component in restComponent.resource) {
 
@@ -64,14 +61,9 @@ class CapabilityStatementInterceptor(
                         }
                     }
                 }
-
                 val message = CapabilityStatement.CapabilityStatementMessagingComponent()
-
                 message.documentation = npmPackage.name()
-                for (resourceIG in implementationGuideParser!!.getResourcesOfTypeFromPackage(
-                    npmPackage,
-                    MessageDefinition::class.java
-                )) {
+                for (resourceIG in supportChain.fetchAllConformanceResources()?.filterIsInstance<MessageDefinition>()!!) {
                     if (resourceIG.hasUrl()) {
                         val messageDefinition = CapabilityStatement.CapabilityStatementMessagingSupportedMessageComponent()
                             .setDefinition(resourceIG.url)

@@ -466,19 +466,12 @@ class OpenAPIParser(@Qualifier("R4") private val ctx: FhirContext?,
     }
 
     private fun getDocumentationPath(profile : String) : String {
-        for (npmPackage in npmPackages!!) {
-            if (!npmPackage.name().equals("hl7.fhir.r4.core")) {
-                for (resource in implementationGuideParser!!.getResourcesOfTypeFromPackage(
-                    npmPackage,
-                    StructureDefinition::class.java
-                )) {
-                    if (resource.url == profile) {
-                        return getDocumentationPathNpm(profile,npmPackage)
-                    }
-                }
+        supportChain.fetchAllConformanceResources()?.filterIsInstance<StructureDefinition>()?.forEach {
+            if (it.url == profile) {
+                return "https://simplifier.net/guide/nhsdigital"
+               /// TODO return getDocumentationPathNpm(profile,npmPackage)
             }
         }
-
         return "https://simplifier.net/guide/nhsdigital/home"
     }
 
