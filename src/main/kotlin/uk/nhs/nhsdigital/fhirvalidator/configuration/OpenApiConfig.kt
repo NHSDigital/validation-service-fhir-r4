@@ -118,7 +118,7 @@ open class OpenApiConfig {
                             + "\n"
                             + "The official URL for this operation definition is \n"
                             + " **http://hl7.org/fhir/OperationDefinition/Resource-validate** ")
-                    .responses(getApiResponsesXMLJSON())
+                    .responses(getApiResponsesXMLJSON_JSONDefault())
                     .addParametersItem(Parameter()
                         .name("profile")
                         .`in`("query")
@@ -140,7 +140,7 @@ open class OpenApiConfig {
                     .addTagsItem(UTILITY)
                     .summary("Experimental fhir path expression evaluation")
                     .description("[fhir path](https://www.hl7.org/fhir/R4/fhirpath.html)")
-                    .responses(getApiResponsesXMLJSON())
+                    .responses(getApiResponsesXMLJSON_JSONDefault())
                     .addParametersItem(Parameter()
                         .name("expression")
                         .`in`("query")
@@ -155,19 +155,14 @@ open class OpenApiConfig {
                     ))
             )
         oas.path("/FHIR/R4/\$fhirpathEvaluate",fhirPathItem)
+
+
         val convertItem = PathItem()
             .post(
                 Operation()
                     .addTagsItem(UTILITY)
                     .summary("Switch between XML and JSON formats")
-                    .addParametersItem(Parameter()
-                        .name("Accept")
-                        .`in`("header")
-                        .required(true)
-                        .style(Parameter.StyleEnum.SIMPLE)
-                        .description("Select response format")
-                        .schema(StringSchema()._enum(listOf("application/fhir+xml","application/fhir+json"))))
-                    .responses(getApiResponsesXMLJSON())
+                    .responses(getApiResponsesXMLJSON_XMLDefault())
                     .requestBody(RequestBody().content(Content()
                         .addMediaType("application/fhir+json",
                             MediaType().schema(StringSchema()._default("{\"resourceType\":\"CapabilityStatement\"}")))
@@ -271,7 +266,7 @@ open class OpenApiConfig {
                     .addTagsItem(getTerminologyTagName(EXPANSION))
                     .summary("The definition of a value set is used to create a simple collection of codes suitable for use for data entry or validation. Body should be a FHIR ValueSet").responses(getApiResponses())
                     .description("[expand](https://www.hl7.org/fhir/R4/operation-valueset-expand.html)")
-                    .responses(getApiResponsesXMLJSON())
+                    .responses(getApiResponsesXMLJSON_JSONDefault())
                     .requestBody(RequestBody().content(Content()
                         .addMediaType("application/fhir+json",MediaType().schema(StringSchema()._default("{}")))
                         .addMediaType("application/fhir+xml",MediaType().schema(StringSchema()))
@@ -643,7 +638,7 @@ open class OpenApiConfig {
                         .style(Parameter.StyleEnum.SIMPLE)
                         .description("Select response format")
                         .schema(StringSchema()._enum(listOf("application/fhir+xml","application/fhir+json"))))
-                    .responses(getApiResponsesXMLJSON())
+                    .responses(getApiResponsesXMLJSON_XMLDefault())
                     .requestBody(RequestBody().content(Content()
                         .addMediaType("application/fhir+json",
                             MediaType().schema(StringSchema()._default("{\"resourceType\":\"CapabilityStatement\"}")))
@@ -697,7 +692,7 @@ open class OpenApiConfig {
         val apiResponses = ApiResponses().addApiResponse("200",response200)
         return apiResponses
     }
-    fun getApiResponsesXMLJSON() : ApiResponses {
+    fun getApiResponsesXMLJSON_JSONDefault() : ApiResponses {
 
         val response200 = ApiResponse()
         response200.description = "OK"
@@ -706,6 +701,20 @@ open class OpenApiConfig {
         response200.content = Content()
             .addMediaType("application/fhir+json", MediaType().schema(StringSchema()._default("{}")))
             .addMediaType("application/fhir+xml", MediaType().schema(StringSchema()._default("<>")))
+        val apiResponses = ApiResponses().addApiResponse("200",response200)
+        return apiResponses
+    }
+
+    fun getApiResponsesXMLJSON_XMLDefault() : ApiResponses {
+
+        val response200 = ApiResponse()
+        response200.description = "OK"
+        val exampleList = mutableListOf<Example>()
+        exampleList.add(Example().value("{}"))
+        response200.content = Content()
+            .addMediaType("application/fhir+xml", MediaType().schema(StringSchema()._default("<>")))
+            .addMediaType("application/fhir+json", MediaType().schema(StringSchema()._default("{}")))
+
         val apiResponses = ApiResponses().addApiResponse("200",response200)
         return apiResponses
     }
