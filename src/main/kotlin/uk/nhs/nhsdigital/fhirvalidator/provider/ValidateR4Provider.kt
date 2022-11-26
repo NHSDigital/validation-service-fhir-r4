@@ -5,6 +5,8 @@ import ca.uhn.fhir.context.support.IValidationSupport
 import ca.uhn.fhir.parser.DataFormatException
 import ca.uhn.fhir.rest.annotation.*
 import ca.uhn.fhir.rest.api.MethodOutcome
+import ca.uhn.fhir.rest.api.server.RequestDetails
+import ca.uhn.fhir.rest.server.exceptions.UnprocessableEntityException
 import ca.uhn.fhir.validation.FhirValidator
 import ca.uhn.fhir.validation.ValidationOptions
 import mu.KLogging
@@ -91,12 +93,21 @@ class ValidateR4Provider (
     @Validate
     fun validate(
         servletRequest: HttpServletRequest,
-        @ResourceParam resource: IBaseResource,
+        theRequestDetails : RequestDetails,
+        @ResourceParam resource: IBaseResource?,
         @Validate.Profile parameterResourceProfile: String?
     ): MethodOutcome {
         var profile = parameterResourceProfile ?: servletRequest.getParameter("profile")
         if (profile!= null) profile = URLDecoder.decode(profile, StandardCharsets.UTF_8.name());
-        val operationOutcome = parseAndValidateResource(resource, profile)
+        var operationOutcome : OperationOutcome? = null
+        if (resource == null && theRequestDetails.resource == null) throw UnprocessableEntityException("Not resource supplied to validation")
+        if (resource == null) {
+            // This should cope with Parameters resources being passed in
+            operationOutcome = parseAndValidateResource(theRequestDetails.resource, profile)
+
+        } else {
+            operationOutcome = parseAndValidateResource(resource, profile)
+        }
         val methodOutcome = MethodOutcome()
         methodOutcome.operationOutcome = operationOutcome
         return methodOutcome
