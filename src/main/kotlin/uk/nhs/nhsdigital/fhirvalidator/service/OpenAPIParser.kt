@@ -33,14 +33,14 @@ import java.util.function.Supplier
 import java.util.stream.Collectors
 
 @Service
-class OpenAPIParser(@Qualifier("R4") private val ctx: FhirContext?,
+class OpenAPIParser(@Qualifier("R4") private val ctx: FhirContext,
                     private val npmPackages: List<NpmPackage>?,
                     @Qualifier("SupportChain") private val supportChain: IValidationSupport,
                     private val searchParameterSupport : SearchParameterSupport) {
 
 
     val PAGE_SYSTEM = "System Level Operations"
-    val FHIR_CONTEXT_CANONICAL = FhirContext.forR4()
+    //val FHIR_CONTEXT_CANONICAL = FhirContext.forR4()
 
     private var generateXML = false
     private var cs: CapabilityStatement = CapabilityStatement()
@@ -769,7 +769,7 @@ class OpenAPIParser(@Qualifier("R4") private val ctx: FhirContext?,
                     when (StringUtils.defaultString(paramType)) {
                         "uri", "url", "code", "string" -> {
                             val type =
-                                FHIR_CONTEXT_CANONICAL.getElementDefinition(paramType)!!.newInstance() as IPrimitiveType<*>
+                                ctx?.getElementDefinition(paramType)!!.newInstance() as IPrimitiveType<*>
                             type.valueAsString = "example"
                             param.value = type as Type
                           /*  parametersArray.addProperties(nextSearchParam.name,  Schema<String>()
@@ -780,13 +780,13 @@ class OpenAPIParser(@Qualifier("R4") private val ctx: FhirContext?,
                         }
                         "integer" -> {
                             val type =
-                                FHIR_CONTEXT_CANONICAL.getElementDefinition(paramType)!!.newInstance() as IPrimitiveType<*>
+                                ctx?.getElementDefinition(paramType)!!.newInstance() as IPrimitiveType<*>
                             type.valueAsString = "0"
                             param.value = type as Type
                         }
                         "boolean" -> {
                             val type =
-                                FHIR_CONTEXT_CANONICAL.getElementDefinition(paramType)!!.newInstance() as IPrimitiveType<*>
+                                ctx?.getElementDefinition(paramType)!!.newInstance() as IPrimitiveType<*>
                             type.valueAsString = "false"
                             param.value = type as Type
                         }
@@ -807,7 +807,7 @@ class OpenAPIParser(@Qualifier("R4") private val ctx: FhirContext?,
                             param.value = reference
                         }
                         "Resource" -> if (theResourceType != null) {
-                            val resource = FHIR_CONTEXT_CANONICAL.getResourceDefinition(theResourceType).newInstance()
+                            val resource = ctx.getResourceDefinition(theResourceType).newInstance()
                             resource.setId("1")
                             param.resource = resource as Resource
                         }
@@ -815,8 +815,8 @@ class OpenAPIParser(@Qualifier("R4") private val ctx: FhirContext?,
                 }
             }
             var exampleRequestBodyString =
-                FHIR_CONTEXT_CANONICAL.newJsonParser().setPrettyPrint(true)
-                    .encodeResourceToString(exampleRequestBody)
+                ctx.newJsonParser()?.setPrettyPrint(true)
+                    ?.encodeResourceToString(exampleRequestBody)
             /*
             val operationExample = getOperationExample(true,theOperationComponent)
 
@@ -834,7 +834,7 @@ class OpenAPIParser(@Qualifier("R4") private val ctx: FhirContext?,
                 if (theOperationComponent.hasExtension("https://fhir.nhs.uk/StructureDefinition/Extension-NHSDigital-CapabilityStatement-Examples")) {
                     //
                     val exampleOperation = getOperationExample(true,theOperationComponent)
-                    if (exampleOperation != null && exampleOperation.size > 0) {
+                    if (exampleOperation.size > 0) {
                         mediaType.examples = mutableMapOf<String,Example>()
                         for ( example in exampleOperation) {
                             var exampleName = "Example"
@@ -854,7 +854,7 @@ class OpenAPIParser(@Qualifier("R4") private val ctx: FhirContext?,
             // TODO add in correct schema
             if (theOperationDefinition.url.equals("http://hl7.org/fhir/OperationDefinition/MessageHeader-process-message")
                 || theOperationDefinition.url.equals("https://fhir.nhs.uk/OperationDefinition/MessageHeader-process-message")) {
-                    val bundleSchema = Schema<Any?>().type("object").title("Bundle-Message")
+                Schema<Any?>().type("object").title("Bundle-Message")
 
                // addSchemaFhirResource(openApi,bundleSchema,"Bundle-Message")
                 addFhirResourceSchema(openApi,"Bundle","https://fhir.nhs.uk/StructureDefinition/NHSDigital-Bundle-FHIRMessage")

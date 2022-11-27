@@ -15,21 +15,14 @@ import javax.servlet.Filter
 open class ApplicationConfiguration {
     @Bean("R4")
     open fun fhirR4Context(): FhirContext {
-        val fhirContext = FhirContext.forR4()
+        val fhirContext = FhirContext.forR4Cached()
         fhirContext.setParserErrorHandler(StrictErrorHandler())
         return fhirContext
     }
 
     @Bean("R5")
     open fun fhirR5Context(): FhirContext {
-        val fhirContext = FhirContext.forR5()
-        fhirContext.setParserErrorHandler(StrictErrorHandler())
-        return fhirContext
-    }
-
-    @Bean("R4B")
-    open fun fhirR4BContext(): FhirContext {
-        val fhirContext = FhirContext.forR5()
+        val fhirContext = FhirContext.forR5Cached()
         fhirContext.setParserErrorHandler(StrictErrorHandler())
         return fhirContext
     }
