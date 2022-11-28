@@ -1,4 +1,4 @@
-package uk.nhs.nhsdigital.fhirvalidator.providerR5
+package uk.nhs.nhsdigital.fhirvalidator.providerR4B
 
 import ca.uhn.fhir.interceptor.api.Hook
 import ca.uhn.fhir.interceptor.api.Interceptor
@@ -6,7 +6,7 @@ import ca.uhn.fhir.interceptor.api.Pointcut
 import ca.uhn.fhir.rest.api.server.RequestDetails
 import mu.KLogging
 import org.hl7.fhir.instance.model.api.IBaseConformance
-import org.hl7.fhir.r5.model.*
+import org.hl7.fhir.r4b.model.*
 
 @Interceptor
 class CapabilityStatementInterceptorR4B() {

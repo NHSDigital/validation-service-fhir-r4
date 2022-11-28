@@ -20,9 +20,9 @@ open class ApplicationConfiguration {
         return fhirContext
     }
 
-    @Bean("R5")
-    open fun fhirR5Context(): FhirContext {
-        val fhirContext = FhirContext.forR5Cached()
+    @Bean("R4B")
+    open fun fhirR4BContext(): FhirContext {
+        val fhirContext = FhirContext.forR4BCached()
         fhirContext.setParserErrorHandler(StrictErrorHandler())
         return fhirContext
     }

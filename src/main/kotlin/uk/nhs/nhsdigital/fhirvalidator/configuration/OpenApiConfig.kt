@@ -37,7 +37,7 @@ open class OpenApiConfig {
    // val SVCM_99 = "Validate Code"
    // val SVCM_100 = "Query Concept Map"
    // val SVCM_101 = "Translate Code"
-    var MEDICATION_DEFINITION = "Experimental - FHIR R5 Medication Definition"
+    var MEDICATION_DEFINITION = "Experimental - FHIR R4B Medication Definition"
     var EXPERIMENTAL = "Experimental"
 
     @Bean
@@ -522,7 +522,7 @@ open class OpenApiConfig {
                         .schema(StringSchema())
                         .example("Methotrexate 5mg"))
             )
-        oas.path("/FHIR/R5/MedicinalProductDefinition",medicineItem)
+        oas.path("/FHIR/R4B/MedicinalProductDefinition",medicineItem)
 
         val medicineReadItem = PathItem()
             .get(
@@ -540,7 +540,7 @@ open class OpenApiConfig {
                         .schema(StringSchema())
                         .example("39720311000001101"))
             )
-        oas.path("/FHIR/R5/MedicinalProductDefinition/{id}",medicineReadItem)
+        oas.path("/FHIR/R4B/MedicinalProductDefinition/{id}",medicineReadItem)
 
         val medicinePackItem = PathItem()
             .get(
@@ -558,7 +558,7 @@ open class OpenApiConfig {
                         .schema(StringSchema())
                         .example("Methotrexate 5mg"))
             )
-        oas.path("/FHIR/R5/PackagedProductDefinition",medicinePackItem)
+        oas.path("/FHIR/R4B/PackagedProductDefinition",medicinePackItem)
 
         val medicinePackReadItem = PathItem()
             .get(
@@ -576,7 +576,7 @@ open class OpenApiConfig {
                         .schema(StringSchema())
                         .example("1029811000001106"))
             )
-        oas.path("/FHIR/R5/PackagedProductDefinition/{id}",medicinePackReadItem)
+        oas.path("/FHIR/R4B/PackagedProductDefinition/{id}",medicinePackReadItem)
 
         // Hidden
 

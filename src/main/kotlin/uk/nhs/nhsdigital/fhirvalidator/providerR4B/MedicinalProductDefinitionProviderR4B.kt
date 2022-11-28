@@ -1,4 +1,4 @@
-package uk.nhs.nhsdigital.fhirvalidator.providerR5
+package uk.nhs.nhsdigital.fhirvalidator.providerR4B
 
 import ca.uhn.fhir.context.FhirContext
 import ca.uhn.fhir.context.support.IValidationSupport
@@ -14,7 +14,7 @@ import org.hl7.fhir.r4.model.CodeType
 import org.hl7.fhir.r4.model.Parameters
 import org.hl7.fhir.r4.model.ValueSet
 import org.hl7.fhir.r4.model.StringType
-import org.hl7.fhir.r5.model.*
+import org.hl7.fhir.r4b.model.*
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
 import uk.nhs.nhsdigital.fhirvalidator.provider.ValueSetProvider
@@ -25,7 +25,7 @@ import uk.nhs.nhsdigital.fhirvalidator.util.FhirSystems
 import java.text.SimpleDateFormat
 
 @Component
-class MedicinalProductDefinitionProviderR4B (@Qualifier("R5") private val fhirContext: FhirContext,
+class MedicinalProductDefinitionProviderR4B (@Qualifier("R4B") private val fhirContext: FhirContext,
                                              private val supportChain: ValidationSupportChain,
                                              private val valueSetProvider: ValueSetProvider,
                                              private val coding: CodingSupport

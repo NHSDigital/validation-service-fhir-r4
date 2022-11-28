@@ -11,8 +11,8 @@ import com.github.benmanes.caffeine.cache.Caffeine
 import org.apache.commons.lang3.StringUtils
 import org.hl7.fhir.instance.model.api.IBaseParameters
 import org.hl7.fhir.r4.model.*
-import org.hl7.fhir.r5.model.CodeableConcept
-import org.hl7.fhir.r5.model.Coding
+import org.hl7.fhir.r4b.model.CodeableConcept
+import org.hl7.fhir.r4b.model.Coding
 import org.hl7.fhir.utilities.npm.NpmPackage
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager
