@@ -1,6 +1,7 @@
 package uk.nhs.nhsdigital.fhirvalidator.controller
 
 import ca.uhn.fhir.context.FhirContext
+import io.swagger.v3.core.util.Json
 import io.swagger.v3.oas.annotations.Hidden
 import uk.nhs.nhsdigital.fhirvalidator.service.VerifyOAS
 import uk.nhs.nhsdigital.fhirvalidator.util.createOperationOutcome
@@ -11,6 +12,7 @@ import mu.KLogging
 import org.hl7.fhir.r4.model.OperationOutcome
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.web.bind.annotation.*
+import uk.nhs.nhsdigital.fhirvalidator.service.OpenAPIParser
 import java.util.*
 
 
@@ -18,11 +20,22 @@ import java.util.*
 @Hidden
 class VerifyController(
     @Qualifier("R4") private val fhirContext: FhirContext,
-    private val verifyOAS:VerifyOAS
+    private val verifyOAS:VerifyOAS,
+    private val oasParser : OpenAPIParser
 
 ) {
     companion object : KLogging()
 
+
+    @PostMapping("convertOAS",produces = ["application/json"])
+    fun convert(
+        @RequestBody input: Optional<String>,
+        @RequestParam(required = false) url: String?
+    ): String {
+        var openAPI : OpenAPI? = null
+        openAPI = OpenAPIV3Parser().readContents(input.get()).openAPI
+        return Json.pretty(openAPI)
+    }
     @PostMapping("/\$verifyOAS", produces = ["application/json", "application/x-yaml"])
     fun validate(
         @RequestBody input: Optional<String>,
