@@ -112,8 +112,11 @@ class ValidateR4Provider (
         if (operationOutcome != null && operationOutcome.hasIssue()) {
             // Temp workaround for onto validation issues around workflow code
             for (issue in operationOutcome.issue) {
-                if (issue.hasDiagnostics() && issue.diagnostics.contains("404") && issue.diagnostics.contains("https://fhir.nhs.uk/CodeSystem/Workflow-Code")) {
-                    issue.severity = OperationOutcome.IssueSeverity.INFORMATION
+                if (issue.hasDiagnostics() && issue.diagnostics.contains("404")) {
+                    if(issue.diagnostics.contains("https://fhir.nhs.uk/CodeSystem/Workflow-Code")
+                        || issue.diagnostics.contains("https://fhir.nhs.uk/CodeSystem/NHSDataModelAndDictionary-treatment-function")) {
+                        issue.severity = OperationOutcome.IssueSeverity.INFORMATION
+                    }
                 }
             }
         }
