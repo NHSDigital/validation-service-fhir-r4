@@ -591,7 +591,26 @@ open class OpenApiConfig {
         oas.path("/FHIR/R4/OperationDefinition",
             getPathItem(CONFORMANCE,"OperationDefinition", "Operation Definition", "url", "https://fhir.nhs.uk/OperationDefinition/MessageHeader-process-message", "" )
         )
-        oas.path("/FHIR/R4/SearchParameter",getPathItem(CONFORMANCE,"SearchParameter", "Search Parameter", "url" , "https://fhir.nhs.uk/SearchParameter/immunization-procedure-code", ""))
+        oas.path("/FHIR/R4/SearchParameter",
+            getPathItem(CONFORMANCE,"SearchParameter", "Search Parameter", "url" , "https://fhir.nhs.uk/SearchParameter/immunization-procedure-code", "")
+                .addParametersItem(Parameter()
+                    .name("code")
+                    .`in`("query")
+                    .required(false)
+                    .style(Parameter.StyleEnum.SIMPLE)
+                    .description("Code used in URL")
+                    .schema(StringSchema())
+                    )
+                .addParametersItem(Parameter()
+                    .name("base")
+                    .`in`("query")
+                    .required(false)
+                    .style(Parameter.StyleEnum.SIMPLE)
+                    .description("The resource type(s) this search parameter applies to")
+                    .schema(StringSchema())
+                )
+        )
+
         oas.path("/FHIR/R4/StructureMap",getPathItem(CONFORMANCE, "StructureMap", "Structure Map", "url" , "http://fhir.nhs.uk/StructureMap/MedicationRepeatInformation-Extension-3to4", ""))
 
         val verifyOASItem = PathItem()
