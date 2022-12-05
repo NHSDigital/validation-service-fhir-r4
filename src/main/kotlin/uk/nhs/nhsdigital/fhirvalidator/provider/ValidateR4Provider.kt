@@ -109,6 +109,14 @@ class ValidateR4Provider (
             operationOutcome = parseAndValidateResource(resource, profile)
         }
         val methodOutcome = MethodOutcome()
+        if (operationOutcome != null && operationOutcome.hasIssue()) {
+            // Temp workaround for onto validation issues around workflow code
+            for (issue in operationOutcome.issue) {
+                if (issue.hasDiagnostics() && issue.diagnostics.contains("404") && issue.diagnostics.contains("https://fhir.nhs.uk/CodeSystem/Workflow-Code")) {
+                    issue.severity = OperationOutcome.IssueSeverity.INFORMATION
+                }
+            }
+        }
         methodOutcome.operationOutcome = operationOutcome
         return methodOutcome
     }
