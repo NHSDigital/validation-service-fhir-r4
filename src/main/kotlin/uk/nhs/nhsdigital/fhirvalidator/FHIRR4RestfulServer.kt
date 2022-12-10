@@ -31,6 +31,7 @@ class FHIRR4RestfulServer(
     private val namingSystemProvider: NamingSystemProvider,
     private val valueSetProvider: ValueSetProvider,
     private val codeSystemProvider: CodeSystemProvider,
+    private val chatGPProvider: chatGPProvider,
 
     private val npmPackages: List<NpmPackage>,
     @Qualifier("SupportChain") private val supportChain: IValidationSupport,
@@ -55,6 +56,7 @@ class FHIRR4RestfulServer(
         registerProvider(namingSystemProvider)
         registerProvider(valueSetProvider)
         registerProvider(codeSystemProvider)
+        registerProvider(chatGPProvider)
 
         registerInterceptor(CapabilityStatementInterceptor(this.fhirContext,npmPackages, supportChain, fhirServerProperties))
 
