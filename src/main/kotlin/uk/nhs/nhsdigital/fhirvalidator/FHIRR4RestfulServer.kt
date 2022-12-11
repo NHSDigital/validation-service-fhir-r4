@@ -4,10 +4,8 @@ import ca.uhn.fhir.context.FhirContext
 import ca.uhn.fhir.context.support.IValidationSupport
 import ca.uhn.fhir.rest.api.EncodingEnum
 import ca.uhn.fhir.rest.server.RestfulServer
-import ca.uhn.fhir.rest.server.interceptor.CorsInterceptor
 import org.hl7.fhir.utilities.npm.NpmPackage
 import org.springframework.beans.factory.annotation.Qualifier
-import org.springframework.web.cors.CorsConfiguration
 import uk.nhs.nhsdigital.fhirvalidator.configuration.FHIRServerProperties
 import uk.nhs.nhsdigital.fhirvalidator.interceptor.AWSAuditEventLoggingInterceptor
 import uk.nhs.nhsdigital.fhirvalidator.interceptor.CapabilityStatementInterceptor
@@ -31,7 +29,7 @@ class FHIRR4RestfulServer(
     private val namingSystemProvider: NamingSystemProvider,
     private val valueSetProvider: ValueSetProvider,
     private val codeSystemProvider: CodeSystemProvider,
-    private val chatGPProvider: chatGPProvider,
+    private val chatGPProvider: FHIRtoTextProvider,
 
     private val npmPackages: List<NpmPackage>,
     @Qualifier("SupportChain") private val supportChain: IValidationSupport,

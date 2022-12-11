@@ -20,8 +20,8 @@ import kotlin.reflect.jvm.isAccessible
 
 
 @Component
-class chatGPProvider(@Qualifier("R4") private val fhirContext: FhirContext,
-                     private val oasParser : OpenAPIParser
+class FHIRtoTextProvider(@Qualifier("R4") private val fhirContext: FhirContext,
+                         private val oasParser : OpenAPIParser
 ) {
 
     var sdf = SimpleDateFormat("dd/MM/yyyy HH:mm")
@@ -36,7 +36,7 @@ class chatGPProvider(@Qualifier("R4") private val fhirContext: FhirContext,
         servletResponse.setCharacterEncoding("UTF-8")
         servletResponse.writer.write("")
         if (resource != null) {
-            if (resource is Bundle) throw UnprocessableEntityException("This server does not support FHIR Bundle or collections, please try again with a single resource.")
+           // if (resource is Bundle) throw UnprocessableEntityException("This server does not support FHIR Bundle or collections, please try again with a single resource.")
            val result = processObject(resource)
             servletResponse.writer.write(result)
         }
@@ -51,9 +51,13 @@ class chatGPProvider(@Qualifier("R4") private val fhirContext: FhirContext,
 
         if (resource is Meta) return ""
 
+
         if (resource is Reference) {
             val reference = resource as Reference
             var str = ""
+            if (reference.resource != null) {
+                str += getReferenceSummary(reference.resource)
+            }
             if (reference.hasDisplay()) str += reference.display + ' '
             if (reference.hasIdentifier()) {
                 val identifier = reference.identifier as Identifier
@@ -173,7 +177,6 @@ class chatGPProvider(@Qualifier("R4") private val fhirContext: FhirContext,
         // if FHIR type processed then return
         if (stringBuilder.length>0) return stringBuilder.toString()
 
-        println(resource::class.simpleName)
 
         if (resource is Resource && resource.resourceType != null) {
             stringBuilder.append("\n\n"+(resource as Resource).resourceType.name + "\n\n")
@@ -186,19 +189,21 @@ class chatGPProvider(@Qualifier("R4") private val fhirContext: FhirContext,
                 .getter(resource)
             if (value != null) {
                 val className = value::class.simpleName
+                // Disable contained.
                  if (className != "ArrayList") {
                     val str = processObject(value)
-                    //println(className)
-                    if (value is CodeableConcept) println(field.name)
+
                     if (!str.isEmpty()) {
                         stringBuilder.append(getFieldName(field.name) + " " + str + '\n')
                     }
                 } else {
-                    val array = value as ArrayList<IElement>
-                    array.forEach { element ->
-                        val str = processObject(element)
-                        if (!str.isEmpty()) {
-                            stringBuilder.append(getFieldName(field.name) + " " + str + '\n')
+                    if (!field.name.equals("contained")) {
+                        val array = value as ArrayList<IElement>
+                        array.forEach { element ->
+                            val str = processObject(element)
+                            if (!str.isEmpty()) {
+                                stringBuilder.append(getFieldName(field.name) + " " + str + '\n')
+                            }
                         }
                     }
                 }
@@ -208,10 +213,14 @@ class chatGPProvider(@Qualifier("R4") private val fhirContext: FhirContext,
         return stringBuilder.toString()
     }
     fun getFieldName(name : String) : String {
-        if (name.equals("subject")) return "patient"
-        if (name.equals("https://fhir.nhs.uk/Id/nhs-number")) return "NHS Number"
+        // TODO maybe using NamingSystem here to return human friendly names?
+        //if (name.equals("subject")) return "patient"
+        if (name.equals("https://fhir.nhs.uk/Id/nhs-number")) return "Patient NHS Number"
         if (name.equals("http://snomed.info/sct")) return "SNOMED"
         if (name.equals("https://fhir.nhs.uk/Id/ods-organization-code")) return "ODS Code"
+        if (name.equals("https://fhir.hl7.org.uk/Id/gmp-number")) return "General Medical Practitioner Code"
+        if (name.equals("https://fhir.hl7.org.uk/Id/gmc-number")) return "General Medical Council Code"
+        if (name.equals("https://fhir.nhs.uk/Id/sds-user-id")) return "NHS Digital Spine User Id"
 
         if (name.startsWith("https://fhir.hl7.org.uk/")
             || name.startsWith("https://fhir.nhs.uk/")
@@ -226,5 +235,132 @@ class chatGPProvider(@Qualifier("R4") private val fhirContext: FhirContext,
             return ""
         }
         return name
+    }
+
+    fun getReferenceSummary(resource : IBaseResource) : String {
+        var resourceSummary = resource.fhirType() + " "
+        if (resource is Organization) {
+            val organization = resource as Organization
+            if (organization.hasName()) resourceSummary += organization.name
+            if (organization.hasIdentifier()) {
+                resourceSummary += " ("
+                for (identifier in organization.identifier) {
+                    if (identifier.hasValue()) resourceSummary += identifier.value
+                    if (identifier.hasSystem()) resourceSummary += " " + getFieldName(identifier.system)
+                }
+                resourceSummary += ")"
+            }
+        }
+        if (resource is Patient) {
+            val patient = resource as Patient
+            if (patient.hasName()) resourceSummary += patient.nameFirstRep.nameAsSingleString
+            if (patient.hasIdentifier()) {
+                resourceSummary += " ("
+                for (identifier in patient.identifier) {
+                    if (identifier.hasValue()) resourceSummary += identifier.value
+                    if (identifier.hasSystem()) resourceSummary += " " + getFieldName(identifier.system)
+                }
+                resourceSummary += ")"
+            }
+        }
+        if (resource is Practitioner) {
+            val practitioner = resource as Practitioner
+            if (practitioner.hasName()) resourceSummary += practitioner.nameFirstRep.nameAsSingleString
+            if (practitioner.hasIdentifier()) {
+                resourceSummary += " ("
+                for (identifier in practitioner.identifier) {
+                    if (identifier.hasValue()) resourceSummary += identifier.value
+                    if (identifier.hasSystem()) resourceSummary += " " + getFieldName(identifier.system)
+                }
+                resourceSummary += ")"
+            }
+        }
+        if (resource is PractitionerRole) {
+            val practitionerRole = resource as PractitionerRole
+            resourceSummary = ""
+            if (practitionerRole.hasPractitioner()) {
+                resourceSummary += " ( practitioner "
+                if (practitionerRole.practitioner.resource != null) {
+                    resourceSummary += getReferenceSummary(practitionerRole.practitioner.resource)
+                }
+                if (practitionerRole.practitioner.hasIdentifier()) {
+                    val identifier = practitionerRole.practitioner.identifier
+                    if (identifier.hasValue()) resourceSummary += identifier.value + " "
+                    if (identifier.hasSystem()) resourceSummary += getFieldName(identifier.system)
+                }
+                resourceSummary += ")"
+            }
+            if (practitionerRole.hasOrganization()) {
+                resourceSummary += " ( organisation "
+                if (practitionerRole.organization.resource != null) {
+                    resourceSummary += getReferenceSummary(practitionerRole.organization.resource)
+                }
+                if (practitionerRole.organization.hasIdentifier()) {
+                    val identifier = practitionerRole.organization.identifier
+                    if (identifier.hasValue()) resourceSummary += identifier.value + " "
+                    if (identifier.hasSystem()) resourceSummary += getFieldName(identifier.system)
+                }
+                resourceSummary += ")"
+            }
+        }
+        if (resource is ServiceRequest) {
+            val serviceRequest = resource as ServiceRequest
+            if (serviceRequest.hasCategory()) {
+                for (category in serviceRequest.category) {
+                    val coding= category.codingFirstRep
+                    if (coding != null ) {
+                        if (coding.hasDisplay()) resourceSummary += " " + coding.display
+                        if (coding.hasCode()) {
+                            resourceSummary += " (" + coding.code
+                            if (coding.hasSystem()) resourceSummary += " " + getFieldName(coding.system)
+                            resourceSummary += ")"
+                        }
+
+                    }
+                }
+            }
+            if (serviceRequest.hasCode()) {
+                val coding= serviceRequest.code.codingFirstRep
+                if (coding != null ) {
+                    if (coding.hasCode()) resourceSummary += " " + coding.code
+                    if (coding.hasSystem()) resourceSummary += " " + getFieldName(coding.system)
+                }
+            }
+        }
+        if (resource is Consent) {
+            val consent = resource as Consent
+            if (consent.hasCategory()) {
+                for (category in consent.category) {
+                    val coding= category.codingFirstRep
+                    if (coding != null ) {
+                        if (coding.hasCode()) resourceSummary += " " + coding.code
+                        if (coding.hasSystem()) resourceSummary += " " + getFieldName(coding.system)
+                    }
+                }
+            }
+        }
+        if (resource is Encounter) {
+            val encounter = resource as Encounter
+            if (encounter.hasClass_()) {
+                if (encounter.class_.hasDisplay()) {
+                    resourceSummary += " " + encounter.class_.display
+                } else if (encounter.class_.hasCode()) resourceSummary += " " + encounter.class_.code
+            }
+            if (encounter.hasPeriod()) {
+                if (encounter.period.hasStart()) {
+                    resourceSummary += " "+sdf.format(encounter.period.start)
+                }
+            }
+            if (encounter.hasIdentifier()) {
+                resourceSummary += " ("
+                for (identifier in encounter.identifier) {
+                    if (identifier.hasValue()) resourceSummary += identifier.value
+                    if (identifier.hasSystem()) resourceSummary += " " + getFieldName(identifier.system)
+                }
+                resourceSummary += ")"
+            }
+
+        }
+        return resourceSummary
     }
 }
