@@ -52,6 +52,21 @@ class FHIRtoTextProvider(@Qualifier("R4") private val fhirContext: FhirContext,
         if (resource is Meta) return ""
 
 
+        if (resource is Bundle && (resource as Bundle).type.name.equals("MESSAGE")) {
+            for (entry in (resource as Bundle).entry) {
+                if (entry.hasResource() && entry.resource is MessageHeader) {
+                        val messsageHeader = entry.resource as MessageHeader
+                        stringBuilder.append(processObject(messsageHeader))
+                        if (messsageHeader.hasFocus()) {
+                            for (focus in messsageHeader.focus) {
+                                if (focus.resource != null) {
+                                    stringBuilder.append(processObject(focus.resource))
+                                }
+                        }
+                    }
+                }
+            }
+        }
         if (resource is Reference) {
             val reference = resource as Reference
             var str = ""
@@ -327,6 +342,30 @@ class FHIRtoTextProvider(@Qualifier("R4") private val fhirContext: FhirContext,
                 }
             }
         }
+        if (resource is CarePlan) {
+            var carePlan = resource as CarePlan
+            var carePlanSummary = ""
+            if (carePlan.hasTitle()) carePlanSummary += carePlan.title
+            if (carePlan.hasCategory()) {
+                carePlanSummary += " ("
+                for (category in carePlan.category) {
+                    val coding= category.codingFirstRep
+                    if (coding != null ) {
+                        if (coding.hasDisplay()) resourceSummary += " " + coding.display
+                        if (coding.hasCode()) {
+                            carePlanSummary +=  coding.code
+                            if (coding.hasSystem()) carePlanSummary += " " + getFieldName(coding.system)
+                        }
+                    }
+                }
+                carePlanSummary += ")"
+            }
+            if (!carePlanSummary.isEmpty()) {
+                resourceSummary += carePlanSummary
+            } else {
+                resourceSummary += "No summary provided"
+            }
+        }
         if (resource is Consent) {
             val consent = resource as Consent
             if (consent.hasCategory()) {
@@ -337,6 +376,27 @@ class FHIRtoTextProvider(@Qualifier("R4") private val fhirContext: FhirContext,
                         if (coding.hasSystem()) resourceSummary += " " + getFieldName(coding.system)
                     }
                 }
+            }
+        }
+        if (resource is MedicationRequest) {
+            val medicationRequest = resource as MedicationRequest
+            if (medicationRequest.hasMedicationCodeableConcept()) {
+                if (medicationRequest.medicationCodeableConcept.hasCoding()) {
+                    val meds = medicationRequest.medicationCodeableConcept.codingFirstRep
+                    if (meds.hasDisplay()) resourceSummary += meds.display + " "
+                    if (meds.hasSystem()) resourceSummary += meds.system + " "
+                    if (meds.hasCode()) resourceSummary += meds.code + " "
+                }
+            }
+        }
+        if (resource is Flag) {
+            val flag = resource as Flag
+            if (flag.hasCode()) {
+                val meds = flag.code.codingFirstRep
+                if (meds.hasDisplay()) resourceSummary += meds.display + " "
+                if (meds.hasSystem()) resourceSummary += meds.system + " "
+                if (meds.hasCode()) resourceSummary += meds.code + " "
+               // TODO if (flag.code.hasText()) resourceSummary += flag.text.div.value + " "
             }
         }
         if (resource is Encounter) {
