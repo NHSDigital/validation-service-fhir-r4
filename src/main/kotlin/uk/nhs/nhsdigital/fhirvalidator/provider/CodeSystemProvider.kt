@@ -20,7 +20,8 @@ import java.nio.charset.StandardCharsets
 @Component
 class CodeSystemProvider (@Qualifier("R4") private val fhirContext: FhirContext,
                           private val supportChain: ValidationSupportChain,
-                          private val codingSupport: CodingSupport
+                          private val codingSupport: CodingSupport,
+                        private val validationSupportContext: ValidationSupportContext
 ) : IResourceProvider {
     /**
      * The getResourceType method comes from IResourceProvider, and must
@@ -30,7 +31,7 @@ class CodeSystemProvider (@Qualifier("R4") private val fhirContext: FhirContext,
     override fun getResourceType(): Class<CodeSystem> {
         return CodeSystem::class.java
     }
-    private val validationSupportContext = ValidationSupportContext(supportChain)
+    //private val validationSupportContext =
 
     var implementationGuideParser: ImplementationGuideParser? = ImplementationGuideParser(fhirContext)
 

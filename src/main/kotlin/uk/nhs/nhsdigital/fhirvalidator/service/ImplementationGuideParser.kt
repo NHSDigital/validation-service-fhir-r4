@@ -16,22 +16,7 @@ class ImplementationGuideParser(@Qualifier("R4") private val fhirContext: FhirCo
         getResourcesFromPackage(npmPackage).forEach(prePopulatedSupport::addResource)
         return prePopulatedSupport
     }
-    /*
-        fun <T : Resource> getResourcesOfTypeFromPackage(npmPackage: NpmPackage, resourceType: Class<T>): List<T> {
-            return getResourcesFromPackage(npmPackage).filterIsInstance(resourceType)
-        }
 
-        fun <T : Resource> getResourcesOfType(npmPackages: List<NpmPackage>?, resourceType: Class<T>): List<T> {
-            var list : ArrayList<T> = ArrayList<T>()
-            if (npmPackages != null) {
-                for (npmPackage in npmPackages) {
-                    val result = getResourcesOfTypeFromPackage(npmPackage,resourceType)
-                    if (result.size>0) list.addAll(result)
-                }
-            }
-            return list
-        }
-    */
     fun getResourcesFromPackage(npmPackage: NpmPackage): List<IBaseResource> {
         return getResourcesFromFolder(npmPackage, "package")
             .plus(getResourcesFromFolder(npmPackage, "examples"))

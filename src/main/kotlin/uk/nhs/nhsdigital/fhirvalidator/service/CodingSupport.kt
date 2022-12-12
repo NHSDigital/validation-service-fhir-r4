@@ -3,12 +3,10 @@ package uk.nhs.nhsdigital.fhirvalidator.service
 import ca.uhn.fhir.context.FhirContext
 import ca.uhn.fhir.context.support.IValidationSupport
 import ca.uhn.fhir.context.support.ValidationSupportContext
-import ca.uhn.fhir.rest.annotation.OperationParam
 import ca.uhn.fhir.rest.client.api.IGenericClient
 import ca.uhn.fhir.util.ParametersUtil
 import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
-import org.apache.commons.lang3.StringUtils
 import org.hl7.fhir.instance.model.api.IBaseParameters
 import org.hl7.fhir.r4.model.*
 import org.hl7.fhir.r4b.model.CodeableConcept
@@ -31,9 +29,10 @@ class CodingSupport(@Qualifier("R4") private val ctx: FhirContext?,
                     private val npmPackages: List<NpmPackage>?,
                     @Qualifier("SupportChain") private val supportChain: IValidationSupport,
                     private val terminologyValidationProperties: TerminologyValidationProperties,
-                    optionalAuthorizedClientManager: Optional<OAuth2AuthorizedClientManager>
+                    optionalAuthorizedClientManager: Optional<OAuth2AuthorizedClientManager>,
+                    private val validationSupportContext : ValidationSupportContext
 ) {
-    private val validationSupportContext = ValidationSupportContext(supportChain)
+
 
     private val myClientInterceptors: MutableList<Any?> = ArrayList()
 
@@ -46,17 +45,28 @@ class CodingSupport(@Qualifier("R4") private val ctx: FhirContext?,
     }
 
 
-    var cacheCoding: Cache<String, LookupCodeResultUK> = Caffeine.newBuilder()
+    var cacheCoding: Cache<String, IValidationSupport.LookupCodeResult> = Caffeine.newBuilder()
         .expireAfterWrite(12, TimeUnit.HOURS)
         .maximumSize(5000)
         .build()
 
-    fun lookupCode(code :String) : LookupCodeResultUK? {
-        var lookupCodeResultUK = cacheCoding.getIfPresent(code)
+    fun lookupCode(code :String) : IValidationSupport.LookupCodeResult? {
+        var lookupCodeResultUK = cacheCoding.getIfPresent(FhirSystems.SNOMED_CT + "-"+ code)
         if (lookupCodeResultUK != null) return lookupCodeResultUK
         lookupCodeResultUK = supportChain.lookupCode(this.validationSupportContext,  FhirSystems.SNOMED_CT, code) as LookupCodeResultUK
         if (lookupCodeResultUK!=null) {
-            cacheCoding.put(code,lookupCodeResultUK)
+            cacheCoding.put(FhirSystems.SNOMED_CT + "-"+ code,lookupCodeResultUK)
+            return lookupCodeResultUK
+        }
+        return null
+    }
+    fun lookupCode(system :String, code: String) : IValidationSupport.LookupCodeResult? {
+        var lookupCodeResultUK = cacheCoding.getIfPresent(system + "-"+ code)
+        if (lookupCodeResultUK != null) return lookupCodeResultUK
+        val result = supportChain.lookupCode(this.validationSupportContext,  system, code)
+        if (result != null) lookupCodeResultUK = result
+        if (lookupCodeResultUK!=null) {
+            cacheCoding.put(system + "-"+ code,lookupCodeResultUK)
             return lookupCodeResultUK
         }
         return null

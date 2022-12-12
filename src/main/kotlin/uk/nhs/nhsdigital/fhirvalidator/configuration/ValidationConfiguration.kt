@@ -60,6 +60,10 @@ open class ValidationConfiguration(
        // return FhirInstanceValidator(supportChain)
     }
 
+    @Bean open fun validationSupportContext(supportChain: ValidationSupportChain): ValidationSupportContext {
+        return ValidationSupportContext(supportChain)
+    }
+
 
     @Bean("SupportChain")
     open fun validationSupportChain(

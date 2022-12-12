@@ -1,6 +1,7 @@
 package uk.nhs.nhsdigital.fhirvalidator.configuration
 
 
+import ca.uhn.fhir.context.FhirContext
 import io.swagger.v3.oas.models.ExternalDocumentation
 import io.swagger.v3.oas.models.OpenAPI
 import io.swagger.v3.oas.models.Operation
@@ -18,13 +19,14 @@ import io.swagger.v3.oas.models.parameters.RequestBody
 import io.swagger.v3.oas.models.responses.ApiResponse
 import io.swagger.v3.oas.models.responses.ApiResponses
 import io.swagger.v3.oas.models.servers.Server
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-
+import uk.nhs.nhsdigital.fhirvalidator.util.FHIRExamples
 
 
 @Configuration
-open class OpenApiConfig {
+open class OpenApiConfig(@Qualifier("R4") val ctx : FhirContext) {
    var VALIDATION = "Validation"
     var UTILITY = "Utility"
     var EXPANSION = "ValueSet Expansion (inc. Filtering)"
@@ -98,6 +100,16 @@ open class OpenApiConfig {
         oas.addTagsItem(getTerminologyTag("100",SVCM_100))
         oas.addTagsItem(getTerminologyTag("101",SVCM_101))
 */
+        val examples = LinkedHashMap<String,Example?>()
+        examples.put("Patient PDS",
+            Example().value(FHIRExamples().loadExample("Patient-PDS.json",ctx))
+        )
+        examples.put("Encounter converted from HL7 v2",
+            Example().value(FHIRExamples().loadExample("Encounter-ADTA03.json",ctx))
+        )
+        examples.put("Bundle - FHIR Messge example",
+            Example().value(FHIRExamples().loadExample("Bundle-message.json",ctx))
+        )
         val validateItem = PathItem()
             .post(
                 Operation()
@@ -128,7 +140,9 @@ open class OpenApiConfig {
                         .schema(StringSchema().format("token"))
                         .example("https://fhir.hl7.org.uk/StructureDefinition/UKCore-Patient"))
                     .requestBody(RequestBody().content(Content()
-                        .addMediaType("application/fhir+json",MediaType().schema(StringSchema()._default("{\"resourceType\":\"Patient\"}")))
+                        .addMediaType("application/fhir+json", MediaType()
+                            .examples(examples)
+                            .schema(StringSchema()))
                         .addMediaType("application/fhir+xml",MediaType().schema(StringSchema()))
                     ))
             )
@@ -625,6 +639,21 @@ open class OpenApiConfig {
                         .addMediaType("application/json",MediaType().schema(StringSchema()))))
             )
         oas.path("/\$verifyOAS",verifyOASItem)
+
+        val convertToTextItem = PathItem()
+            .post(
+                Operation()
+                    .addTagsItem(EXPERIMENTAL)
+                    .summary("Does a basic conversion of the FHIR resource to text")
+                    .description("This is a proof of concept.")
+                    .responses(getApiResponsesMarkdown())
+                    .requestBody(RequestBody().content(Content()
+                        .addMediaType("application/fhir+json",MediaType()
+                            .examples(examples)
+                            .schema(StringSchema()))))
+            )
+        oas.path("/FHIR/R4/\$convertToText",convertToTextItem)
+
 
         val markdownItem = PathItem()
             .get(

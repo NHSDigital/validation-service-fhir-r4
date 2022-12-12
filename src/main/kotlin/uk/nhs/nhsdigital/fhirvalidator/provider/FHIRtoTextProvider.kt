@@ -1,16 +1,21 @@
 package uk.nhs.nhsdigital.fhirvalidator.provider
 
 import ca.uhn.fhir.context.FhirContext
+import ca.uhn.fhir.context.support.IValidationSupport
+import ca.uhn.fhir.context.support.ValidationSupportContext
 import ca.uhn.fhir.model.api.IElement
 import ca.uhn.fhir.rest.annotation.Operation
 import ca.uhn.fhir.rest.annotation.ResourceParam
 import ca.uhn.fhir.rest.server.exceptions.UnprocessableEntityException
+import org.hl7.fhir.common.hapi.validation.support.ValidationSupportChain
 import org.hl7.fhir.instance.model.api.IBaseResource
 import org.hl7.fhir.r4.model.*
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
+import uk.nhs.nhsdigital.fhirvalidator.service.CodingSupport
 import uk.nhs.nhsdigital.fhirvalidator.service.OpenAPIParser
 import java.net.URI
+import java.nio.charset.StandardCharsets
 import java.text.SimpleDateFormat
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
@@ -21,7 +26,9 @@ import kotlin.reflect.jvm.isAccessible
 
 @Component
 class FHIRtoTextProvider(@Qualifier("R4") private val fhirContext: FhirContext,
-                         private val oasParser : OpenAPIParser
+                         private val supportChain: ValidationSupportChain,
+                         private val validationSupportContext: ValidationSupportContext,
+                         private val codingSupport: CodingSupport
 ) {
 
     var sdf = SimpleDateFormat("dd/MM/yyyy HH:mm")
@@ -96,16 +103,43 @@ class FHIRtoTextProvider(@Qualifier("R4") private val fhirContext: FhirContext,
                 stringBuilder.append(str)
             }
         }
+        if (resource is Extension) {
+            val extension = resource as Extension
+            var str = getFieldName(extension.url)
+            if (extension.hasValue()) {
+                str += " " + processObject(extension.value)
+            }
+            stringBuilder.append(str)
+        }
         if (resource is Coding) {
                     val code = resource as Coding
                     var str = ""
-                    if (code.hasDisplay()) str = code.display
+                    var lookupCodeResult :IValidationSupport.LookupCodeResult? = null
+                    if (code.hasDisplay()) {
+                        str = code.display
+                    } else {
+                        if (code.hasSystem() && code.hasCode()) {
+                            lookupCodeResult = codingSupport.lookupCode( code.system, code.code)
+                            if (lookupCodeResult!=null) {
+                                if (lookupCodeResult.codeDisplay != null) {
+                                    str = lookupCodeResult.codeDisplay
+                                }
+                            }
+                        }
+                    }
                     if (code.hasSystem() || code.hasCode()) {
                         str += " ("
-                        if (code.hasSystem()) str += getFieldName(code.system) + " "
+                        if (code.hasSystem()) {
+                            if (lookupCodeResult != null && lookupCodeResult.codeSystemDisplayName != null) {
+                                str += lookupCodeResult.codeSystemDisplayName + " "
+                            } else {
+                                str += getFieldName(code.system) + " "
+                            }
+                        }
                         if (code.hasCode()) str += code.code
                         str += ")"
                     }
+
                     stringBuilder.append(str)
 
                 }
@@ -115,10 +149,26 @@ class FHIRtoTextProvider(@Qualifier("R4") private val fhirContext: FhirContext,
                     if (concept.hasText()) str += concept.text
                     if (concept.hasCoding()) {
                         for(code in concept.coding) {
-                            if (code.hasDisplay()) str = code.display
+                            var lookupCodeResult :IValidationSupport.LookupCodeResult? = null
+                            if (code.hasDisplay()) {
+                                str = code.display
+                            } else {
+                                if (code.hasSystem() && code.hasCode()) {
+                                    lookupCodeResult = codingSupport.lookupCode( code.system, code.code)
+                                    if (lookupCodeResult!=null) {
+                                        if (lookupCodeResult.codeDisplay != null) {
+                                            str = lookupCodeResult.codeDisplay
+                                        }
+                                    }
+                                }
+                            }
                             if (code.hasSystem() || code.hasCode()) {
                                 str += " ("
-                                if (code.hasSystem()) str += getFieldName(code.system) + " "
+                                if (lookupCodeResult != null && lookupCodeResult.codeSystemDisplayName != null) {
+                                    str += lookupCodeResult.codeSystemDisplayName + " "
+                                } else {
+                                    str += getFieldName(code.system) + " "
+                                }
                                 if (code.hasCode()) str += code.code
                                 str += ")"
                             }
@@ -228,14 +278,15 @@ class FHIRtoTextProvider(@Qualifier("R4") private val fhirContext: FhirContext,
         return stringBuilder.toString()
     }
     fun getFieldName(name : String) : String {
-        // TODO maybe using NamingSystem here to return human friendly names?
-        //if (name.equals("subject")) return "patient"
-        if (name.equals("https://fhir.nhs.uk/Id/nhs-number")) return "Patient NHS Number"
-        if (name.equals("http://snomed.info/sct")) return "SNOMED"
-        if (name.equals("https://fhir.nhs.uk/Id/ods-organization-code")) return "ODS Code"
-        if (name.equals("https://fhir.hl7.org.uk/Id/gmp-number")) return "General Medical Practitioner Code"
-        if (name.equals("https://fhir.hl7.org.uk/Id/gmc-number")) return "General Medical Council Code"
-        if (name.equals("https://fhir.nhs.uk/Id/sds-user-id")) return "NHS Digital Spine User Id"
+        try {
+            val result = supportChain.fetchResource(
+                NamingSystem::class.java,
+                java.net.URLDecoder.decode(name, StandardCharsets.UTF_8.name())
+            )
+            if ((result as NamingSystem).hasName()) return result.name
+        } catch (e : Exception) {
+
+        }
 
         if (name.startsWith("https://fhir.hl7.org.uk/")
             || name.startsWith("https://fhir.nhs.uk/")

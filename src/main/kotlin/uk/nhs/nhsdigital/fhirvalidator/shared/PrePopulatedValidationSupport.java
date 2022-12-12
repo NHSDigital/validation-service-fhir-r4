@@ -10,6 +10,7 @@ import org.hl7.fhir.instance.model.api.IBase;
 import org.hl7.fhir.instance.model.api.IBaseResource;
 import org.hl7.fhir.instance.model.api.IPrimitiveType;
 import org.hl7.fhir.r4.model.CodeSystem;
+import org.hl7.fhir.r4.model.NamingSystem;
 import org.hl7.fhir.r4.model.StructureDefinition;
 import org.hl7.fhir.r4.model.ValueSet;
 import org.jetbrains.annotations.Nullable;
@@ -201,9 +202,18 @@ public class PrePopulatedValidationSupport extends BaseStaticResourceValidationS
             case "SearchParameter":
             case "CapabilityStatement":
             case "ConceptMap":
+           // case "NamingSystem": had no url
             //case "ObservationDefinition": //TODO - ObservationDefinition doesn't have a "url" field so this breaks
                 addOtherConformanceResource(theResource);
                 break;
+            case "NamingSystem" :
+                Set<String> urls = new HashSet<>();
+                for(NamingSystem.NamingSystemUniqueIdComponent unique : ((NamingSystem) theResource).getUniqueId()) {
+                    if (unique.hasType() && unique.getType().toCode().equals("uri")) {
+                        if (unique.hasValue()) urls.add(unique.getValue());
+                    }
+                }
+                if (urls.size()>0) addToMap(theResource, myOtherConformanceResources, urls);
         }
     }
 
