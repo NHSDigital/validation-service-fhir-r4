@@ -109,15 +109,23 @@ class ValidateR4Provider (
             operationOutcome = parseAndValidateResource(resource, profile)
         }
         val methodOutcome = MethodOutcome()
-        if (operationOutcome != null && operationOutcome.hasIssue()) {
+        if (operationOutcome != null ) {
+            if (operationOutcome.hasIssue()) {
             // Temp workaround for onto validation issues around workflow code
-            for (issue in operationOutcome.issue) {
-                if (issue.hasDiagnostics() && issue.diagnostics.contains("404")) {
-                    if(// issue.diagnostics.contains("https://fhir.nhs.uk/CodeSystem/Workflow-Code") ||
-                        issue.diagnostics.contains("https://fhir.nhs.uk/CodeSystem/NHSDataModelAndDictionary-treatment-function")) {
-                        issue.severity = OperationOutcome.IssueSeverity.INFORMATION
+                for (issue in operationOutcome.issue) {
+                    if (issue.hasDiagnostics() && issue.diagnostics.contains("404")) {
+                        if(// issue.diagnostics.contains("https://fhir.nhs.uk/CodeSystem/Workflow-Code") ||
+                            issue.diagnostics.contains("https://fhir.nhs.uk/CodeSystem/NHSDataModelAndDictionary-treatment-function")) {
+                            issue.severity = OperationOutcome.IssueSeverity.INFORMATION
+                        }
                     }
                 }
+            } else {
+                // https://nhsd-jira.digital.nhs.uk/browse/IOPS-829
+                operationOutcome.issue.add(OperationOutcome.OperationOutcomeIssueComponent()
+                    .setCode(OperationOutcome.IssueType.INFORMATIONAL)
+                    .setSeverity(OperationOutcome.IssueSeverity.INFORMATION)
+                    .setDiagnostics("No issues detected during validatio"))
             }
         }
         methodOutcome.operationOutcome = operationOutcome
