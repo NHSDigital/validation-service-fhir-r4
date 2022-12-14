@@ -16,7 +16,7 @@ fhir:
   server:
     name: IOPS FHIR Testing
     baseUrl: https://3cdzg7kbj4.execute-api.eu-west-2.amazonaws.com/poc/Conformance
-    version: 2.6.27
+    version: 2.6.28
 
 ###Remote terminology validation:
 
