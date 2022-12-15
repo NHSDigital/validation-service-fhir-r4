@@ -125,7 +125,7 @@ class ValidateR4Provider (
                 operationOutcome.issue.add(OperationOutcome.OperationOutcomeIssueComponent()
                     .setCode(OperationOutcome.IssueType.INFORMATIONAL)
                     .setSeverity(OperationOutcome.IssueSeverity.INFORMATION)
-                    .setDiagnostics("No issues detected during validatio"))
+                    .setDiagnostics("No issues detected during validation"))
             }
         }
         methodOutcome.operationOutcome = operationOutcome
