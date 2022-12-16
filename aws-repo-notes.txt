@@ -28,3 +28,12 @@ docker tag fhir-validator-r4:latest 365027538941.dkr.ecr.eu-west-2.amazonaws.com
 docker push 365027538941.dkr.ecr.eu-west-2.amazonaws.com/fhir-validator-r4:latest
 
 docker push 365027538941.dkr.ecr.eu-west-2.amazonaws.com/fhir-validator-r4:2.6.29
+
+
+
+### Cloud Formation Notes
+
+Command is
+
+aws cloudformation deploy --template-file C:\Development\NHSDigital\validation-service-fhir-r4\cloudfront\IOPSValidation.yaml --stack-name test-stack
+
