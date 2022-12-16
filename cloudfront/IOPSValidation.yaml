@@ -1,5 +1,16 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: NHS Digital IOPS FHIR Services
+
+Parameters:
+  OntoClientId:
+    Description: "Ontology Server Client ID"
+    Type: "String"
+    Default: "1234"
+  OntoClientSecret:
+    Description: "Ontology Server Client Secret"
+    Type: "String"
+    Default: "5678"
+
 Resources:
   ECSCluster:
     Type: "AWS::ECS::Cluster"
@@ -9,35 +20,6 @@ Resources:
         - "FARGATE"
         - "FARGATE_SPOT"
 
-  EC2VPC:
-    Type: "AWS::EC2::VPC"
-    Properties:
-      CidrBlock: "10.0.0.0/16"
-      EnableDnsSupport: true
-      EnableDnsHostnames: true
-      InstanceTenancy: "default"
-
-  EC2Subnet:
-    Type: "AWS::EC2::Subnet"
-    Properties:
-      AvailabilityZone: !Sub "${AWS::Region}a"
-      CidrBlock: "10.0.0.0/24"
-      VpcId: !Ref EC2VPC
-      MapPublicIpOnLaunch: false
-      Tags:
-        - Key: "Name"
-          Value: !Sub "${ECSCluster}/Public"
-
-  EC2Subnet2:
-    Type: "AWS::EC2::Subnet"
-    Properties:
-      AvailabilityZone: !Sub "${AWS::Region}b"
-      CidrBlock: "10.0.1.0/24"
-      VpcId: !Ref EC2VPC
-      MapPublicIpOnLaunch: false
-      Tags:
-        - Key: "Name"
-          Value: !Sub "${ECSCluster}/Public"
 
   ECSTaskDefinition:
     Type: "AWS::ECS::TaskDefinition"
@@ -47,9 +29,9 @@ Resources:
             - Name: "terminology.url"
               Value: "https://ontology.nhs.uk/authoring/fhir/"
             - Name: "terminology.authorization.clientId"
-              Value: "${terminology.authorization.clientId}"
+              Value: !Ref OntoClientId
             - Name: "terminology.authorization.clientSecret"
-              Value: "${terminology.authorization.clientSecret}"
+              Value: !Ref OntoClientSecret
             - Name: "terminology.authorization.tokenUrl"
               Value: "https://ontology.nhs.uk/authorisation/auth/realms/nhs-digital-terminology/protocol/openid-connect/token"
           Essential: true
@@ -89,8 +71,8 @@ Resources:
       Matcher:
         HttpCode: "200"
       HealthyThresholdCount: 3
-      VpcId: !Ref EC2VPC
-      Name: "tgt-fhir-validator"
+      VpcId: "vpc-014d22eaa2ae874ab"
+      Name: "tg-fhir-validator-r4"
       HealthCheckEnabled: true
       TargetGroupAttributes:
         - Key: "target_group_health.unhealthy_state_routing.minimum_healthy_targets.count"
@@ -128,10 +110,10 @@ Resources:
       Scheme: "internet-facing"
       Type: "application"
       SecurityGroups:
-        - !Ref EC2SecurityGroup
+        - "sg-006ea14846fb347de"
       Subnets:
-        - !Ref EC2Subnet
-        - !Ref EC2Subnet2
+        - "subnet-0d786d325c26ca068"
+        - "subnet-0ffaa3af23683e8b1"
       IpAddressType: "ipv4"
       LoadBalancerAttributes:
         -
@@ -191,12 +173,33 @@ Resources:
         -
           Key: "Name"
           Value: "ecs-fargate-group"
-      VpcId: !Ref EC2VPC
+      VpcId: "vpc-014d22eaa2ae874ab"
       SecurityGroupIngress:
         - CidrIp: "0.0.0.0/0"
           FromPort: 9001
           IpProtocol: "tcp"
           ToPort: 9001
+
+  EC2SecurityGroup2:
+    Type: "AWS::EC2::SecurityGroup"
+    Properties:
+      GroupDescription: "2022-09-29T12:20:12.903Z"
+      GroupName: "svc-fh-2021"
+      Tags:
+        -
+          Key: "Name"
+          Value: "orginal-ecs-default"
+      VpcId: "vpc-014d22eaa2ae874ab"
+      SecurityGroupIngress:
+        -
+          CidrIp: "0.0.0.0/0"
+          FromPort: 9001
+          IpProtocol: "tcp"
+          ToPort: 9001
+      SecurityGroupEgress:
+        -
+          CidrIp: "0.0.0.0/0"
+          IpProtocol: "-1"
 
   ECSService:
     Type: "AWS::ECS::Service"
@@ -204,8 +207,7 @@ Resources:
       ServiceName: "svc-fhir-validator"
       Cluster: !GetAtt ECSCluster.Arn
       LoadBalancers:
-        -
-          TargetGroupArn: !Ref ElasticLoadBalancingV2TargetGroup
+        - TargetGroupArn: !Ref ElasticLoadBalancingV2TargetGroup
           ContainerName: "fhir-validator-container"
           ContainerPort: 9001
       DesiredCount: 1
@@ -224,18 +226,11 @@ Resources:
           SecurityGroups:
             - !Ref EC2SecurityGroup
           Subnets:
-            - !Ref EC2Subnet
-            - !Ref EC2Subnet2
+            - "subnet-0d786d325c26ca068"
+            - "subnet-0ffaa3af23683e8b1"
       HealthCheckGracePeriodSeconds: 20
       SchedulingStrategy: "REPLICA"
       DeploymentController:
         Type: "ECS"
 
-  EC2InternetGateway:
-    Type: "AWS::EC2::InternetGateway"
 
-  EC2VPCGatewayAttachment:
-    Type: "AWS::EC2::VPCGatewayAttachment"
-    Properties:
-      InternetGatewayId: !Ref EC2InternetGateway
-      VpcId: !Ref EC2VPC
