@@ -11,7 +11,6 @@ import org.springframework.stereotype.Service
 
 @Service
 class CapabilityStatementApplier(
-    implementationGuideParser: ImplementationGuideParser,
     val supportChain: ValidationSupportChain
 ) {
     private val restResources = supportChain.fetchAllConformanceResources()?.filterIsInstance(CapabilityStatement::class.java)
