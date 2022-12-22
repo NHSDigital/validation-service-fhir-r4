@@ -138,33 +138,33 @@ open class ValidationConfiguration(
         return validationSupport
     }
 
-    fun generateSnapshots(supportChain: IValidationSupport) {
-        val structureDefinitions = supportChain.fetchAllStructureDefinitions<StructureDefinition>() ?: return
-        val context = ValidationSupportContext(supportChain)
-        structureDefinitions
-            .filter { shouldGenerateSnapshot(it) }
-            .forEach {
-                try {
-                    circularReferenceCheck(it,supportChain)
-                } catch (e: Exception) {
-                    logger.error("Failed to generate snapshot for $it", e)
+        fun generateSnapshots(supportChain: IValidationSupport) {
+            val structureDefinitions = supportChain.fetchAllStructureDefinitions<StructureDefinition>() ?: return
+            val context = ValidationSupportContext(supportChain)
+            structureDefinitions
+                .filter { shouldGenerateSnapshot(it) }
+                .forEach {
+                    try {
+                        circularReferenceCheck(it,supportChain)
+                    } catch (e: Exception) {
+                        logger.error("Failed to generate snapshot for $it", e)
+                    }
                 }
-            }
 
-        structureDefinitions
-            .filter { shouldGenerateSnapshot(it) }
-            .forEach {
-                try {
-                    val start: Instant = Instant.now()
-                    supportChain.generateSnapshot(context, it, it.url, "https://fhir.nhs.uk/R4", it.name)
-                    val end: Instant = Instant.now()
-                    val duration: Duration = Duration.between(start, end)
-                    logger.info(duration.toMillis().toString() + " ms $it")
-                } catch (e: Exception) {
-                    logger.error("Failed to generate snapshot for $it", e)
+            structureDefinitions
+                .filter { shouldGenerateSnapshot(it) }
+                .forEach {
+                    try {
+                        val start: Instant = Instant.now()
+                        supportChain.generateSnapshot(context, it, it.url, "https://fhir.nhs.uk/R4", it.name)
+                        val end: Instant = Instant.now()
+                        val duration: Duration = Duration.between(start, end)
+                        logger.info(duration.toMillis().toString() + " ms $it")
+                    } catch (e: Exception) {
+                        logger.error("Failed to generate snapshot for $it", e)
+                    }
                 }
-            }
-    }
+        }
 
     private fun circularReferenceCheck(structureDefinition: StructureDefinition, supportChain: IValidationSupport): StructureDefinition {
         if (structureDefinition.hasSnapshot()) logger.error(structureDefinition.url + " has snapshot!!")
