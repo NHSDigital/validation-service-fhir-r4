@@ -183,7 +183,8 @@ open class ValidationConfiguration(
                         it.id.contains("ServiceRequest.reasonReference") ||
                         it.id.contains("EpisodeOfCare.diagnosis.condition") ||
                         it.id.contains("Encounter.diagnosis.condition") ||
-                        it.id.contains("Encounter.reasonReference")
+                        it.id.contains("Encounter.reasonReference") ||
+                                it.id.contains("Encounter.appointment")
                                 )
                 && it.hasType()) {
                 logger.warn(structureDefinition.url + " has circular references ("+ it.id + ")")
