@@ -126,7 +126,7 @@ class ValidationConfiguration(private val implementationGuideParser: Implementat
                 it.id.contains("EpisodeOfCare.diagnosis.condition") ||
                 it.id.contains("Encounter.diagnosis.condition") ||
                 it.id.contains("Encounter.reasonReference") ||
-				it.id.contains("Encounter.appointment")
+                it.id.contains("Encounter.appointment")
             ) && it.hasType()) {
                 logger.warn(structureDefinition.url + " has circular references ("+ it.id + ")")
                 it.type.forEach{
