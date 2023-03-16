@@ -78,7 +78,9 @@ open class ValidationConfiguration(
         )
         getPackages()
         if (npmPackages != null) {
-            npmPackages!!.map(implementationGuideParser::createPrePopulatedValidationSupport)
+            npmPackages!!
+                .filter { !it.name().equals("hl7.fhir.r4.examples") }
+                .map(implementationGuideParser::createPrePopulatedValidationSupport)
                 .forEach(supportChain::addValidationSupport)
 
             //Initialise now instead of when the first message arrives

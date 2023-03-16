@@ -42,7 +42,7 @@ class ImplementationGuideParser(@Qualifier("R4") private val fhirContext: FhirCo
     }
     fun parseResource(jsonParser: IParser, it : InputStream?): IBaseResource {
         try {
-            jsonParser.parseResource(it)
+            return jsonParser.parseResource(it)
         } catch (ex: Exception) {
             ValidationConfiguration.logger.error(ex.message)
         }
