@@ -1,12 +1,16 @@
 package uk.nhs.nhsdigital.fhirvalidator.service
 
 import ca.uhn.fhir.context.FhirContext
+import ca.uhn.fhir.parser.IParser
+import ca.uhn.fhir.parser.LenientErrorHandler
 import uk.nhs.nhsdigital.fhirvalidator.shared.PrePopulatedValidationSupport
 import org.hl7.fhir.instance.model.api.IBaseResource
 import org.hl7.fhir.r4.model.*
 import org.hl7.fhir.utilities.npm.NpmPackage
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
+import uk.nhs.nhsdigital.fhirvalidator.configuration.ValidationConfiguration
+import java.io.InputStream
 
 @Service
 class ImplementationGuideParser(@Qualifier("R4") private val fhirContext: FhirContext) {
@@ -23,20 +27,27 @@ class ImplementationGuideParser(@Qualifier("R4") private val fhirContext: FhirCo
     }
 
     fun getResourcesFromFolder(npmPackage: NpmPackage, folderName: String): List<IBaseResource> {
-        val jsonParser = fhirContext.newJsonParser()
-        var cnt : Int = 0
+        val jsonParser = fhirContext.newJsonParser().setParserErrorHandler(LenientErrorHandler())
         val list = npmPackage.list(folderName).map {
             //println(cnt.toString() + " " + it)
             //cnt++
             npmPackage.load(folderName, it)
         }
-        cnt = 0
+        ValidationConfiguration.logger.info("Package {} - {} Folder {}",npmPackage.name(),npmPackage.version(),folderName)
         return list
             .map {
-              //  println(cnt)
-              //  cnt++
-                jsonParser.parseResource(it)
+
+                parseResource(jsonParser,it)
             }
+    }
+    fun parseResource(jsonParser: IParser, it : InputStream?): IBaseResource {
+        try {
+            jsonParser.parseResource(it)
+        } catch (ex: Exception) {
+            ValidationConfiguration.logger.error(ex.message)
+        }
+        // Should not get here
+        return Parameters()
     }
 
 }

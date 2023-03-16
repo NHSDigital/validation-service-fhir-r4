@@ -12,6 +12,7 @@ import mu.KLogging
 import org.hl7.fhir.common.hapi.validation.support.*
 import org.hl7.fhir.common.hapi.validation.validator.FhirInstanceValidator
 import org.hl7.fhir.r4.model.StructureDefinition
+import org.hl7.fhir.utilities.json.model.JsonProperty
 import org.hl7.fhir.utilities.npm.NpmPackage
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
@@ -56,8 +57,8 @@ open class ValidationConfiguration(
 
     @Bean
     open fun instanceValidator(supportChain: ValidationSupportChain): FhirInstanceValidator {
-       return FhirInstanceValidator(NHSDCachingValidationSupport(supportChain))
-       // return FhirInstanceValidator(supportChain)
+        return FhirInstanceValidator(NHSDCachingValidationSupport(supportChain))
+        // return FhirInstanceValidator(supportChain)
     }
 
     @Bean open fun validationSupportContext(supportChain: ValidationSupportChain): ValidationSupportContext {
@@ -68,13 +69,13 @@ open class ValidationConfiguration(
     @Bean("SupportChain")
     open fun validationSupportChain(
         @Qualifier("R4") fhirContext: FhirContext,
-        switchedTerminologyServiceValidationSupport: SwitchedTerminologyServiceValidationSupport
+        switchedTerminologyServiceValidationSupport: SwitchedTerminologyServiceValidationSupport,
     ): ValidationSupportChain {
         val supportChain = ValidationSupportChain(
             DefaultProfileValidationSupport(fhirContext),
             SnapshotGeneratingValidationSupport(fhirContext),
             CommonCodeSystemsTerminologyService(fhirContext),
-            switchedTerminologyServiceValidationSupport
+            switchedTerminologyServiceValidationSupport,
         )
         getPackages()
         if (npmPackages != null) {
@@ -124,7 +125,7 @@ open class ValidationConfiguration(
     ): RemoteTerminologyServiceValidationSupport {
         logger.info("Using remote terminology server at ${terminologyValidationProperties.url}")
         val validationSupport =
-                RemoteTerminologyServiceValidationSupport(
+            RemoteTerminologyServiceValidationSupport(
                 fhirContext
             )
         validationSupport.setBaseUrl(terminologyValidationProperties.url)
@@ -138,33 +139,33 @@ open class ValidationConfiguration(
         return validationSupport
     }
 
-        fun generateSnapshots(supportChain: IValidationSupport) {
-            val structureDefinitions = supportChain.fetchAllStructureDefinitions<StructureDefinition>() ?: return
-            val context = ValidationSupportContext(supportChain)
-            structureDefinitions
-                .filter { shouldGenerateSnapshot(it) }
-                .forEach {
-                    try {
-                        circularReferenceCheck(it,supportChain)
-                    } catch (e: Exception) {
-                        logger.error("Failed to generate snapshot for $it", e)
-                    }
+    fun generateSnapshots(supportChain: IValidationSupport) {
+        val structureDefinitions = supportChain.fetchAllStructureDefinitions<StructureDefinition>() ?: return
+        val context = ValidationSupportContext(supportChain)
+        structureDefinitions
+            .filter { shouldGenerateSnapshot(it) }
+            .forEach {
+                try {
+                    circularReferenceCheck(it,supportChain)
+                } catch (e: Exception) {
+                    logger.error("Failed to generate snapshot for $it", e)
                 }
+            }
 
-            structureDefinitions
-                .filter { shouldGenerateSnapshot(it) }
-                .forEach {
-                    try {
-                        val start: Instant = Instant.now()
-                        supportChain.generateSnapshot(context, it, it.url, "https://fhir.nhs.uk/R4", it.name)
-                        val end: Instant = Instant.now()
-                        val duration: Duration = Duration.between(start, end)
-                        logger.info(duration.toMillis().toString() + " ms $it")
-                    } catch (e: Exception) {
-                        logger.error("Failed to generate snapshot for $it", e)
-                    }
+        structureDefinitions
+            .filter { shouldGenerateSnapshot(it) }
+            .forEach {
+                try {
+                    val start: Instant = Instant.now()
+                    supportChain.generateSnapshot(context, it, it.url, "https://fhir.nhs.uk/R4", it.name)
+                    val end: Instant = Instant.now()
+                    val duration: Duration = Duration.between(start, end)
+                    logger.info(duration.toMillis().toString() + " ms $it")
+                } catch (e: Exception) {
+                    logger.error("Failed to generate snapshot for $it", e)
                 }
-        }
+            }
+    }
 
     private fun circularReferenceCheck(structureDefinition: StructureDefinition, supportChain: IValidationSupport): StructureDefinition {
         if (structureDefinition.hasSnapshot()) logger.error(structureDefinition.url + " has snapshot!!")
@@ -172,20 +173,20 @@ open class ValidationConfiguration(
             //   ||
             if ((
                         it.id.endsWith(".partOf") ||
-                        it.id.endsWith(".basedOn") ||
-                        it.id.endsWith(".replaces") ||
-                        it.id.contains("Condition.stage.assessment") ||
-                        it.id.contains("Observation.derivedFrom") ||
+                                it.id.endsWith(".basedOn") ||
+                                it.id.endsWith(".replaces") ||
+                                it.id.contains("Condition.stage.assessment") ||
+                                it.id.contains("Observation.derivedFrom") ||
                                 it.id.contains("Observation.hasMember") ||
                                 it.id.contains("CareTeam.encounter") ||
-                        it.id.contains("CareTeam.reasonReference") ||
-                        it.id.contains("ServiceRequest.encounter") ||
-                        it.id.contains("ServiceRequest.reasonReference") ||
-                        it.id.contains("EpisodeOfCare.diagnosis.condition") ||
-                        it.id.contains("Encounter.diagnosis.condition") ||
-                        it.id.contains("Encounter.reasonReference") ||
+                                it.id.contains("CareTeam.reasonReference") ||
+                                it.id.contains("ServiceRequest.encounter") ||
+                                it.id.contains("ServiceRequest.reasonReference") ||
+                                it.id.contains("EpisodeOfCare.diagnosis.condition") ||
+                                it.id.contains("Encounter.diagnosis.condition") ||
+                                it.id.contains("Encounter.reasonReference") ||
                                 it.id.contains("Encounter.appointment")
-                                )
+                        )
                 && it.hasType()) {
                 logger.warn(structureDefinition.url + " has circular references ("+ it.id + ")")
                 it.type.forEach{
@@ -244,43 +245,57 @@ open class ValidationConfiguration(
     open fun downloadPackage(name : String, version : String) : List<NpmPackage> {
         logger.info("Downloading from AWS Cache {} - {}",name, version)
         // Try self first
-        var inputStream : InputStream
+        var inputStream : InputStream? = null;
         try {
             val packUrl =  "https://fhir.nhs.uk/ImplementationGuide/" + name+"-" + version
             inputStream = readFromUrl(messageProperties.getNPMFhirServer() + "/FHIR/R4/ImplementationGuide/\$package?url="+packUrl )
+            logger.info("Found Package on AWS Cache {} - {}",name,version)
         } catch (ex : Exception) {
-            logger.info("Package not found in AWS Cache trying simplifier "+name+ "-"+version)
+            logger.warn("Package not found in AWS Cache trying simplifier {} - {}",name,version)
             if (ex.message!=null) logger.info(ex.message)
-            inputStream = readFromUrl("https://packages.simplifier.net/" + name + "/" + version)
+            try {
+                inputStream = readFromUrl("https://packages.simplifier.net/" + name + "/" + version)
+                logger.info("Found Package on Simplifier {} - {}",name,version)
+            } catch (exSimplifier: Exception) {
+                logger.error("Package not found on simplifier {} - {}",name, version)
+            }
         }
-        if (inputStream == null) logger.info("Failed to download  {} - {}",name, version)
+        if (inputStream == null) logger.error("Failed to download  {} - {}",name, version)
         val packages = arrayListOf<NpmPackage>()
         val npmPackage = NpmPackage.fromPackage(inputStream)
 
         val dependency= npmPackage.npm.get("dependencies")
 
-        if (dependency.isJsonArray) logger.info("isJsonArray")
-        if (dependency.isJsonObject) {
-            val obj = dependency.asJsonObject
-            val entrySet: Set<Map.Entry<String?, JsonElement?>> = obj.entrySet()
-            for (entry in entrySet) {
-                logger.info(entry.key + " version =  " + entry.value)
-                if (entry.key != "hl7.fhir.r4.core") {
-                    val entryVersion = entry.value?.asString?.replace("\"","")
-                    if (entry.key != null && entryVersion != null) {
-                        val packs = downloadPackage(entry.key!!, entryVersion)
-                        if (packs.size > 0) {
-                            for (pack in packs) {
-                                packages.add(pack)
+        if (dependency !== null) {
+            if (dependency.isJsonArray) logger.info("isJsonArray")
+            if (dependency.isJsonObject) {
+                val obj = dependency.asJsonObject()
+                obj.properties
+                val entrySet: MutableList<JsonProperty>? = obj.properties
+                entrySet?.forEach()
+                {
+                    logger.info(it.name + " version =  " + it.value)
+                    if (it.name != "hl7.fhir.r4.core") {
+                        val entryVersion = it.value?.asString()?.replace("\"","")
+                        if (it.name != null && entryVersion != null) {
+                            val packs = downloadPackage(it.name!!, entryVersion)
+                            if (packs.size > 0) {
+                                for (pack in packs) {
+                                    packages.add(pack)
+                                }
                             }
                         }
                     }
                 }
             }
+            if (dependency.isJsonNull) logger.info("isNull")
+            if (dependency.isJsonPrimitive) logger.info("isJsonPrimitive")
+        } else {
+            logger.info("No dependencies found for {} - {}",name,version)
         }
+
         packages.add(npmPackage)
-        if (dependency.isJsonNull) logger.info("isNull")
-        if (dependency.isJsonPrimitive) logger.info("isJsonPrimitive")
+
 
         return packages
     }
