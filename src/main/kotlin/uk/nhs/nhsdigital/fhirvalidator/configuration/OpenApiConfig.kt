@@ -209,7 +209,6 @@ open class OpenApiConfig(@Qualifier("R4") val ctx : FhirContext) {
                     .style(Parameter.StyleEnum.SIMPLE)
                     .description("Type defined or constrained by this structure")
                     .schema(StringSchema())
-                    .example("Patient")
                 )
                 .addParametersItem(Parameter()
                     .name("ext-context")
@@ -218,7 +217,6 @@ open class OpenApiConfig(@Qualifier("R4") val ctx : FhirContext) {
                     .style(Parameter.StyleEnum.SIMPLE)
                     .description("The system is the URL for the context-type: e.g. http://hl7.org/fhir/extension-context-type#element|CodeableConcept.text")
                     .schema(StringSchema())
-                    .example("Patient")
                 )
         )
 

@@ -12,7 +12,6 @@ import mu.KLogging
 import org.hl7.fhir.common.hapi.validation.support.*
 import org.hl7.fhir.common.hapi.validation.validator.FhirInstanceValidator
 import org.hl7.fhir.r4.model.StructureDefinition
-import org.hl7.fhir.utilities.json.model.JsonProperty
 import org.hl7.fhir.utilities.npm.NpmPackage
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
@@ -269,16 +268,14 @@ open class ValidationConfiguration(
         if (dependency !== null) {
             if (dependency.isJsonArray) logger.info("isJsonArray")
             if (dependency.isJsonObject) {
-                val obj = dependency.asJsonObject()
-                obj.properties
-                val entrySet: MutableList<JsonProperty>? = obj.properties
-                entrySet?.forEach()
-                {
-                    logger.info(it.name + " version =  " + it.value)
-                    if (it.name != "hl7.fhir.r4.core") {
-                        val entryVersion = it.value?.asString()?.replace("\"","")
-                        if (it.name != null && entryVersion != null) {
-                            val packs = downloadPackage(it.name!!, entryVersion)
+                val obj = dependency.asJsonObject
+                val entrySet: Set<Map.Entry<String?, JsonElement?>> = obj.entrySet()
+                for (entry in entrySet) {
+                    logger.info(entry.key + " version =  " + entry.value)
+                    if (entry.key != "hl7.fhir.r4.core") {
+                        val entryVersion = entry.value?.asString?.replace("\"","")
+                        if (entry.key != null && entryVersion != null) {
+                            val packs = downloadPackage(entry.key!!, entryVersion)
                             if (packs.size > 0) {
                                 for (pack in packs) {
                                     packages.add(pack)
