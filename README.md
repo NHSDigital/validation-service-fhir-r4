@@ -18,4 +18,4 @@ From repo root, run:
 - `make install`
 - `make build-latest`
 
-Commit and push changes to a branch. Get merged into master and reference new commit from EPS repo
+Commit and push changes to a branch. Get merged into main and reference new commit from EPS repo
