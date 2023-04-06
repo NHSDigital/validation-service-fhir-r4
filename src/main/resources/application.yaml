@@ -1,0 +1,33 @@
+server:
+  port: 9001
+  tomcat:
+    threads:
+      max: 10
+
+management:
+  health:
+    elasticsearch:
+        enabled: false
+  endpoints:
+    web.exposure:
+      include: "*"
+
+fhir:
+  server:
+    name: IOPS FHIR Testing
+    baseUrl: https://3cdzg7kbj4.execute-api.eu-west-2.amazonaws.com/poc/Conformance
+    version: 2.6.29
+
+###Remote terminology validation:
+
+##Example without auth:
+#terminology:
+#  url: https://r4.ontoserver.csiro.au/fhir
+
+##Example with auth:
+#terminology:
+#  url: https://ontology.nhs.uk/authoring/fhir/
+#  authorization:
+#    tokenUrl: https://ontology.nhs.uk/authorisation/auth/realms/nhs-digital-terminology/protocol/openid-connect/token
+#    clientId: test
+#    clientSecret: test

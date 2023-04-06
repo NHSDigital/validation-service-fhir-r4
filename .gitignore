@@ -1,6 +1,9 @@
 HELP.md
 target/
 fhir-validator.jar
+src/main/resources/validation.json
+src/main/resources/nhs-validation.json
+src/main/resources/*.tgz
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
