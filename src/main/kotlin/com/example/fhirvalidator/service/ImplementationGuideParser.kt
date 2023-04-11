@@ -18,18 +18,6 @@ class ImplementationGuideParser(private val fhirContext: FhirContext) {
         return prePopulatedSupport
     }
 
-    //TODO - can't use listResources or loadExampleResource as for some reason the message definitions are in an "examples" folder. Is this correct?
-    // fun getMessageDefinitions(npmPackage: NpmPackage): List<MessageDefinition> {
-    //     return getResourcesOfType(npmPackage, MessageDefinition())
-    // }
-    fun getMessageDefinitions(npmPackage: NpmPackage): List<MessageDefinition> {
-        val jsonParser = fhirContext.newJsonParser()
-        return npmPackage.list("examples")
-            .map { npmPackage.load("examples", it) }
-            .map(jsonParser::parseResource)
-            .filterIsInstance(MessageDefinition::class.java)
-    }
-
     fun <T : Resource> getResourcesOfType(npmPackage: NpmPackage, resourceType: T): List<T> {
         val jsonParser = fhirContext.newJsonParser()
         return npmPackage.listResources(resourceType.fhirType())
