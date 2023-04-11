@@ -4,17 +4,16 @@ import com.example.fhirvalidator.util.applyProfile
 import com.example.fhirvalidator.util.createOperationOutcome
 import com.example.fhirvalidator.util.createOperationOutcomeIssue
 import com.example.fhirvalidator.util.getResourcesOfType
+import org.hl7.fhir.common.hapi.validation.support.ValidationSupportChain
 import org.hl7.fhir.instance.model.api.IBaseResource
 import org.hl7.fhir.r4.model.*
-import org.hl7.fhir.utilities.npm.NpmPackage
 import org.springframework.stereotype.Service
 
 @Service
 class MessageDefinitionApplier(
-    implementationGuideParser: ImplementationGuideParser,
-    npmPackages: List<NpmPackage>
+    supportChain: ValidationSupportChain
 ) {
-    val messageDefinitions = npmPackages.flatMap(implementationGuideParser::getMessageDefinitions)
+    val messageDefinitions = supportChain.fetchAllConformanceResources()?.filterIsInstance(MessageDefinition::class.java)
 
     fun applyMessageDefinition(resource: IBaseResource): OperationOutcome? {
         if (resource !is Bundle || resource.type != Bundle.BundleType.MESSAGE) {
@@ -28,7 +27,8 @@ class MessageDefinitionApplier(
             )
 
         val messageType = messageHeader.eventCoding
-        val messageDefinition = findMessageDefinition(messageType)
+        val messageDefinitionProfile = messageHeader.definition
+        val messageDefinition = findMessageDefinition(messageType, messageDefinitionProfile)
             ?: return createOperationOutcome(
                 "Unsupported message type ${messageType.system}#${messageType.code}.",
                 "MessageHeader.eventCoding"
@@ -44,10 +44,17 @@ class MessageDefinitionApplier(
             ?.singleOrNull()
     }
 
-    private fun findMessageDefinition(messageType: Coding): MessageDefinition? {
-        return messageDefinitions
-            .filter { it.eventCoding.system == messageType.system }
-            .firstOrNull { it.eventCoding.code == messageType.code }
+    private fun findMessageDefinition(messageType: Coding, messageDefinitionProfile: String?): MessageDefinition? {
+
+        if (messageDefinitionProfile != null) {
+            return messageDefinitions
+                ?.filter { it.eventCoding.system == messageType.system }
+                ?.firstOrNull { it.eventCoding.code == messageType.code &&  it.url == messageDefinitionProfile }
+        } else {
+            return messageDefinitions
+                ?.filter { it.eventCoding.system == messageType.system }
+                ?.firstOrNull { it.eventCoding.code == messageType.code }
+        }
     }
 
     private fun applyMessageDefinition(
@@ -110,5 +117,4 @@ class MessageDefinitionApplier(
 
         return null
     }
-
 }
