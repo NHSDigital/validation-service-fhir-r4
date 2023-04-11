@@ -7,12 +7,10 @@ import com.example.fhirvalidator.util.getResourcesOfType
 import org.hl7.fhir.common.hapi.validation.support.ValidationSupportChain
 import org.hl7.fhir.instance.model.api.IBaseResource
 import org.hl7.fhir.r4.model.*
-import org.hl7.fhir.utilities.npm.NpmPackage
 import org.springframework.stereotype.Service
 
 @Service
 class MessageDefinitionApplier(
-    implementationGuideParser: ImplementationGuideParser,
     supportChain: ValidationSupportChain
 ) {
     val messageDefinitions = supportChain.fetchAllConformanceResources()?.filterIsInstance(MessageDefinition::class.java)

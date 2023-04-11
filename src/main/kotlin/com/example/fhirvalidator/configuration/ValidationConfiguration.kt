@@ -33,7 +33,7 @@ class ValidationConfiguration(private val implementationGuideParser: Implementat
         return FhirInstanceValidator(supportChain)
     }
 
-    @Bean
+    @Bean("SupportChain")
     fun validationSupportChain(
         fhirContext: FhirContext,
         terminologyValidationSupport: InMemoryTerminologyServerValidationSupport,
@@ -48,6 +48,7 @@ class ValidationConfiguration(private val implementationGuideParser: Implementat
         npmPackages.map(implementationGuideParser::createPrePopulatedValidationSupport)
             .forEach(supportChain::addValidationSupport)
         generateSnapshots(supportChain)
+        supportChain.fetchCodeSystem("http://snomed.info/sct")
         return supportChain
     }
 
