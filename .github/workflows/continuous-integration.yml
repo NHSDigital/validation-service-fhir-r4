@@ -47,46 +47,20 @@ jobs:
       - name: Create release (main only)
         id: create_release
         if: github.ref == 'refs/heads/main'
-        uses: actions/create-release@v1
+        # using commit hash for version v1.13.0
+        uses: ncipollo/release-action@6c75be85e571768fa31b40abf38de58ba0397db5
         continue-on-error: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ env.SPEC_VERSION }}
-          release_name: ${{ env.SPEC_VERSION }}
-        
-      - name: Upload jar release artifact (main only)
-        id: upload_jar_release_artifact
-        if: github.ref == 'refs/heads/main'
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./fhir-validator.jar
-          asset_name: fhir-validator.jar
-          asset_content_type: application/java-archive
+          tag: ${{ env.SPEC_VERSION }}
+          commit: ${{  github.sha }}
+          artifacts: " fhir-validator.jar,Dockerfile,src/main/resources/manifest.json"
+          body: |
+            ## Commit message
+            ${{ github.event.head_commit.message }}
+            ## Info
+            [See code diff](${{ github.event.compare }})
+            [Release workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
 
-      - name: Upload Dockerfile release artifact (main only)
-        id: upload_Dockerfile_release_artifact
-        if: github.ref == 'refs/heads/main'
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: Dockerfile
-          asset_name: Dockerfile
-          asset_content_type: text/plain
-
-      - name: Upload manifest release artifact (main only)
-        id: upload_manifest_release_artifact
-        if: github.ref == 'refs/heads/main'
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./src/main/resources/manifest.json
-          asset_name: manifest.json
-          asset_content_type: application/json
+            It was initialized by [${{ github.event.sender.login }}](${{ github.event.sender.html_url }})
