@@ -55,7 +55,7 @@ jobs:
         with:
           tag: ${{ env.SPEC_VERSION }}
           commit: ${{  github.sha }}
-          artifacts: " fhir-validator.jar,Dockerfile,src/main/resources/manifest.json"
+          artifacts: "fhir-validator.jar,Dockerfile,src/main/resources/manifest.json"
           body: |
             ## Commit message
             ${{ github.event.head_commit.message }}
