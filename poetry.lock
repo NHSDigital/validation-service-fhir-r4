@@ -166,30 +166,37 @@ files = [
 
 [[package]]
 name = "pip-licenses"
-version = "2.3.0"
+version = "4.3.3"
 description = "Dump the software license list of Python packages installed with pip."
 optional = false
-python-versions = "~=3.5"
+python-versions = "~=3.8"
 files = [
-    {file = "pip-licenses-2.3.0.tar.gz", hash = "sha256:630f7e1b51ac0751c9c218e2ed76bb982e769301510a0bcca0dd4a47d05198fd"},
-    {file = "pip_licenses-2.3.0-py3-none-any.whl", hash = "sha256:b3922fc71e819c1a155460116d2fcf15eca85a22ebe057cd1e1dedb951b1199f"},
+    {file = "pip-licenses-4.3.3.tar.gz", hash = "sha256:d14447094135eb5e43e4d9e1e3bcdb17a05751a9199df2d07f043a542c241c7a"},
+    {file = "pip_licenses-4.3.3-py3-none-any.whl", hash = "sha256:1b697cace3149d7d380307bb1f1e0505f0db98f25fada64d32b7e6240f37f72c"},
 ]
 
 [package.dependencies]
-PTable = "*"
+prettytable = ">=2.3.0"
 
 [package.extras]
-test = ["docutils", "pytest-cov", "pytest-pycodestyle", "pytest-runner"]
+test = ["docutils", "mypy", "pytest-cov", "pytest-pycodestyle", "pytest-runner"]
 
 [[package]]
-name = "ptable"
-version = "0.9.2"
+name = "prettytable"
+version = "3.9.0"
 description = "A simple Python library for easily displaying tabular data in a visually appealing ASCII table format"
 optional = false
-python-versions = "*"
+python-versions = ">=3.8"
 files = [
-    {file = "PTable-0.9.2.tar.gz", hash = "sha256:aa7fc151cb40f2dabcd2275ba6f7fd0ff8577a86be3365cd3fb297cbe09cc292"},
+    {file = "prettytable-3.9.0-py3-none-any.whl", hash = "sha256:a71292ab7769a5de274b146b276ce938786f56c31cf7cea88b6f3775d82fe8c8"},
+    {file = "prettytable-3.9.0.tar.gz", hash = "sha256:f4ed94803c23073a90620b201965e5dc0bccf1760b7a7eaf3158cab8aaffdf34"},
 ]
+
+[package.dependencies]
+wcwidth = "*"
+
+[package.extras]
+tests = ["pytest", "pytest-cov", "pytest-lazy-fixture"]
 
 [[package]]
 name = "pycodestyle"
@@ -273,7 +280,18 @@ secure = ["certifi", "cryptography (>=1.9)", "idna (>=2.0.0)", "pyopenssl (>=17.
 socks = ["pysocks (>=1.5.6,!=1.5.7,<2.0)"]
 zstd = ["zstandard (>=0.18.0)"]
 
+[[package]]
+name = "wcwidth"
+version = "0.2.8"
+description = "Measures the displayed width of unicode strings in a terminal"
+optional = false
+python-versions = "*"
+files = [
+    {file = "wcwidth-0.2.8-py2.py3-none-any.whl", hash = "sha256:77f719e01648ed600dfa5402c347481c0992263b81a027344f3e1ba25493a704"},
+    {file = "wcwidth-0.2.8.tar.gz", hash = "sha256:8705c569999ffbb4f6a87c6d1b80f324bd6db952f5eb0b95bc07517f4c1813d4"},
+]
+
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "1fbebb4ed61d3af60835c96acfe05b1b237e1a397210be7f4e960f95f51a2bcb"
+content-hash = "14b35cbaddbf3980a0ec68901d70df1bc821eb0934c57208cd5126f2d9a19fe3"
