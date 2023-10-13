@@ -24,7 +24,7 @@ gitpython = "^3.1.37"
 [tool.poetry.dev-dependencies]
 requests = "2.31.0"
 flake8 = "^3.7.9"
-pip-licenses = "^2.0.1"
+pip-licenses = "^4.3.3"
 
 [tool.poetry.scripts]
 
