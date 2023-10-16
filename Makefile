@@ -1,4 +1,4 @@
-hainstall:
+install:
 	poetry install
 
 lint:
