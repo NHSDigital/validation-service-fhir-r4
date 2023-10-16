@@ -41,7 +41,8 @@
           "redhat.vscode-xml",
           "streetsidesoftware.code-spell-checker",
           "timonwong.shellcheck",
-          "github.vscode-github-actions"
+          "github.vscode-github-actions",
+          "vscjava.vscode-java-pack"
         ],
         "settings": {
           "python.defaultInterpreterPath": "/workspaces/prescriptionsforpatients/.venv/bin/python",
