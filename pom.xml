@@ -94,12 +94,65 @@
             <version>1.8.0.1</version>
         </dependency>
     </dependencies>
-
+    <pluginRepositories>
+        <pluginRepository>
+          <id>jitpack.io</id>
+          <url>https://jitpack.io</url>
+        </pluginRepository>
+      </pluginRepositories>
     <build>
         <finalName>fhir-validator</finalName>
         <sourceDirectory>${project.basedir}/src/main/kotlin</sourceDirectory>
         <testSourceDirectory>${project.basedir}/src/test/kotlin</testSourceDirectory>
+
         <plugins>
+            <plugin>
+                <groupId>com.github.carlomorelli</groupId>
+                <artifactId>licensescan-maven-plugin</artifactId>
+                <version>3.2</version> <!-- check the latest version -->
+                <configuration>
+                  <printLicenses>true</printLicenses>
+                  <forbiddenLicenses>
+                    <license>GNU General Public License, v2.0</license>
+                    <license>GNU General Public License, v3.0</license>
+                    <license>regex:.*Affero.*</license> <!-- to enable use of wildcards, use string prefix 'regex:' -->
+                  </forbiddenLicenses>
+                  <failBuildOnViolation>true</failBuildOnViolation>
+                </configuration>
+                <executions>
+                  <execution>
+                    <phase>validate</phase> <!-- choose the most relevant goal for your pipeline, e.g. 'compile', 'test' or 'deploy' -->
+                    <goals>
+                      <goal>audit</goal>
+                    </goals>
+                  </execution>
+                </executions>
+              </plugin>
+                <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>0.8.7</version>
+                <executions>
+                    <execution>
+                        <id>prepare-agent</id>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                        <configuration>
+                            <formats>
+                              <format>XML</format>
+                            </formats>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>

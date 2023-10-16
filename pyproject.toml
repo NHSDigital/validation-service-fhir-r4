@@ -7,11 +7,15 @@ version = "0.0.1-alpha"
 description = "Validation Service FHIR R4 API Definitions"
 license = "MIT"
 authors = [
-    "Alex McCormick <alex.mccormick1@nhs.net>",
-    "Conner Jowitt <conner.jowitt1@nhs.net>",
-    "Dan Jones <dan.jones13@nhs.net>",
-    "Matt Jarvis <matt.jarvis1@nhs.net>",
-    "Richard Crawley <richard.crawley1@nhs.net>"
+    "Anthony Brown <anthony.brown8@nhs.net>",
+    "Matthew Popat <matthew.popat1@nhs.net>",
+    "Chris Matus <chris.matus@nhs.net>",
+    "Phil Gee <phil.gee@nhs.net>",
+    "Kris Szlapa <kris.szlapa1@nhs.net>",
+    "Jack Spagnoli <jack.spagnoli1@nhs.net>",
+    "Tom Smith <tom.smith24@nhs.net>",
+    "Adam Brown <adam.brown41@nhs.net>",
+    "Sean Steberis <sean.steberis2@nhs.net>"
 ]
 readme = "README.md"
 repository = "https://github.com/NHSDigital/validation-service-fhir-r4"
@@ -20,6 +24,7 @@ repository = "https://github.com/NHSDigital/validation-service-fhir-r4"
 python = "^3.8"
 semver = "^3.0.2"
 gitpython = "^3.1.37"
+pre-commit = "^3.5.0"
 
 [tool.poetry.dev-dependencies]
 requests = "2.31.0"
