@@ -16,7 +16,7 @@
 
     <properties>
         <java.version>1.8</java.version>
-        <kotlin.version>1.9.10</kotlin.version>
+        <kotlin.version>1.9.20</kotlin.version>
         <fhir.version>5.4.2</fhir.version>
     </properties>
 
