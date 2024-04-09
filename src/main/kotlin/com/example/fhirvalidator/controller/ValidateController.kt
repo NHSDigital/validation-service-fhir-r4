@@ -6,7 +6,7 @@ import ca.uhn.fhir.validation.FhirValidator
 import com.example.fhirvalidator.service.CapabilityStatementApplier
 import com.example.fhirvalidator.service.MessageDefinitionApplier
 import com.example.fhirvalidator.util.createOperationOutcome
-import mu.KLogging
+import io.github.oshai.kotlinlogging.KLogging
 import org.hl7.fhir.instance.model.api.IBaseResource
 import org.hl7.fhir.r4.model.Bundle
 import org.hl7.fhir.r4.model.OperationOutcome

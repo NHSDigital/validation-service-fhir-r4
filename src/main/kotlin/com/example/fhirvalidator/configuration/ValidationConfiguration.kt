@@ -7,7 +7,7 @@ import ca.uhn.fhir.context.support.IValidationSupport
 import ca.uhn.fhir.context.support.ValidationSupportContext
 import ca.uhn.fhir.validation.FhirValidator
 import com.example.fhirvalidator.service.ImplementationGuideParser
-import mu.KLogging
+import io.github.oshai.kotlinlogging.KLogging
 import org.hl7.fhir.common.hapi.validation.support.CommonCodeSystemsTerminologyService
 import org.hl7.fhir.common.hapi.validation.support.InMemoryTerminologyServerValidationSupport
 import org.hl7.fhir.common.hapi.validation.support.SnapshotGeneratingValidationSupport
