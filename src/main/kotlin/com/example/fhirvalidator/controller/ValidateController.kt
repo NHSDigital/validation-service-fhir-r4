@@ -30,9 +30,9 @@ class ValidateController(
         @RequestBody input: String,
         @RequestHeader("x-request-id", required = false) requestId: String?
     ): String {
-        requestId?.let { logger.info("started processing message $it") }
+        requestId?.let { logger.info { "started processing message $it" } }
         val result = parseAndValidateResource(input)
-        requestId?.let { logger.info("finished processing message $it") }
+        requestId?.let { logger.info { "finished processing message $it"} }
         return fhirContext.newJsonParser().encodeResourceToString(result)
     }
 
@@ -44,7 +44,7 @@ class ValidateController(
             val operationOutcomeIssues = operationOutcomeList.filterNotNull().flatMap { it.issue }
             return createOperationOutcome(operationOutcomeIssues)
         } catch (e: DataFormatException) {
-            logger.error("Caught parser error", e)
+            logger.error(e) { "Caught parser error" }
             createOperationOutcome(e.message ?: "Invalid JSON", null)
         }
     }
