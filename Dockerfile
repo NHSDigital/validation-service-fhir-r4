@@ -1,4 +1,4 @@
-FROM openjdk:11.0.8
+FROM eclipse-temurin:21.0.2_13-jdk
 
 WORKDIR /app
 

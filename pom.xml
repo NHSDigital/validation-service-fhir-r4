@@ -18,6 +18,7 @@
         <java.version>1.8</java.version>
         <kotlin.version>1.9.23</kotlin.version>
         <fhir.version>7.0.2</fhir.version>
+        <fasterxml.version>2.17.0</fasterxml.version>
     </properties>
 
     <dependencies>
@@ -32,6 +33,21 @@
         <dependency>
             <groupId>com.fasterxml.jackson.module</groupId>
             <artifactId>jackson-module-kotlin</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+            <version>${fasterxml.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>${fasterxml.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-annotations</artifactId>
+            <version>${fasterxml.version}</version>
         </dependency>
         <dependency>
             <groupId>org.jetbrains.kotlin</groupId>
@@ -89,6 +105,11 @@
             <version>${fhir.version}</version>
         </dependency>
         <dependency>
+            <groupId>ca.uhn.hapi.fhir</groupId>
+            <artifactId>hapi-fhir-caching-caffeine</artifactId>
+            <version>${fhir.version}</version>
+        </dependency>
+        <dependency>
             <groupId>io.github.oshai</groupId>
             <artifactId>kotlin-logging-jvm</artifactId>
             <version>6.0.4</version>
@@ -107,27 +128,25 @@
 
         <plugins>
             <plugin>
-                <groupId>com.github.carlomorelli</groupId>
-                <artifactId>licensescan-maven-plugin</artifactId>
-                <version>3.2</version> <!-- check the latest version -->
-                <configuration>
-                  <printLicenses>true</printLicenses>
-                  <forbiddenLicenses>
-                    <license>GNU General Public License, v2.0</license>
-                    <license>GNU General Public License, v3.0</license>
-                    <license>regex:.*Affero.*</license> <!-- to enable use of wildcards, use string prefix 'regex:' -->
-                  </forbiddenLicenses>
-                  <failBuildOnViolation>true</failBuildOnViolation>
-                </configuration>
+                <groupId>se.ayoy.maven-plugins</groupId>
+                <artifactId>ayoy-license-verifier-maven-plugin</artifactId>
+                <version>1.2.0</version>
                 <executions>
-                  <execution>
-                    <phase>validate</phase> <!-- choose the most relevant goal for your pipeline, e.g. 'compile', 'test' or 'deploy' -->
-                    <goals>
-                      <goal>audit</goal>
-                    </goals>
-                  </execution>
+                    <execution>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>verify</goal>
+                        </goals>
+                    </execution>
                 </executions>
-              </plugin>
+                <configuration>
+                    <licenseFile>${project.basedir}/licenses/licenses.xml</licenseFile>
+                    <excludedMissingLicensesFile>${project.basedir}/licenses/allowedMissingLicense.xml</excludedMissingLicensesFile>
+                    <failOnForbidden>true</failOnForbidden>
+                    <failOnMissing>true</failOnMissing>
+                    <failOnUnknown>true</failOnUnknown>
+                </configuration>
+            </plugin>
                 <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>

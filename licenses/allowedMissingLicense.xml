@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<missing>
+    <dependency>
+        <groupId>jakarta-regexp</groupId>
+        <artifactId>jakarta-regexp</artifactId>
+        <version>1.4</version>
+    </dependency>
+</missing>
