@@ -6,7 +6,7 @@ import ca.uhn.fhir.validation.FhirValidator
 import com.example.fhirvalidator.service.CapabilityStatementApplier
 import com.example.fhirvalidator.service.MessageDefinitionApplier
 import com.example.fhirvalidator.util.createOperationOutcome
-import io.github.oshai.kotlinlogging.KLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.hl7.fhir.instance.model.api.IBaseResource
 import org.hl7.fhir.r4.model.Bundle
 import org.hl7.fhir.r4.model.OperationOutcome
@@ -23,7 +23,7 @@ class ValidateController(
     private val messageDefinitionApplier: MessageDefinitionApplier,
     private val capabilityStatementApplier: CapabilityStatementApplier
 ) {
-    companion object : KLogging()
+    private val logger = KotlinLogging.logger {} 
 
     @PostMapping("/\$validate", produces = ["application/json", "application/fhir+json"])
     fun validate(
