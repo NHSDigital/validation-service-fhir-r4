@@ -6,7 +6,7 @@ import ca.uhn.fhir.validation.FhirValidator
 import com.example.fhirvalidator.service.CapabilityStatementApplier
 import com.example.fhirvalidator.service.MessageDefinitionApplier
 import com.example.fhirvalidator.util.createOperationOutcome
-import mu.KLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.hl7.fhir.instance.model.api.IBaseResource
 import org.hl7.fhir.r4.model.Bundle
 import org.hl7.fhir.r4.model.OperationOutcome
@@ -23,16 +23,16 @@ class ValidateController(
     private val messageDefinitionApplier: MessageDefinitionApplier,
     private val capabilityStatementApplier: CapabilityStatementApplier
 ) {
-    companion object : KLogging()
+    private val logger = KotlinLogging.logger {} 
 
     @PostMapping("/\$validate", produces = ["application/json", "application/fhir+json"])
     fun validate(
         @RequestBody input: String,
         @RequestHeader("x-request-id", required = false) requestId: String?
     ): String {
-        requestId?.let { logger.info("started processing message $it") }
+        requestId?.let { logger.info { "started processing message $it" } }
         val result = parseAndValidateResource(input)
-        requestId?.let { logger.info("finished processing message $it") }
+        requestId?.let { logger.info { "finished processing message $it"} }
         return fhirContext.newJsonParser().encodeResourceToString(result)
     }
 
@@ -44,7 +44,7 @@ class ValidateController(
             val operationOutcomeIssues = operationOutcomeList.filterNotNull().flatMap { it.issue }
             return createOperationOutcome(operationOutcomeIssues)
         } catch (e: DataFormatException) {
-            logger.error("Caught parser error", e)
+            logger.error(e) { "Caught parser error" }
             createOperationOutcome(e.message ?: "Invalid JSON", null)
         }
     }

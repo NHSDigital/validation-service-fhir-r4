@@ -2,7 +2,7 @@ package com.example.fhirvalidator.configuration
 
 import com.example.fhirvalidator.model.SimplifierPackage
 import com.fasterxml.jackson.databind.ObjectMapper
-import mu.KLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.hl7.fhir.utilities.npm.NpmPackage
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -12,7 +12,7 @@ import kotlin.streams.toList
 
 @Configuration
 class PackageConfiguration(val objectMapper: ObjectMapper) {
-    companion object : KLogging()
+    private val logger = KotlinLogging.logger {} 
 
     @Bean
     fun getPackages(): List<NpmPackage> {

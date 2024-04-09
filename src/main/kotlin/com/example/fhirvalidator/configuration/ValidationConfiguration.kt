@@ -7,7 +7,7 @@ import ca.uhn.fhir.context.support.IValidationSupport
 import ca.uhn.fhir.context.support.ValidationSupportContext
 import ca.uhn.fhir.validation.FhirValidator
 import com.example.fhirvalidator.service.ImplementationGuideParser
-import mu.KLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.hl7.fhir.common.hapi.validation.support.CommonCodeSystemsTerminologyService
 import org.hl7.fhir.common.hapi.validation.support.InMemoryTerminologyServerValidationSupport
 import org.hl7.fhir.common.hapi.validation.support.SnapshotGeneratingValidationSupport
@@ -21,7 +21,7 @@ import org.springframework.context.annotation.Configuration
 
 @Configuration
 class ValidationConfiguration(private val implementationGuideParser: ImplementationGuideParser) {
-    companion object : KLogging()
+    private val logger = KotlinLogging.logger {} 
 
     @Bean
     fun validator(fhirContext: FhirContext, instanceValidator: FhirInstanceValidator): FhirValidator {
@@ -95,7 +95,7 @@ class ValidationConfiguration(private val implementationGuideParser: Implementat
                 try {
                     circularReferenceCheck(it,supportChain)
                 } catch (e: Exception) {
-                    logger.error("Failed to generate snapshot for $it", e)
+                    logger.error(e) { "Failed to generate snapshot for $it" }
                 }
             }
         structureDefinitions
@@ -104,13 +104,13 @@ class ValidationConfiguration(private val implementationGuideParser: Implementat
                 try {
                     supportChain.generateSnapshot(context, it, it.url, "https://fhir.nhs.uk/R4", it.name)
                 } catch (e: Exception) {
-                    logger.error("Failed to generate snapshot for $it", e)
+                    logger.error(e) { "Failed to generate snapshot for $it" }
                 }
             }
     }
 
     private fun circularReferenceCheck(structureDefinition: StructureDefinition, supportChain: IValidationSupport): StructureDefinition {
-        if (structureDefinition.hasSnapshot()) logger.error(structureDefinition.url + " has snapshot!!")
+        if (structureDefinition.hasSnapshot()) logger.error { structureDefinition.url + " has snapshot!!" }
         structureDefinition.differential.element.forEach{
             //   ||
             if ((
@@ -129,7 +129,7 @@ class ValidationConfiguration(private val implementationGuideParser: Implementat
                 it.id.contains("Encounter.reasonReference") ||
                 it.id.contains("Encounter.appointment")
             ) && it.hasType()) {
-                logger.warn(structureDefinition.url + " has circular references ("+ it.id + ")")
+                logger.warn { structureDefinition.url + " has circular references ("+ it.id + ")" }
                 it.type.forEach{
                     if (it.hasTargetProfile())
                         it.targetProfile.forEach {
