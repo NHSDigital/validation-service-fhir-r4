@@ -7,6 +7,10 @@ jobs:
     name: build
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'corretto'
       - name: Checkout
         uses: actions/checkout@v4
         with:
