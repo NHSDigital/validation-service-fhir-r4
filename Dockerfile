@@ -1,4 +1,4 @@
-FROM eclipse-temurin:21.0.2_13-jdk
+FROM amazoncorretto:21.0.2
 
 WORKDIR /app
 

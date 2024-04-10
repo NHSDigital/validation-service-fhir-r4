@@ -31,3 +31,9 @@ build-latest: clean-packages update-manifest build
 
 run:
 	mvn spring-boot:run
+
+docker-run: build
+	docker-compose up
+
+docker-rebuild-run: build
+	docker-compose up --no-deps --build fhir-validator

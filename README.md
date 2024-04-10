@@ -19,3 +19,26 @@ From repo root, run:
 - `make build-latest`
 
 Commit and push changes to a branch. Get merged into main and reference new commit from EPS repo
+
+
+## Run docker service locally
+To run the docker image locally use
+```
+make docker-run
+```
+To run the docker image locally forcing a rebuild of the docker image use
+```
+make docker-rebuild-run
+```
+Note - the jar file is patched into the image at run time, and it is rebuilt before running the container, so you should not need to use docker-rebuild-run
+
+To test it is running you can use the following
+```
+curl http://localhost:9001/_status
+```
+To validate a FHIR message you can use
+```
+curl -X POST "http://localhost:9001/\$validate" \
+  -H "Content-Type: application/json" \
+  -d "@1-Prepare-Request-200_OK.json"
+```

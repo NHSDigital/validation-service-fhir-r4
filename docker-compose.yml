@@ -1,0 +1,10 @@
+version: '3'
+services:
+    fhir-validator:
+        image: 'fhir-validator'
+        build:
+            dockerfile: "Dockerfile"
+        ports:
+            - "9001:9001"
+        volumes:
+            - ${LOCAL_WORKSPACE_FOLDER:-./}/fhir-validator.jar:/fhir-validator.jar
