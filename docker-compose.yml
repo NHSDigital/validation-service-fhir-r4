@@ -6,5 +6,3 @@ services:
             dockerfile: "Dockerfile"
         ports:
             - "9001:9001"
-        volumes:
-            - ${LOCAL_WORKSPACE_FOLDER:-./}/fhir-validator.jar:/fhir-validator.jar

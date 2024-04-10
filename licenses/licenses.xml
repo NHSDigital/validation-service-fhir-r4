@@ -46,10 +46,12 @@
             <names>
                 <name>The MIT License</name>
                 <name>MIT License</name>
+                <name>MIT</name>
             </names>
             <urls>
                 <url>http://code.google.com/p/mockito/wiki/License</url>
                 <url>http://www.opensource.org/licenses/mit-license.php</url>
+                <url>https://opensource.org/licenses/MIT</url>
             </urls>
         </license>
         <license>
@@ -65,9 +67,11 @@
             <name>BSD License 3</name>
             <names>
                 <name>BSD License 3</name>
+                <name>BSD-3-Clause</name>
             </names>
             <urls>
                 <url>http://opensource.org/licenses/BSD-3-Clause</url>
+                <url>https://asm.ow2.io/license.html</url>
             </urls>
         </license>
         <license>

@@ -30,7 +30,6 @@ To run the docker image locally forcing a rebuild of the docker image use
 ```
 make docker-rebuild-run
 ```
-Note - the jar file is patched into the image at run time, and it is rebuilt before running the container, so you should not need to use docker-rebuild-run
 
 To test it is running you can use the following
 ```
