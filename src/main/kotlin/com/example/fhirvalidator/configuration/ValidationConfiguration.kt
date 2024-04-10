@@ -91,6 +91,7 @@ class ValidationConfiguration(private val implementationGuideParser: Implementat
 
         structureDefinitions
             .filter { shouldGenerateSnapshot(it) }
+            .parallelStream()
             .forEach {
                 try {
                     circularReferenceCheck(it,supportChain)
