@@ -99,13 +99,8 @@ class ValidationConfiguration(private val implementationGuideParser: Implementat
                     logger.error(e) { "Failed to generate snapshot for $it" }
                 }
             }
-        logger.info{"structureDefinitions: " + structureDefinitions.size }
-        val structureDefinitionsForSnapshot = structureDefinitions
-            .parallelStream()
+        structureDefinitions
             .filter { shouldGenerateSnapshot(it) }
-            .toList()
-        logger.info{"structureDefinitionsForSnapshot: " + structureDefinitionsForSnapshot.size }
-        structureDefinitionsForSnapshot
             .forEach {
                 try {
                     supportChain.generateSnapshot(context, it, it.url, "https://fhir.nhs.uk/R4", it.name)
