@@ -1,4 +1,4 @@
-package software.nhs.fhirvalidator.service
+package software.nhs.fhirvalidator.common.service
 
 import ca.uhn.fhir.context.FhirContext
 import org.hl7.fhir.common.hapi.validation.support.PrePopulatedValidationSupport

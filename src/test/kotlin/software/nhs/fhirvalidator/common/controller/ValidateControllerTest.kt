@@ -1,9 +1,10 @@
-package software.nhs.fhirvalidator.controller
+package software.nhs.fhirvalidator.common.controller
 
 import ca.uhn.fhir.context.FhirContext
 import ca.uhn.fhir.validation.FhirValidator
-import software.nhs.fhirvalidator.service.CapabilityStatementApplier
-import software.nhs.fhirvalidator.service.MessageDefinitionApplier
+import software.nhs.fhirvalidator.common.service.CapabilityStatementApplier
+import software.nhs.fhirvalidator.common.service.MessageDefinitionApplier
+import software.nhs.fhirvalidator.common.controller.ValidateController
 import org.hl7.fhir.r4.model.Bundle
 import org.hl7.fhir.r4.model.Patient
 import org.junit.jupiter.api.Assertions.*

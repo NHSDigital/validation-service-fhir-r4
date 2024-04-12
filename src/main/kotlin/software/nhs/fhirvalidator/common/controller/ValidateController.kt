@@ -1,11 +1,11 @@
-package software.nhs.fhirvalidator.controller
+package software.nhs.fhirvalidator.common.controller
 
 import ca.uhn.fhir.context.FhirContext
 import ca.uhn.fhir.parser.DataFormatException
 import ca.uhn.fhir.validation.FhirValidator
-import software.nhs.fhirvalidator.service.CapabilityStatementApplier
-import software.nhs.fhirvalidator.service.MessageDefinitionApplier
-import software.nhs.fhirvalidator.util.createOperationOutcome
+import software.nhs.fhirvalidator.common.service.CapabilityStatementApplier
+import software.nhs.fhirvalidator.common.service.MessageDefinitionApplier
+import software.nhs.fhirvalidator.common.util.createOperationOutcome
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.hl7.fhir.instance.model.api.IBaseResource
 import org.hl7.fhir.r4.model.Bundle

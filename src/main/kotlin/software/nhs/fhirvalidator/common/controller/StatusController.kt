@@ -1,4 +1,4 @@
-package software.nhs.fhirvalidator.controller
+package software.nhs.fhirvalidator.common.controller
 
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RestController

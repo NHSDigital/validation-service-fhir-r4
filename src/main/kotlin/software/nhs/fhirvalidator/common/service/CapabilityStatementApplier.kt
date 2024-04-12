@@ -1,7 +1,7 @@
-package software.nhs.fhirvalidator.service
+package software.nhs.fhirvalidator.common.service
 
-import software.nhs.fhirvalidator.util.applyProfile
-import software.nhs.fhirvalidator.util.getResourcesOfType
+import software.nhs.fhirvalidator.common.util.applyProfile
+import software.nhs.fhirvalidator.common.util.getResourcesOfType
 import org.hl7.fhir.instance.model.api.IBaseResource
 import org.hl7.fhir.r4.model.CapabilityStatement
 import org.hl7.fhir.utilities.npm.NpmPackage
