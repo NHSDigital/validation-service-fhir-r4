@@ -1,4 +1,4 @@
-package com.example.fhirvalidator.configuration
+package software.nhs.fhirvalidator.configuration
 
 import ca.uhn.fhir.context.FhirContext
 import ca.uhn.fhir.context.support.ConceptValidationOptions
@@ -6,7 +6,7 @@ import ca.uhn.fhir.context.support.DefaultProfileValidationSupport
 import ca.uhn.fhir.context.support.IValidationSupport
 import ca.uhn.fhir.context.support.ValidationSupportContext
 import ca.uhn.fhir.validation.FhirValidator
-import com.example.fhirvalidator.service.ImplementationGuideParser
+import software.nhs.fhirvalidator.service.ImplementationGuideParser
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.hl7.fhir.common.hapi.validation.support.CommonCodeSystemsTerminologyService
 import org.hl7.fhir.common.hapi.validation.support.InMemoryTerminologyServerValidationSupport

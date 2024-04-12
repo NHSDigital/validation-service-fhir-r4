@@ -1,4 +1,4 @@
-package com.example.fhirvalidator.util
+package software.nhs.fhirvalidator.util
 
 import org.hl7.fhir.r4.model.Bundle
 import org.hl7.fhir.r4.model.CanonicalType

@@ -1,9 +1,9 @@
-package com.example.fhirvalidator.controller
+package software.nhs.fhirvalidator.controller
 
 import ca.uhn.fhir.context.FhirContext
 import ca.uhn.fhir.validation.FhirValidator
-import com.example.fhirvalidator.service.CapabilityStatementApplier
-import com.example.fhirvalidator.service.MessageDefinitionApplier
+import software.nhs.fhirvalidator.service.CapabilityStatementApplier
+import software.nhs.fhirvalidator.service.MessageDefinitionApplier
 import org.hl7.fhir.r4.model.Bundle
 import org.hl7.fhir.r4.model.Patient
 import org.junit.jupiter.api.Assertions.*

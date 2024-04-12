@@ -1,4 +1,4 @@
-package com.example.fhirvalidator
+package software.nhs.fhirvalidator
 
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired

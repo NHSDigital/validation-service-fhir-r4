@@ -1,6 +1,6 @@
-package com.example.fhirvalidator.configuration
+package software.nhs.fhirvalidator.configuration
 
-import com.example.fhirvalidator.model.SimplifierPackage
+import software.nhs.fhirvalidator.model.SimplifierPackage
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.hl7.fhir.utilities.npm.NpmPackage

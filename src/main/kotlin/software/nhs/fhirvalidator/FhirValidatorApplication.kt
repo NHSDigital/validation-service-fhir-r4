@@ -1,4 +1,4 @@
-package com.example.fhirvalidator
+package software.nhs.fhirvalidator
 
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
