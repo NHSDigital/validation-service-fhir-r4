@@ -20,6 +20,9 @@
         <kotlin.version>1.9.23</kotlin.version>
         <fhir.version>7.0.2</fhir.version>
         <fasterxml.version>2.17.0</fasterxml.version>
+        <spring-cloud-function.version>4.1.1</spring-cloud-function.version>
+        <aws-lambda-java-core.version>1.2.3</aws-lambda-java-core.version>
+        <aws-lambda-java-events.version>3.11.4</aws-lambda-java-events.version>
     </properties>
 
     <dependencies>
@@ -115,6 +118,24 @@
             <artifactId>kotlin-logging-jvm</artifactId>
             <version>6.0.4</version>
         </dependency>
+        <!-- Spring Cloud Function -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-function-adapter-aws</artifactId>
+            <version>${spring-cloud-function.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-lambda-java-core</artifactId>
+            <version>${aws-lambda-java-core.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-lambda-java-events</artifactId>
+            <version>${aws-lambda-java-events.version}</version>
+        </dependency>
+
     </dependencies>
     <pluginRepositories>
         <pluginRepository>
@@ -183,7 +204,7 @@
                         <phase>package</phase>
                         <configuration>
                             <finalName>application</finalName>
-                            <mainClass>software.nhs.fhirvalidator.webserver.FhirValidatorApplication</mainClass>
+                            <mainClass>software.nhs.fhirvalidator.webserver.FhirValidatorWebserver</mainClass>
                             <outputDirectory>target/fhir-validator</outputDirectory>
                             <classifier>1</classifier>
                         </configuration>
