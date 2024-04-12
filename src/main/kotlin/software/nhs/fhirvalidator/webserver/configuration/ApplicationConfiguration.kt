@@ -1,4 +1,4 @@
-package software.nhs.fhirvalidator.common.configuration
+package software.nhs.fhirvalidator.webserver.configuration
 
 import ca.uhn.fhir.context.FhirContext
 import ca.uhn.fhir.parser.StrictErrorHandler

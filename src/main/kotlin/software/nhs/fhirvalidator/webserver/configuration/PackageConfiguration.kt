@@ -1,4 +1,4 @@
-package software.nhs.fhirvalidator.common.configuration
+package software.nhs.fhirvalidator.webserver.configuration
 
 import software.nhs.fhirvalidator.common.model.SimplifierPackage
 import com.fasterxml.jackson.databind.ObjectMapper
@@ -15,7 +15,7 @@ class PackageConfiguration(val objectMapper: ObjectMapper) {
     private val logger = KotlinLogging.logger {} 
 
     @Bean
-    fun getPackages(): List<NpmPackage> {
+    fun npmPackages(): List<NpmPackage> {
         val inputStream = ClassPathResource("manifest.json").inputStream
         val packages = objectMapper.readValue(inputStream, Array<SimplifierPackage>::class.java)
         return Arrays.stream(packages)

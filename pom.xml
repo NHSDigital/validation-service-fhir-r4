@@ -183,7 +183,7 @@
                         <phase>package</phase>
                         <configuration>
                             <finalName>application</finalName>
-                            <mainClass>software.nhs.fhirvalidator.common.FhirValidatorApplication</mainClass>
+                            <mainClass>software.nhs.fhirvalidator.webserver.FhirValidatorApplication</mainClass>
                             <outputDirectory>target/fhir-validator</outputDirectory>
                             <classifier>1</classifier>
                         </configuration>

@@ -1,4 +1,4 @@
-package software.nhs.fhirvalidator.common
+package software.nhs.fhirvalidator.webserver
 
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication

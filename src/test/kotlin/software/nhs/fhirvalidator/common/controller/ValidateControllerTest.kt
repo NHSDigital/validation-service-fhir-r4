@@ -4,9 +4,12 @@ import ca.uhn.fhir.context.FhirContext
 import ca.uhn.fhir.validation.FhirValidator
 import software.nhs.fhirvalidator.common.service.CapabilityStatementApplier
 import software.nhs.fhirvalidator.common.service.MessageDefinitionApplier
+import software.nhs.fhirvalidator.common.service.ImplementationGuideParser
 import software.nhs.fhirvalidator.common.controller.ValidateController
+import software.nhs.fhirvalidator.common.configuration.ValidationConfiguration
 import org.hl7.fhir.r4.model.Bundle
 import org.hl7.fhir.r4.model.Patient
+import org.hl7.fhir.utilities.npm.NpmPackage
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -17,10 +20,16 @@ import org.mockito.junit.jupiter.MockitoExtension
 @ExtendWith(MockitoExtension::class)
 internal class ValidateControllerTest {
     @Mock
-    lateinit var mockFhirContext: FhirContext
+    var mockFhirContext: FhirContext = FhirContext.forR4()
 
     @Mock
-    lateinit var mockValidator: FhirValidator
+    var mockNpmPackages: List<NpmPackage> = emptyList()
+
+    @Mock
+    lateinit var mockImplementationGuideParser: ImplementationGuideParser
+
+    @Mock
+    lateinit var mockValidationConfiguration: ValidationConfiguration
 
     @Mock
     lateinit var mockMessageDefinitionApplier: MessageDefinitionApplier
@@ -29,7 +38,7 @@ internal class ValidateControllerTest {
     lateinit var mockCapabilityStatementApplier: CapabilityStatementApplier
 
     @InjectMocks
-    lateinit var testValidateController: ValidateController
+    var testValidateController: ValidateController = ValidateController(mockFhirContext, mockNpmPackages)
 
     @Test
     fun getResourcesToValidate_returns_inner_bundles_when_passed_searchset_containing_bundles() {
