@@ -20,6 +20,9 @@
         <kotlin.version>1.9.23</kotlin.version>
         <fhir.version>7.0.2</fhir.version>
         <fasterxml.version>2.17.0</fasterxml.version>
+        <spring-cloud-function.version>4.1.1</spring-cloud-function.version>
+        <aws-lambda-java-core.version>1.2.3</aws-lambda-java-core.version>
+        <aws-lambda-java-events.version>3.11.4</aws-lambda-java-events.version>
     </properties>
 
     <dependencies>
@@ -115,6 +118,24 @@
             <artifactId>kotlin-logging-jvm</artifactId>
             <version>6.0.4</version>
         </dependency>
+        <!-- Spring Cloud Function -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-function-adapter-aws</artifactId>
+            <version>${spring-cloud-function.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-lambda-java-core</artifactId>
+            <version>${aws-lambda-java-core.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-lambda-java-events</artifactId>
+            <version>${aws-lambda-java-events.version}</version>
+        </dependency>
+
     </dependencies>
     <pluginRepositories>
         <pluginRepository>
@@ -177,15 +198,30 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <mainClass>software.nhs.fhirvalidator.webserver.FhirValidatorWebServer</mainClass>
+                </configuration>
                 <executions>
                     <execution>
-                        <id>Pack webserver</id>
                         <phase>package</phase>
                         <configuration>
-                            <finalName>application</finalName>
-                            <mainClass>software.nhs.fhirvalidator.webserver.FhirValidatorApplication</mainClass>
-                            <outputDirectory>target/fhir-validator</outputDirectory>
-                            <classifier>1</classifier>
+                            <finalName>fhir-validator</finalName>
+                            <mainClass>software.nhs.fhirvalidator.webserver.FhirValidatorWebServer</mainClass>
+                            <outputDirectory>target</outputDirectory>
+                            <classifier>webserver</classifier>
+                        </configuration>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>Batch 2</id>
+                        <phase>package</phase>
+                        <configuration>
+                            <finalName>fhir-validator</finalName>
+                            <mainClass>software.nhs.fhirvalidator.lambda.FhirValidatorLambda</mainClass>
+                            <outputDirectory>target</outputDirectory>
+                            <classifier>lambda</classifier>
                         </configuration>
                         <goals>
                             <goal>repackage</goal>
