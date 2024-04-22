@@ -139,6 +139,19 @@
                 <url>http://creativecommons.org/publicdomain/zero/1.0</url>
             </urls>
         </license>
+        <license>
+            <name>Indiana University Extreme! Lab Software License, vesion 1.1.1</name>
+            <names>
+                <name>Indiana University Extreme! Lab Software License, vesion 1.1.1</name>
+                <name>Public Domain</name>
+                <name>Apache Software License, version 1.1</name>
+            </names>
+            <urls>
+                <url>http://www.extreme.indiana.edu/viewcvs/~checkout~/XPP3/java/LICENSE.txt</url>
+                <url>http://creativecommons.org/licenses/publicdomain</url>
+                <url>http://www.apache.org/licenses/LICENSE-1.1</url>
+            </urls>
+        </license>
     </valid>
     <forbidden>
         <license>
