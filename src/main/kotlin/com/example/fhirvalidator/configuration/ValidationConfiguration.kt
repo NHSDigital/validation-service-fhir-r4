@@ -63,6 +63,8 @@ class ValidationConfiguration(private val implementationGuideParser: Implementat
                 theDisplay: String?,
                 theValueSet: IBaseResource
             ): IValidationSupport.CodeValidationResult? {
+                // this is needed for later version of hapi-fhir
+                // val valueSetUrl = CommonCodeSystemsTerminologyService.getValueSetUrl(fhirContext, theValueSet)
                 val valueSetUrl = CommonCodeSystemsTerminologyService.getValueSetUrl(theValueSet)
 
                 if (valueSetUrl == "https://fhir.nhs.uk/ValueSet/NHSDigital-MedicationRequest-Code"
@@ -91,6 +93,7 @@ class ValidationConfiguration(private val implementationGuideParser: Implementat
 
         structureDefinitions
             .filter { shouldGenerateSnapshot(it) }
+            .parallelStream()
             .forEach {
                 try {
                     circularReferenceCheck(it,supportChain)

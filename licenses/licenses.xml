@@ -1,0 +1,167 @@
+<?xml version="1.0"?>
+<licenses>
+    <valid>
+        <license>
+            <name>The Apache Software License, Version 2.0</name>
+            <names>
+                <name>The Apache Software License, Version 2.0</name>
+                <name>Apache License, Version 2.0</name>
+                <name>Apache Software License 2.0</name>
+                <name>Apache License 2.0</name>
+            </names>
+            <urls>
+                <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+                <url>https://www.apache.org/licenses/LICENSE-2.0</url>
+                <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+                <url>https://www.apache.org/licenses/LICENSE-2.0</url>
+            </urls>
+        </license>
+        <license>
+            <name>Eclipse Public License 1.0</name>
+            <names>
+                <name>Eclipse Public License 1.0</name>
+                <name>Eclipse Public License - v 1.0</name>
+                <name>Eclipse Distribution License - v 1.0</name>
+            </names>
+            <urls>
+                <url>http://www.eclipse.org/legal/epl-v10.html</url>
+                <url>http://www.eclipse.org/legal/epl-v10.html</url>
+                <url>http://www.eclipse.org/org/documents/edl-v10.php</url>
+            </urls>
+        </license>
+        <license>
+            <name>Eclipse Public License v2.0</name>
+            <names>
+                <name>Eclipse Public License v2.0</name>
+                <name>EPL 2.0</name>
+            </names>
+            <urls>
+                <url>https://www.eclipse.org/legal/epl-v20.html</url>
+                <url>http://www.eclipse.org/legal/epl-2.0</url>
+            </urls>
+        </license>
+
+        <license>
+            <name>The MIT License</name>
+            <names>
+                <name>The MIT License</name>
+                <name>MIT License</name>
+                <name>MIT</name>
+            </names>
+            <urls>
+                <url>http://code.google.com/p/mockito/wiki/License</url>
+                <url>http://www.opensource.org/licenses/mit-license.php</url>
+                <url>https://opensource.org/licenses/MIT</url>
+            </urls>
+        </license>
+        <license>
+            <name>BSD</name>
+            <names>
+                <name>BSD</name>
+            </names>
+            <urls>
+                <url>http://asm.objectweb.org/license.html</url>
+            </urls>
+        </license>
+        <license>
+            <name>BSD License 3</name>
+            <names>
+                <name>BSD License 3</name>
+                <name>BSD-3-Clause</name>
+            </names>
+            <urls>
+                <url>http://opensource.org/licenses/BSD-3-Clause</url>
+                <url>https://asm.ow2.io/license.html</url>
+            </urls>
+        </license>
+        <license>
+            <name>BSD-2-Clause</name>
+            <names>
+                <name>BSD-2-Clause</name>
+            </names>
+            <urls>
+                <url>https://opensource.org/licenses/BSD-2-Clause</url>
+            </urls>
+        </license>
+        <license>
+            <name>LGPL 2.1</name>
+            <names>
+                <name>LGPL 2.1</name>
+                <name>GNU Lesser General Public License</name>
+                <url>http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html</url>
+            </names>
+            <urls>
+                <url>http://www.gnu.org/licenses/lgpl-2.1.html</url>
+            </urls>
+        </license>
+        <license>
+            <name>MPL 1.1</name>
+            <names>
+                <name>MPL 1.1</name>
+            </names>
+            <urls>
+                <url>http://www.mozilla.org/MPL/MPL-1.1.html</url>
+            </urls>
+        </license>
+        <license>
+            <name>Mozilla Public License Version 2.0</name>
+            <names>
+                <name>Mozilla Public License Version 2.0</name>
+            </names>
+            <urls>
+                <url>http://www.mozilla.org/MPL/2.0/</url>
+            </urls>
+        </license>
+        <license>
+            <name>Unicode/ICU License</name>
+            <names>
+                <name>Unicode/ICU License</name>
+            </names>
+            <urls>
+                <url>https://raw.githubusercontent.com/unicode-org/icu/main/icu4c/LICENSE</url>
+            </urls>
+        </license>
+        <license>
+            <name>GPL2 w/ CPE</name>
+            <names>
+                <name>GPL2 w/ CPE</name>
+            </names>
+            <urls>
+                <url>https://www.gnu.org/software/classpath/license.html</url>
+            </urls>
+        </license>
+        <license>
+            <name>Public Domain, per Creative Commons CC0</name>
+            <names>
+                <name>Public Domain, per Creative Commons CC0</name>
+            </names>
+            <urls>
+                <url>http://creativecommons.org/publicdomain/zero/1.0</url>
+            </urls>
+        </license>
+        <license>
+            <name>Indiana University Extreme! Lab Software License, vesion 1.1.1</name>
+            <names>
+                <name>Indiana University Extreme! Lab Software License, vesion 1.1.1</name>
+                <name>Public Domain</name>
+                <name>Apache Software License, version 1.1</name>
+            </names>
+            <urls>
+                <url>http://www.extreme.indiana.edu/viewcvs/~checkout~/XPP3/java/LICENSE.txt</url>
+                <url>http://creativecommons.org/licenses/publicdomain</url>
+                <url>http://www.apache.org/licenses/LICENSE-1.1</url>
+            </urls>
+        </license>
+    </valid>
+    <forbidden>
+        <license>
+            <name>GNU General Public License version 2</name>
+            <names>
+                <name>GNU General Public License version 2</name>
+            </names>
+            <urls>
+                <url>https://opensource.org/licenses/gpl-2.0.php</url>
+            </urls>
+        </license>
+    </forbidden>
+</licenses>
