@@ -117,11 +117,6 @@
             <version>${fhir.version}</version>
         </dependency>
         <dependency>
-            <groupId>ca.uhn.hapi.fhir</groupId>
-            <artifactId>hapi-fhir-caching-caffeine</artifactId>
-            <version>${fhir.version}</version>
-        </dependency>
-        <dependency>
             <groupId>io.github.oshai</groupId>
             <artifactId>kotlin-logging-jvm</artifactId>
             <version>6.0.9</version>
