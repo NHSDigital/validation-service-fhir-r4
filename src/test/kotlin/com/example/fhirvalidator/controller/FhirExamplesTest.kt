@@ -17,7 +17,7 @@ import javax.print.attribute.standard.Severity
 
 @SpringBootTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-internal class PrimaryCareExamplesTest {
+internal class FhirExamplesTest {
     val loader = Thread.currentThread().getContextClassLoader()
 
     @Autowired
