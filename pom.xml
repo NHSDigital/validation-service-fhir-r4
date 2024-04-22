@@ -24,7 +24,7 @@
     <properties>
         <java.version>21</java.version>
         <kotlin.version>1.9.23</kotlin.version>
-        <fhir.version>5.4.2</fhir.version>
+        <fhir.version>7.0.2</fhir.version>
         <fasterxml.version>2.17.0</fasterxml.version>
     </properties>
 
@@ -111,14 +111,11 @@
             <artifactId>hapi-fhir-validation-resources-r4</artifactId>
             <version>${fhir.version}</version>
         </dependency>
-        <!-- 
-            only needed for later fhir-hapi
         <dependency>
             <groupId>ca.uhn.hapi.fhir</groupId>
             <artifactId>hapi-fhir-caching-caffeine</artifactId>
             <version>${fhir.version}</version>
         </dependency>
-        -->
         <dependency>
             <groupId>io.github.oshai</groupId>
             <artifactId>kotlin-logging-jvm</artifactId>
