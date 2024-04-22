@@ -17,13 +17,13 @@ import javax.print.attribute.standard.Severity
 
 @SpringBootTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-internal class FhirExamplesTest {
+internal class PrimaryCareExamplesTest {
     val loader = Thread.currentThread().getContextClassLoader()
 
     @Autowired
     lateinit var testValidateController: ValidateController
 
-    fun getFiles(): Stream<Arguments> {
+    fun getExampleFhirFiles(): Stream<Arguments> {
         val dir = File( loader.getResource("examples").file)
         val exampleFiles = dir.walk()
             .filter { it.isFile }
@@ -35,8 +35,8 @@ internal class FhirExamplesTest {
 
     @DisplayName("Test all valid example files")
     @ParameterizedTest
-    @MethodSource("getFiles")
-    fun testExample(exampleFile: File) {
+    @MethodSource("getExampleFhirFiles")
+    fun testFhirExamples(exampleFile: File) {
         val lines = exampleFile.bufferedReader().readLines()
         val fileContent = lines.joinToString(" ")
         val actualResult = testValidateController.parseAndValidateResource(fileContent)
@@ -44,8 +44,6 @@ internal class FhirExamplesTest {
             if (issue.severity.equals(OperationOutcome.IssueSeverity.ERROR)) {
                 throw AssertionFailedError("Error found checking file ${exampleFile.absolutePath}. Error: ${issue.diagnostics}")
             }
-            assertNotEquals(issue.severity, OperationOutcome.IssueSeverity.ERROR)
         }
     }
-
 }
