@@ -12,6 +12,7 @@ jobs:
     uses: ./.github/workflows/quality_checks.yml
 
   package_code:
+    needs: quality_checks
     runs-on: ubuntu-latest
 
     steps:
