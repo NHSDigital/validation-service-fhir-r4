@@ -1,6 +1,7 @@
-name: Build
+name: quality checks
 
-on: push
+on:
+    workflow_call:
 
 jobs:
   build:
@@ -50,26 +51,9 @@ jobs:
       - name: Build
         run: make build
 
-      - name: Set SPEC_VERSION env var
-        run: echo "SPEC_VERSION=$(poetry run python scripts/calculate_version.py)" >> $GITHUB_ENV
-
-      - name: Create release (main only)
-        id: create_release
-        if: github.ref == 'refs/heads/main'
-        # using commit hash for version v1.13.0
-        uses: ncipollo/release-action@2c591bcc8ecdcd2db72b97d6147f871fcd833ba5
-        continue-on-error: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/upload-artifact@v4
+        name: upload build artifact
         with:
-          tag: ${{ env.SPEC_VERSION }}
-          commit: ${{  github.sha }}
-          artifacts: "fhir-validator.jar,Dockerfile,src/main/resources/manifest.json"
-          body: |
-            ## Commit message
-            ${{ github.event.head_commit.message }}
-            ## Info
-            [See code diff](${{ github.event.compare }})
-            [Release workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
-
-            It was initialized by [${{ github.event.sender.login }}](${{ github.event.sender.html_url }})
+          name: packaged_code
+          path: |
+            fhir-validator.jar

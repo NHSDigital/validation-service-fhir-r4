@@ -1,0 +1,42 @@
+name: merge to main workflow
+
+on:
+  push:
+    branches: [main]
+
+env:
+  BRANCH_NAME: ${{ github.event.ref.BRANCH_NAME }}
+
+jobs:
+  quality_checks:
+    uses: ./.github/workflows/quality_checks.yml
+
+  package_code:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: download build artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: packaged_code
+        path: .
+
+    - name: Create release (main only)
+      id: create_release
+      # using commit hash for version v1.13.0
+      uses: ncipollo/release-action@2c591bcc8ecdcd2db72b97d6147f871fcd833ba5
+      continue-on-error: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag: ${{ env.SPEC_VERSION }}
+        commit: ${{  github.sha }}
+        artifacts: "fhir-validator.jar,Dockerfile,src/main/resources/manifest.json"
+        body: |
+          ## Commit message
+          ${{ github.event.head_commit.message }}
+          ## Info
+          [See code diff](${{ github.event.compare }})
+          [Release workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+
+          It was initialized by [${{ github.event.sender.login }}](${{ github.event.sender.html_url }})
