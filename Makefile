@@ -26,7 +26,7 @@ update-manifest:
 build:
 	poetry run scripts/download_dependencies.py
 	mvn package
-	docker-compose build fhir-validator
+	docker build .
 
 build-latest: clean-packages update-manifest build
 
