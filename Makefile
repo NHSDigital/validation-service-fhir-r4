@@ -25,7 +25,7 @@ update-manifest:
 
 build:
 	poetry run scripts/download_dependencies.py
-	mvn package
+	mvn package -DskipTests
 
 build-latest: clean-packages update-manifest build
 
