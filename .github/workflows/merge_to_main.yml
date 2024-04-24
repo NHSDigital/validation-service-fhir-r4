@@ -21,7 +21,7 @@ jobs:
         name: packaged_code
         path: .
 
-    - name: Create release (main only)
+    - name: Create release
       id: create_release
       # using commit hash for version v1.13.0
       uses: ncipollo/release-action@2c591bcc8ecdcd2db72b97d6147f871fcd833ba5

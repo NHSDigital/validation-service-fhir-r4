@@ -48,7 +48,7 @@ jobs:
       - name: check licences
         run: make check-licences 
 
-      - name: Build
+      - name: Test and Build
         run: make build
 
       - uses: actions/upload-artifact@v4
