@@ -1,4 +1,4 @@
-name: Pull request test and deploy
+name: Pull request test and build
 
 on:
   pull_request:
