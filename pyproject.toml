@@ -27,7 +27,7 @@ gitpython = "^3.1.43"
 pre-commit = "^3.5.0"
 
 [tool.poetry.dev-dependencies]
-requests = "2.32.1"
+requests = "2.32.2"
 flake8 = "^5.0.4"
 pip-licenses = "^4.4.0"
 
