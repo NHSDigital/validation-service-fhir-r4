@@ -10,3 +10,6 @@ env:
 jobs:
   quality_checks:
     uses: ./.github/workflows/quality_checks.yml
+
+  pr_title_format_check:
+    uses: ./.github/workflows/pr_title_check.yml
