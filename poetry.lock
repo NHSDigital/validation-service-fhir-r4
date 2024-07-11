@@ -233,20 +233,21 @@ setuptools = "*"
 
 [[package]]
 name = "pip-licenses"
-version = "4.4.0"
+version = "4.5.0"
 description = "Dump the software license list of Python packages installed with pip."
 optional = false
 python-versions = "~=3.8"
 files = [
-    {file = "pip-licenses-4.4.0.tar.gz", hash = "sha256:996817118375445243a34faafe23c06f6b2d250247c4046571b5a6722d45be69"},
-    {file = "pip_licenses-4.4.0-py3-none-any.whl", hash = "sha256:dbad2ac5a25f574cabe2716f2f031a0c5fa359bed9b3ef615301f4e546893b46"},
+    {file = "pip-licenses-4.5.0.tar.gz", hash = "sha256:ef00cecd58ea9a9484f11ddaa4baa6994b611e94239a4449b98e0feb309074a5"},
+    {file = "pip_licenses-4.5.0-py3-none-any.whl", hash = "sha256:1f52b73654dddb2ad0e3853e3884fb8aee1226bae7897b0e4122ad983c942f75"},
 ]
 
 [package.dependencies]
 prettytable = ">=2.3.0"
+tomli = ">=2"
 
 [package.extras]
-test = ["docutils", "mypy", "pytest-cov", "pytest-pycodestyle", "pytest-runner"]
+test = ["docutils", "mypy", "pytest-cov", "pytest-pycodestyle", "pytest-runner", "tomli-w"]
 
 [[package]]
 name = "platformdirs"
@@ -440,6 +441,17 @@ files = [
 ]
 
 [[package]]
+name = "tomli"
+version = "2.0.1"
+description = "A lil' TOML parser"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "tomli-2.0.1-py3-none-any.whl", hash = "sha256:939de3e7a6161af0c887ef91b7d41a53e7c5a1ca976325f429cb46ea9bc30ecc"},
+    {file = "tomli-2.0.1.tar.gz", hash = "sha256:de526c12914f0c550d15924c62d72abc48d6fe7364aa87328337a31007fe8a4f"},
+]
+
+[[package]]
 name = "urllib3"
 version = "2.2.2"
 description = "HTTP library with thread-safe connection pooling, file post, and more."
@@ -490,4 +502,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "bc43ce519138634cb33d061c11c4f96483a3b91e8de8e45902cc30b2009e5d3a"
+content-hash = "1dce34cbff931d56395cb1e9eca18dd9bbf7ad3c5d665fa14049b0becccc44fb"
