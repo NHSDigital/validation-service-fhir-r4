@@ -1,7 +1,10 @@
 name: quality checks
 
 on:
-    workflow_call:
+  workflow_call:
+    secrets:
+      SONAR_TOKEN:
+        required: true
 
 jobs:
   build:
@@ -57,3 +60,21 @@ jobs:
           name: packaged_code
           path: |
             fhir-validator.jar
+
+      - name: Check SONAR_TOKEN
+        run: |
+          if [ -z "$SONAR_TOKEN" ]; then
+            echo "SONAR_TOKEN is not set!"
+            exit 1
+          else
+            echo "SONAR_TOKEN is set."
+          fi
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+            
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}         
