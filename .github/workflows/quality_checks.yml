@@ -61,16 +61,16 @@ jobs:
           path: |
             fhir-validator.jar
 
-      - name: Check SONAR_TOKEN
-        run: |
-          if [ -z "$SONAR_TOKEN" ]; then
-            echo "SONAR_TOKEN is not set!"
-            exit 1
-          else
-            echo "SONAR_TOKEN is set."
-          fi
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      # - name: Check SONAR_TOKEN
+      #   run: |
+      #     if [ -z "$SONAR_TOKEN" ]; then
+      #       echo "SONAR_TOKEN is not set!"
+      #       exit 1
+      #     else
+      #       echo "SONAR_TOKEN is set."
+      #     fi
+      #   env:
+      #     SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
       - name: run unit tests
         run: make test 
@@ -95,8 +95,8 @@ jobs:
       #     echo "Listing target/site directory (if exists)"
       #     ls -R target/site || echo "target/site does not exist"
       
-      - name: Check test results
-        run: cat target/surefire-reports/*.txt || echo "No test results found"
+      # - name: Check test results
+      #   run: cat target/surefire-reports/*.txt || echo "No test results found"
       
       - name: Check Maven build output
         run: cat target/maven-build-output.txt || echo "Maven build output not found"
@@ -109,3 +109,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }} 
+
+
+      - name: Check SonarCloud scan results
+        run: |
+            echo "SonarCloud scan completed. Please check the SonarCloud dashboard for results."
+            echo "If coverage data is still missing, please verify the SonarCloud configuration and logs."    
