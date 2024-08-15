@@ -84,6 +84,9 @@ jobs:
           find . -name jacoco.exec
           echo "Searching for jacoco.xml"
           find . -name jacoco.xml
+
+      - name: Check for JaCoCo Report
+        run: cat target/site/jacoco/jacoco.xml || echo "JaCoCo XML reponot found"    
       
       # - name: List target directory
       #   run: |
