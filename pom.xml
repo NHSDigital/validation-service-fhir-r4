@@ -31,6 +31,7 @@
         <sonar.organization>nhsdigital</sonar.organization>
         <sonar.projectKey>NHSDigital_eps-validator</sonar.projectKey>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
+        <argLine />
     </properties>
 
     <dependencies>
