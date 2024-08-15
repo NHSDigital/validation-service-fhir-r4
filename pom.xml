@@ -31,7 +31,6 @@
         <sonar.organization>nhsdigital</sonar.organization>
         <sonar.projectKey>NHSDigital_eps-validator</sonar.projectKey>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
-        <argLine />
     </properties>
 
     <dependencies>
@@ -236,7 +235,7 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.3.1</version>
                 <configuration>
-                    <argLine>-XX:MaxMetaspaceSize=128M</argLine>
+                    <argLine>-XX:MaxMetaspaceSize=128M ${argLine}</argLine>
                 </configuration>
             </plugin>
         </plugins>
