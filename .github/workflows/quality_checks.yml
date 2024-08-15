@@ -75,19 +75,34 @@ jobs:
       - name: run unit tests
         run: make test 
         
-      - name: list target directory
-        run: ls -R target
-
-      - name: dispaly pom
-        run: cat pom.xml
-      
       - name: Run tests with debug output
         run: mvn clean test jacoco:report -X
       
-      - name: search for jacoco files
-        run:  find . -name "jacoco*"
+      - name: Check for JaCoCo files
+        run: |
+          echo "Searching for jacoco.exec"
+          find . -name jacoco.exec
+          echo "Searching for jacoco.xml"
+          find . -name jacoco.xml
+      
+      - name: List target directory
+        run: |
+          echo "Listing target directory"
+          ls -R target
+          echo "Listing target/site directory (if exists)"
+          ls -R target/site || echo "target/site does not exist"
+      
+      - name: Check test results
+        run: cat target/surefire-reports/*.txt || echo "No test results found"
+      
+      - name: Check Maven build output
+        run: cat target/maven-build-output.txt || echo "Maven build output not found"
+      
+      - name: Display sonar-project.properties
+        run: cat sonar-project.properties || echo "sonar-project.properties not found"
+      
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}         
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }} 
