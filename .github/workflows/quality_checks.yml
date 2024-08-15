@@ -78,9 +78,14 @@ jobs:
       - name: list target directory
         run: ls -R target
 
+      - name: dispaly pom
+        run: cat pom.xml
+      
+      - name: Run tests with debug output
+        run: mvn clean test jacoco:report -X
+      
       - name: search for jacoco files
         run:  find . -name "jacoco*"
-
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@master
         env:
