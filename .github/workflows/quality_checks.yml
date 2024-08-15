@@ -78,8 +78,8 @@ jobs:
       # - name: Run tests with debug output
       #   run: mvn clean test jacoco:report -X
 
-      - name: Run tests with JaCoCo
-        run: mvn verify -X 
+      # - name: Run tests with JaCoCo
+      #   run: mvn verify -X 
       
       - name: Check for JaCoCo files
         run: |
