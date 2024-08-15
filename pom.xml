@@ -173,7 +173,7 @@
                         <goals>
                             <goal>prepare-agent</goal>
                         </goals>
-                        <phase>test</phase>
+                        <phase>process-test-classes</phase>
                     </execution>
                     <execution>
                         <id>report</id>

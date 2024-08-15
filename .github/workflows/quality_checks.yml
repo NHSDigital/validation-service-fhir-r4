@@ -88,12 +88,12 @@ jobs:
           echo "Searching for jacoco.xml"
           find . -name jacoco.xml
       
-      - name: List target directory
-        run: |
-          echo "Listing target directory"
-          ls -R target
-          echo "Listing target/site directory (if exists)"
-          ls -R target/site || echo "target/site does not exist"
+      # - name: List target directory
+      #   run: |
+      #     echo "Listing target directory"
+      #     ls -R target
+      #     echo "Listing target/site directory (if exists)"
+      #     ls -R target/site || echo "target/site does not exist"
       
       - name: Check test results
         run: cat target/surefire-reports/*.txt || echo "No test results found"
