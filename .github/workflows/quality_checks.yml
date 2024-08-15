@@ -75,11 +75,11 @@ jobs:
       - name: run unit tests
         run: make test 
         
-      - name: Run tests with debug output
-        run: mvn clean test jacoco:report -X
+      # - name: Run tests with debug output
+      #   run: mvn clean test jacoco:report -X
 
       - name: Run tests with JaCoCo
-        run: mvn clean test verify -X 
+        run: mvn verify -X 
       
       - name: Check for JaCoCo files
         run: |
