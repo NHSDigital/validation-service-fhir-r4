@@ -7,6 +7,7 @@ lint:
 
 test:
 	poetry run scripts/download_dependencies.py
+	mvn clean test jacoco:report
 	mvn test
 
 check-licences:
