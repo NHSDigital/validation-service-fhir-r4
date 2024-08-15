@@ -73,7 +73,13 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
       - name: run unit tests
-        run: make test    
+        run: make test 
+        
+      - name: list target directory
+        run: ls -R target
+
+      - name: search for jacoco files
+        run:  find . -name "jacoco*"
 
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@master
