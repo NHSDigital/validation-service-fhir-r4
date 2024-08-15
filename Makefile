@@ -7,8 +7,7 @@ lint:
 
 test:
 	poetry run scripts/download_dependencies.py
-	mvn clean test jacoco:report
-	mvn test
+	mvn clean test jacoco:report > target/maven-test-output.txt 2>&1
 
 check-licences:
 	scripts/check_python_licenses.sh
@@ -24,8 +23,7 @@ clean: clean-packages
 update-manifest:
 	poetry run scripts/update_manifest.py
 
-build:
-	poetry run scripts/download_dependencies.py
+build: test
 	mvn package
 	docker build .
 
