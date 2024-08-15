@@ -7,6 +7,7 @@ lint:
 
 test:
 	poetry run scripts/download_dependencies.py
+	mkdir -p target
 	mvn clean test jacoco:report > target/maven-test-output.txt 2>&1
 
 check-licences:
@@ -24,7 +25,8 @@ update-manifest:
 	poetry run scripts/update_manifest.py
 
 build: test
-	mvn package
+	mkdir -p target
+	mvn package > target/maven-build-output.txt 2>&1
 	docker build .
 
 build-latest: clean-packages update-manifest build
