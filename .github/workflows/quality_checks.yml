@@ -71,7 +71,9 @@ jobs:
           fi
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-            
+
+      - name: run unit tests
+        run: make test    
 
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@master
