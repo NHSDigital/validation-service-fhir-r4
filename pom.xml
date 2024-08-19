@@ -29,7 +29,7 @@
         <fhir.version>5.4.2</fhir.version>
         <fasterxml.version>2.17.2</fasterxml.version>
         <sonar.organization>nhsdigital</sonar.organization>
-        <sonar.projectKey>NHSDigital_eps-validator</sonar.projectKey>
+        <sonar.projectKey>NHSDigital_validation-service-fhir-r4</sonar.projectKey>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
     </properties>
 
