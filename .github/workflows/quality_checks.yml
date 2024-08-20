@@ -98,17 +98,17 @@ jobs:
       #     echo "Listing target/site directory (if exists)"
       #     ls -R target/site || echo "target/site does not exist"
       
-      - name: Check test results
-        run: cat target/surefire-reports/*.txt || echo "No test results found"
+      # - name: Check test results
+      #   run: cat target/surefire-reports/*.txt || echo "No test results found"
 
-      - name: Check Maven test output
-        run: cat target/maven-test-output.txt || echo "Maven test output not found"
+      # - name: Check Maven test output
+      #   run: cat target/maven-test-output.txt || echo "Maven test output not found"
       
-      - name: Check Maven build output
-        run: cat target/maven-build-output.txt || echo "Maven build output not found"
+      # - name: Check Maven build output
+      #   run: cat target/maven-build-output.txt || echo "Maven build output not found"
       
-      - name: Display sonar-project.properties
-        run: cat sonar-project.properties || echo "sonar-project.properties not found"
+      # - name: Display sonar-project.properties
+      #   run: cat sonar-project.properties || echo "sonar-project.properties not found"
       
       # - name: SonarCloud Scan
       #   uses: SonarSource/sonarcloud-github-action@master
@@ -116,5 +116,18 @@ jobs:
       #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       #     SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }} 
 
-      - name: Run SonarQube analysis
-        run: mvn sonar:sonar -Dsonar.login=${{ secrets.SONAR_TOKEN }}
+      - name: Run SonarCloud Analysis (PR-specific)
+        run: mvn sonar:sonar \
+          -Dsonar.login=${{ secrets.SONAR_TOKEN }} \
+          -Dsonar.pullrequest.key=${{ github.event.number }} \
+          -Dsonar.pullrequest.branch=${{ github.head_ref }} \
+          -Dsonar.pullrequest.base=${{ github.base_ref }}
+      
+      - name: Run Full SonarCloud Analysis on PR Branch
+        run: mvn sonar:sonar \
+          -Dsonar.login=${{ secrets.SONAR_TOKEN }} \
+          -Dsonar.branch.name=${{ github.head_ref }}
+
+
+      # - name: Run SonarQube analysis
+      #   run: mvn sonar:sonar -Dsonar.login=${{ secrets.SONAR_TOKEN }}
