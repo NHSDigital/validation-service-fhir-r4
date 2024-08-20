@@ -117,4 +117,4 @@ jobs:
       #     SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }} 
 
       - name: Run SonarQube analysis
-        run: mvn sonar:sonar -Dsonar.login=${{ secrets.SONAR_TOKEN }} -X
+        run: mvn sonar:sonar -Dsonar.login=${{ secrets.SONAR_TOKEN }}
