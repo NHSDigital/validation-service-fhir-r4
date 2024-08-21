@@ -116,18 +116,18 @@ jobs:
       #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       #     SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }} 
 
-      # - name: Run SonarCloud Analysis (PR-specific)
-      #   run: mvn sonar:sonar \
-      #     -Dsonar.login=${{ secrets.SONAR_TOKEN }} \
-      #     -Dsonar.pullrequest.key=${{ github.event.number }} \
-      #     -Dsonar.pullrequest.branch=${{ github.head_ref }} \
-      #     -Dsonar.pullrequest.base=${{ github.base_ref }}
+      - name: Run SonarCloud Analysis (PR-specific)
+        run: mvn sonar:sonar \
+          -Dsonar.login=${{ secrets.SONAR_TOKEN }} \
+          -Dsonar.pullrequest.key=${{ github.event.number }} \
+          -Dsonar.pullrequest.branch=${{ github.head_ref }} \
+          -Dsonar.pullrequest.base=${{ github.base_ref }}
       
-      # - name: Run Full SonarCloud Analysis on PR Branch
-      #   run: mvn sonar:sonar \
-      #     -Dsonar.login=${{ secrets.SONAR_TOKEN }} \
-      #     -Dsonar.branch.name=${{ github.head_ref }}
+      - name: Run Full SonarCloud Analysis on PR Branch
+        run: mvn sonar:sonar \
+          -Dsonar.login=${{ secrets.SONAR_TOKEN }} \
+          -Dsonar.branch.name=${{ github.head_ref }}
 
 
-      - name: Run SonarQube analysis
-        run: mvn sonar:sonar -Dsonar.login=${{ secrets.SONAR_TOKEN }}
+      # - name: Run SonarQube analysis
+      #   run: mvn sonar:sonar -Dsonar.login=${{ secrets.SONAR_TOKEN }}
