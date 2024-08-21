@@ -128,7 +128,8 @@ jobs:
           -Dsonar.login=${{ secrets.SONAR_TOKEN }} \
           -Dsonar.pullrequest.key=${{ github.event.number }} \
           -Dsonar.pullrequest.branch=${{ github.head_ref }} \
-          -Dsonar.pullrequest.base=${{ github.base_ref }}
+          -Dsonar.pullrequest.base=${{ github.base_ref }} \
+          -X
       
       - name: Run Full SonarCloud Analysis on PR Branch
         run: mvn sonar:sonar \
