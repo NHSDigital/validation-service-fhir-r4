@@ -47,4 +47,3 @@ internal class FhirExamplesTest {
         }
     }
 }
-//comment1

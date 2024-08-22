@@ -64,5 +64,3 @@ internal class ValidateControllerTest {
         assertEquals(listOf(patient), testValidateController.getResourcesToValidate(patient))
     }
 }
-
-//cmment 2
