@@ -1,7 +1,10 @@
 name: quality checks
 
 on:
-    workflow_call:
+  workflow_call:
+    secrets:
+      SONAR_TOKEN:
+        required: true
 
 jobs:
   build:
@@ -48,7 +51,7 @@ jobs:
       - name: check licences
         run: make check-licences 
 
-      - name: Test and Build
+      - name: Run tests, generate coverage, and build
         run: make build
 
       - uses: actions/upload-artifact@v4
@@ -57,3 +60,9 @@ jobs:
           name: packaged_code
           path: |
             fhir-validator.jar
+        
+      - name: Run tests with coverage
+        run: mvn clean verify org.jacoco:jacoco-maven-plugin:report -X
+
+      - name: Run SonarQube analysis
+        run: mvn sonar:sonar -Dsonar.login=${{ secrets.SONAR_TOKEN }}
