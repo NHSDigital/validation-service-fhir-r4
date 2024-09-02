@@ -1,4 +1,6 @@
-FROM eclipse-temurin:21.0.2_13-jdk as jre-build
+FROM eclipse-temurin:21.0.2_13-jdk AS jre-build
+RUN apt -y update; \
+    apt -y upgrade
 
 # add the jar file
 COPY fhir-validator.jar ./fhir-validator.jar
@@ -25,8 +27,10 @@ RUN jlink \
 
 # now actually create the runtime image we want
 FROM ubuntu:22.04
+RUN apt -y update; \
+    apt -y upgrade
 ENV JAVA_HOME=/opt/java/openjdk
-ENV PATH "${JAVA_HOME}/bin:${PATH}"
+ENV PATH="${JAVA_HOME}/bin:${PATH}"
 COPY --from=jre-build /javaruntime $JAVA_HOME
 
 WORKDIR /app
