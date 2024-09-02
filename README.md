@@ -31,6 +31,7 @@ To run the docker image locally forcing a rebuild of the docker image use
 make docker-rebuild-run
 ```
 
+
 To test it is running you can use the following
 ```
 curl http://localhost:9001/_status
