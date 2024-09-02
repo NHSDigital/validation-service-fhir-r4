@@ -1,5 +1,5 @@
 FROM eclipse-temurin:21.0.2_13-jdk AS jre-build
-RUN apt -y update; \
+RUN apt -y update && \
     apt -y upgrade
 
 # add the jar file
@@ -27,7 +27,7 @@ RUN jlink \
 
 # now actually create the runtime image we want
 FROM ubuntu:22.04
-RUN apt -y update; \
+RUN apt -y update && \
     apt -y upgrade
 ENV JAVA_HOME=/opt/java/openjdk
 ENV PATH="${JAVA_HOME}/bin:${PATH}"
