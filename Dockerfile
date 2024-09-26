@@ -1,4 +1,7 @@
-FROM eclipse-temurin:21.0.2_13-jdk as jre-build
+# syntax=docker/dockerfile:1
+FROM eclipse-temurin:21.0.2_13-jdk-alpine AS jre-build
+RUN apk update; \
+    apk upgrade
 
 # add the jar file
 COPY fhir-validator.jar ./fhir-validator.jar
@@ -24,9 +27,11 @@ RUN jlink \
     --output /javaruntime
 
 # now actually create the runtime image we want
-FROM ubuntu:22.04
+FROM alpine:3.19.1 AS runtime
+RUN apk update; \
+    apk upgrade
 ENV JAVA_HOME=/opt/java/openjdk
-ENV PATH "${JAVA_HOME}/bin:${PATH}"
+ENV PATH="${JAVA_HOME}/bin:${PATH}"
 COPY --from=jre-build /javaruntime $JAVA_HOME
 
 WORKDIR /app
