@@ -1,5 +1,10 @@
-install:
+install: install-python install-hooks
+
+install-python:
 	poetry install
+
+install-hooks: install-python
+	poetry run pre-commit install --install-hooks --overwrite
 
 lint:
 	poetry run flake8 scripts/*.py --config .flake8

@@ -63,9 +63,7 @@ class ValidationConfiguration(private val implementationGuideParser: Implementat
                 theDisplay: String?,
                 theValueSet: IBaseResource
             ): IValidationSupport.CodeValidationResult? {
-                // this is needed for later version of hapi-fhir
-                // val valueSetUrl = CommonCodeSystemsTerminologyService.getValueSetUrl(fhirContext, theValueSet)
-                val valueSetUrl = CommonCodeSystemsTerminologyService.getValueSetUrl(theValueSet)
+                val valueSetUrl = CommonCodeSystemsTerminologyService.getValueSetUrl(fhirContext, theValueSet)
 
                 if (valueSetUrl == "https://fhir.nhs.uk/ValueSet/NHSDigital-MedicationRequest-Code"
                     || valueSetUrl == "https://fhir.nhs.uk/ValueSet/NHSDigital-MedicationDispense-Code"
