@@ -1,3 +1,5 @@
+.PHONY: check-licenses
+
 install:
 	poetry install
 
