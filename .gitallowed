@@ -5,7 +5,7 @@ github-token: ?"?\$\{\{\s*secrets\.GITHUB_TOKEN\s*\}\}"?
 "code": "1\.2\.840\.10065\.1\.12\.1\.1"
 java corretto-21\.0\.2\.14\.1
 CidrIp: "0\.0\.0\.0\/0"
-CidrBlock: "10\.0\.\d+\.\d+\/\d+"
+CidrBlock:\s?"?10\.0\.\d+\.\d+\/\d+"
 .*tcp:\/\/0\.0\.0\.0:8888.*
 .*\.gitallowed.*
  
