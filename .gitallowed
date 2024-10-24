@@ -1,7 +1,7 @@
-./pom.xml
-./src/test
-./.github/workflows
-./.tool-versions
-./mvnw
-./.mvn/wrapper/MavenWrapperDownloader.java:101
-./nhsd-rules-deny.txt
+*./pom.xml
+*./src/test
+*./.github/workflows
+*./.tool-versions
+*./mvnw
+*./.mvn/wrapper/MavenWrapperDownloader.java:101
+*./nhsd-rules-deny.txt
