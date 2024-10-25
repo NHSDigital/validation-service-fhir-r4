@@ -45,10 +45,12 @@ build-latest: clean-packages update-manifest build
 show-build-error-log:
 	echo "An error occured in build step"
 	cat target/maven-build-output.txt
+	exit 1
 
 show-test-error-log:
 	echo "An error occured in test step"
 	cat target/maven-test-output.txt
+	exit 1
 
 run:
 	mvn spring-boot:run
