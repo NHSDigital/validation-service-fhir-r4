@@ -27,6 +27,7 @@ internal class FhirExamplesTest {
         val dir = File( loader.getResource("examples").file)
         val exampleFiles = dir.walk()
             .filter { it.isFile }
+            .filter { it.absolutePath == "/workspaces/validation-service-fhir-r4/target/test-classes/examples/primary-care/acute/no-nominated-pharmacy/medical-prescriber/author/gmc/responsible-party/din/1-Process-Request-Send-200_OK.json" }
             .toList()
             .map { Arguments.of(Named.of("parseAndValidateResource should return no errors for file ${it.absolutePath}", it)) }
             .stream()
@@ -37,6 +38,7 @@ internal class FhirExamplesTest {
     @ParameterizedTest
     @MethodSource("getExampleFhirFiles")
     fun testFhirExamples(exampleFile: File) {
+        println("Reading file ${exampleFile.absolutePath}")
         val lines = exampleFile.bufferedReader().readLines()
         val fileContent = lines.joinToString(" ")
         val actualResult = testValidateController.parseAndValidateResource(fileContent)

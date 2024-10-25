@@ -126,7 +126,7 @@
         "dosageInstruction": [
           {
             "sequence": 1,
-            "text": "EIGHT (8) tablets to be taken DAILY for two days. Take these tablets with or after food.",
+            "text": "1 tablet to be taken at 17:00 for two days. Take these tablets with or after food.",
             "timing": {
               "repeat": {
                 "boundsDuration": {
@@ -135,9 +135,12 @@
                   "system": "http://unitsofmeasure.org",
                   "code": "d"
                 },
-                "frequency": 8,
+                "frequency": 1,
                 "period": 1,
-                "periodUnit": "d"
+                "periodUnit": "d",
+                "timeOfDay": [
+                  "17:00:00"
+                ]
               }
             },
             "doseAndRate": [
@@ -153,169 +156,7 @@
           },
           {
             "sequence": 2,
-            "text": "SEVEN (7) tablets to be taken DAILY for two days. Take these tablets with or after food.",
-            "timing": {
-              "repeat": {
-                "boundsDuration": {
-                  "value": 2,
-                  "unit": "day",
-                  "system": "http://unitsofmeasure.org",
-                  "code": "d"
-                },
-                "frequency": 7,
-                "period": 1,
-                "periodUnit": "d"
-              }
-            },
-            "doseAndRate": [
-              {
-                "doseQuantity": {
-                  "value": 5,
-                  "unit": "milligram",
-                  "system": "http://unitsofmeasure.org",
-                  "code": "mg"
-                }
-              }
-            ]
-          },
-          {
-            "sequence": 3,
-            "text": "SIX (6) tablets to be taken DAILY for two days. Take these tablets with or after food.",
-            "timing": {
-              "repeat": {
-                "boundsDuration": {
-                  "value": 2,
-                  "unit": "day",
-                  "system": "http://unitsofmeasure.org",
-                  "code": "d"
-                },
-                "frequency": 6,
-                "period": 1,
-                "periodUnit": "d"
-              }
-            },
-            "doseAndRate": [
-              {
-                "doseQuantity": {
-                  "value": 5,
-                  "unit": "milligram",
-                  "system": "http://unitsofmeasure.org",
-                  "code": "mg"
-                }
-              }
-            ]
-          },
-          {
-            "sequence": 4,
-            "text": "FIVE (5) tablets to be taken DAILY for two days. Take these tablets with or after food.",
-            "timing": {
-              "repeat": {
-                "boundsDuration": {
-                  "value": 2,
-                  "unit": "day",
-                  "system": "http://unitsofmeasure.org",
-                  "code": "d"
-                },
-                "frequency": 5,
-                "period": 1,
-                "periodUnit": "d"
-              }
-            },
-            "doseAndRate": [
-              {
-                "doseQuantity": {
-                  "value": 5,
-                  "unit": "milligram",
-                  "system": "http://unitsofmeasure.org",
-                  "code": "mg"
-                }
-              }
-            ]
-          },
-          {
-            "sequence": 5,
-            "text": "FOUR (4) tablets to be taken DAILY for two days. Take these tablets with or after food.",
-            "timing": {
-              "repeat": {
-                "boundsDuration": {
-                  "value": 2,
-                  "unit": "day",
-                  "system": "http://unitsofmeasure.org",
-                  "code": "d"
-                },
-                "frequency": 4,
-                "period": 1,
-                "periodUnit": "d"
-              }
-            },
-            "doseAndRate": [
-              {
-                "doseQuantity": {
-                  "value": 5,
-                  "unit": "milligram",
-                  "system": "http://unitsofmeasure.org",
-                  "code": "mg"
-                }
-              }
-            ]
-          },
-          {
-            "sequence": 6,
-            "text": "THREE (3) tablets to be taken DAILY for two days. Take these tablets with or after food.",
-            "timing": {
-              "repeat": {
-                "boundsDuration": {
-                  "value": 2,
-                  "unit": "day",
-                  "system": "http://unitsofmeasure.org",
-                  "code": "d"
-                },
-                "frequency": 3,
-                "period": 1,
-                "periodUnit": "d"
-              }
-            },
-            "doseAndRate": [
-              {
-                "doseQuantity": {
-                  "value": 5,
-                  "unit": "milligram",
-                  "system": "http://unitsofmeasure.org",
-                  "code": "mg"
-                }
-              }
-            ]
-          },
-          {
-            "sequence": 7,
-            "text": "TWO (2) tablets to be taken DAILY for two days. Take these tablets with or after food.",
-            "timing": {
-              "repeat": {
-                "boundsDuration": {
-                  "value": 2,
-                  "unit": "day",
-                  "system": "http://unitsofmeasure.org",
-                  "code": "d"
-                },
-                "frequency": 2,
-                "period": 1,
-                "periodUnit": "d"
-              }
-            },
-            "doseAndRate": [
-              {
-                "doseQuantity": {
-                  "value": 5,
-                  "unit": "milligram",
-                  "system": "http://unitsofmeasure.org",
-                  "code": "mg"
-                }
-              }
-            ]
-          },
-          {
-            "sequence": 8,
-            "text": "ONE (1) tablet to be taken DAILY for two days. Take these tablets with or after food.",
+            "text": "1 tablet to be taken DAILY for two days. Take these tablets with or after food.",
             "timing": {
               "repeat": {
                 "boundsDuration": {
