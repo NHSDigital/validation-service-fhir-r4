@@ -37,7 +37,6 @@ internal class FhirExamplesTest {
     @ParameterizedTest
     @MethodSource("getExampleFhirFiles")
     fun testFhirExamples(exampleFile: File) {
-        println("Reading file ${exampleFile.absolutePath}")
         val lines = exampleFile.bufferedReader().readLines()
         val fileContent = lines.joinToString(" ")
         val actualResult = testValidateController.parseAndValidateResource(fileContent)
