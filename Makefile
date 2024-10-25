@@ -36,6 +36,7 @@ build:
 	$(MAKE) build-java || $(MAKE) show-build-error-log
 
 build-java:
+	poetry run scripts/download_dependencies.py
 	mkdir -p target
 	mvn package > target/maven-build-output.txt 2>&1
 	docker build .
