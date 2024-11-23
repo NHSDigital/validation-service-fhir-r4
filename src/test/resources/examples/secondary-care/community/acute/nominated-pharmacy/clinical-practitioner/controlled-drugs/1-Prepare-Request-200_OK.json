@@ -66,6 +66,12 @@
       "resource": {
         "resourceType": "MedicationRequest",
         "id": "00d3dd04-d162-49ce-a808-6f220906f1c8",
+        "identifier": [
+          {
+            "system": "https://fhir.nhs.uk/Id/prescription-order-item-number",
+            "value": "00d3dd04-d162-49ce-a808-6f220906f1c8"
+          }
+        ],
         "extension": [
           {
             "url": "https://fhir.nhs.uk/StructureDefinition/Extension-DM-PrescriptionType",
@@ -91,12 +97,6 @@
                 }
               }
             ]
-          }
-        ],
-        "identifier": [
-          {
-            "system": "https://fhir.nhs.uk/Id/prescription-order-item-number",
-            "value": "00d3dd04-d162-49ce-a808-6f220906f1c8"
           }
         ],
         "status": "active",
@@ -187,6 +187,12 @@
       "resource": {
         "resourceType": "MedicationRequest",
         "id": "1de954ac-a1ea-49ab-bd4e-88e99f191186",
+        "identifier": [
+          {
+            "system": "https://fhir.nhs.uk/Id/prescription-order-item-number",
+            "value": "1de954ac-a1ea-49ab-bd4e-88e99f191186"
+          }
+        ],
         "extension": [
           {
             "url": "https://fhir.nhs.uk/StructureDefinition/Extension-DM-PrescriptionType",
@@ -195,12 +201,6 @@
               "code": "1001",
               "display": "Outpatient Community Prescriber - Medical Prescriber"
             }
-          }
-        ],
-        "identifier": [
-          {
-            "system": "https://fhir.nhs.uk/Id/prescription-order-item-number",
-            "value": "1de954ac-a1ea-49ab-bd4e-88e99f191186"
           }
         ],
         "status": "active",
@@ -306,8 +306,12 @@
           {
             "use": "usual",
             "family": "AKRASI",
-            "given": ["ROYDON"],
-            "prefix": ["MR"]
+            "given": [
+              "ROYDON"
+            ],
+            "prefix": [
+              "MR"
+            ]
           }
         ],
         "gender": "male",
@@ -315,7 +319,11 @@
         "address": [
           {
             "use": "home",
-            "line": ["35 STEVENS LANE", "CLAYGATE", "SURREY"],
+            "line": [
+              "35 STEVENS LANE",
+              "CLAYGATE",
+              "SURREY"
+            ],
             "postalCode": "KT10 0TQ"
           }
         ],
@@ -347,8 +355,12 @@
         "name": [
           {
             "family": "Fiftyseven",
-            "given": ["Random"],
-            "prefix": ["MR"]
+            "given": [
+              "Random"
+            ],
+            "prefix": [
+              "MR"
+            ]
           }
         ]
       }
@@ -409,7 +421,9 @@
         "address": [
           {
             "use": "work",
-            "line": ["MUSGROVE PARK HOSPITAL"],
+            "line": [
+              "MUSGROVE PARK HOSPITAL"
+            ],
             "city": "TAUNTON",
             "postalCode": "TA1 5DA"
           }
