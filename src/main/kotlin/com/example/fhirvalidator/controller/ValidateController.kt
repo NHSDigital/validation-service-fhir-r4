@@ -36,9 +36,11 @@ class ValidateController(
         return fhirContext.newJsonParser().encodeResourceToString(result)
     }
 
+    // use Synchronized here to ensure single thread as newJsonParser is not thread safe
+    @Synchronized
     fun parseAndValidateResource(input: String): OperationOutcome {
         return try {
-            val inputResource = parseResource(input)
+            val inputResource = fhirContext.newJsonParser().parseResource(input)
             val resources = getResourcesToValidate(inputResource)
             val operationOutcomeList = resources.map { validateResource(it) }
             val operationOutcomeIssues = operationOutcomeList.filterNotNull().flatMap { it.issue }
@@ -47,13 +49,6 @@ class ValidateController(
             logger.error(e) { "Caught parser error" }
             createOperationOutcome(e.message ?: "Invalid JSON", null)
         }
-    }
-
-    // use Synchronized here to ensure single thread as newJsonParser is not thread safe
-    @Synchronized
-    fun parseResource(input: String): IBaseResource {
-        val inputResource = fhirContext.newJsonParser().parseResource(input)
-        return inputResource
     }
     
     fun validateResource(resource: IBaseResource): OperationOutcome? {
