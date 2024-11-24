@@ -135,7 +135,7 @@ class ValidationConfiguration(private val implementationGuideParser: Implementat
                 it.type.forEach{
                     if (it.hasTargetProfile())
                         it.targetProfile.forEach {
-                            it.value = getBase(it.value, supportChain);
+                            it.value = getBase(it.value, supportChain)
                         }
                 }
             }
@@ -145,13 +145,13 @@ class ValidationConfiguration(private val implementationGuideParser: Implementat
 
     private fun getBase(profile : String,supportChain: IValidationSupport): String? {
         val structureDefinition : StructureDefinition=
-            supportChain.fetchStructureDefinition(profile) as StructureDefinition;
+            supportChain.fetchStructureDefinition(profile) as StructureDefinition
         if (structureDefinition.hasBaseDefinition()) {
             var baseProfile = structureDefinition.baseDefinition
             if (baseProfile.contains(".uk")) baseProfile = getBase(baseProfile, supportChain)
             return baseProfile
         }
-        return null;
+        return null
     }
     private fun shouldGenerateSnapshot(structureDefinition: StructureDefinition): Boolean {
         return !structureDefinition.hasSnapshot() && structureDefinition.derivation == StructureDefinition.TypeDerivationRule.CONSTRAINT

@@ -1,7 +1,6 @@
 package com.example.fhirvalidator.controller
 
 import org.hl7.fhir.r4.model.OperationOutcome
-import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.Named
 import org.junit.jupiter.api.DisplayName
@@ -13,7 +12,6 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.opentest4j.AssertionFailedError
 import java.io.File
 import java.util.stream.Stream
-import javax.print.attribute.standard.Severity
 
 @SpringBootTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
