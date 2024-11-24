@@ -55,6 +55,7 @@ class ValidationConfiguration(private val implementationGuideParser: Implementat
     @Bean
     fun terminologyValidationSupport(fhirContext: FhirContext): InMemoryTerminologyServerValidationSupport {
         return object : InMemoryTerminologyServerValidationSupport(fhirContext) {
+            @Synchronized
             override fun validateCodeInValueSet(
                 theValidationSupportContext: ValidationSupportContext?,
                 theOptions: ConceptValidationOptions?,
