@@ -38,7 +38,7 @@ class ValidateController(
 
     fun parseAndValidateResource(input: String): OperationOutcome {
         return try {
-            val inputResource = fhirContext.newJsonParser().parseResource(input)
+            val inputResource = parseResource(input)
             val resources = getResourcesToValidate(inputResource)
             val operationOutcomeList = resources.map { validateResource(it) }
             val operationOutcomeIssues = operationOutcomeList.filterNotNull().flatMap { it.issue }
@@ -49,6 +49,13 @@ class ValidateController(
         }
     }
 
+    // use Synchronized here to ensure single thread as newJsonParser is not thread safe
+    @Synchronized
+    fun parseResource(input: String): IBaseResource {
+        val inputResource = fhirContext.newJsonParser().parseResource(input)
+        return inputResource
+    }
+    
     fun validateResource(resource: IBaseResource): OperationOutcome? {
         capabilityStatementApplier.applyCapabilityStatementProfiles(resource)
         val messageDefinitionErrors = messageDefinitionApplier.applyMessageDefinition(resource)
