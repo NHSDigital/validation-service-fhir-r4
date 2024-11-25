@@ -1,6 +1,7 @@
 package com.example.fhirvalidator.controller
 
 import org.hl7.fhir.r4.model.OperationOutcome
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.Named
 import org.junit.jupiter.api.DisplayName
@@ -20,6 +21,14 @@ internal class FhirExamplesTest {
 
     @Autowired
     lateinit var testValidateController: ValidateController
+
+    @BeforeAll
+    fun initValidator() {
+        val primerPayload = loader.getResourceAsStream("primerPayload.json")
+        val lines = primerPayload.bufferedReader().readLines()
+        val fileContent = lines.joinToString(" ")
+        testValidateController.parseAndValidateResource(fileContent)
+    }
 
     fun getExampleFhirFiles(): Stream<Arguments> {
         val dir = File( loader.getResource("examples").file)
