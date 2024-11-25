@@ -58,12 +58,18 @@ class ValidateController(
             return messageDefinitionErrors
         }
         val result = validator.validateWithResult(resource).toOperationOutcome() as? OperationOutcome
-            for (issue in result?.issue!!) {
+        var hasError = false
+        for (issue in result?.issue!!) {
                 if (issue.severity.equals(OperationOutcome.IssueSeverity.ERROR)) {
                     println("Error found checking file. Error: ${issue.diagnostics}")
-                    println(resource.toString())
+                    hasError = true
                 }
             }
+        if (hasError) {
+            val string_repr = fhirContext.newJsonParser().encodeResourceToString(resource)
+            println("There was an error")
+            println(string_repr)
+        }
         return result
     }
 
