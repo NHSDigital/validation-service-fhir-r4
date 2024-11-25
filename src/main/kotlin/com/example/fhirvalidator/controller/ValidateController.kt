@@ -11,7 +11,6 @@ import org.hl7.fhir.instance.model.api.IBaseResource
 import org.hl7.fhir.r4.model.Bundle
 import org.hl7.fhir.r4.model.OperationOutcome
 import org.hl7.fhir.r4.model.ResourceType
-import org.opentest4j.AssertionFailedError
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestHeader
