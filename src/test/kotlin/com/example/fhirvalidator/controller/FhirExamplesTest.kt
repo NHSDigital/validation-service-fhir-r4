@@ -24,10 +24,12 @@ internal class FhirExamplesTest {
 
     @BeforeAll
     fun initValidator() {
+        println("Priming the validator")
         val primerPayload = loader.getResourceAsStream("primerPayload.json")
         val lines = primerPayload.bufferedReader().readLines()
         val fileContent = lines.joinToString(" ")
         testValidateController.parseAndValidateResource(fileContent)
+        println("Validator primed")
     }
 
     fun getExampleFhirFiles(): Stream<Arguments> {

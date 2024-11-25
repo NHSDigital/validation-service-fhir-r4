@@ -57,6 +57,7 @@ class ValidateController(
         if (messageDefinitionErrors != null) {
             return messageDefinitionErrors
         }
+        validator.setConcurrentBundleValidation(false)
         val result = validator.validateWithResult(resource).toOperationOutcome() as? OperationOutcome
         var hasError = false
         for (issue in result?.issue!!) {
