@@ -25,7 +25,7 @@ internal class FhirExamplesTest {
     @BeforeAll
     fun initValidator() {
         println("Priming the validator")
-        val primerPayload = loader.getResourceAsStream("primerPayload.json")
+        val primerPayload = loader.getResourceAsStream("examples/primary-care/acute/nominated-pharmacy/responsible-party-org/separate-telecom/1-Process-Request-Send-200_OK.json")
         val lines = primerPayload.bufferedReader().readLines()
         val fileContent = lines.joinToString(" ")
         testValidateController.parseAndValidateResource(fileContent)
