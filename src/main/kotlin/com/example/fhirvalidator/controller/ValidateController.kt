@@ -11,6 +11,7 @@ import org.hl7.fhir.instance.model.api.IBaseResource
 import org.hl7.fhir.r4.model.Bundle
 import org.hl7.fhir.r4.model.OperationOutcome
 import org.hl7.fhir.r4.model.ResourceType
+import org.opentest4j.AssertionFailedError
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestHeader
@@ -57,7 +58,14 @@ class ValidateController(
         if (messageDefinitionErrors != null) {
             return messageDefinitionErrors
         }
-        return validator.validateWithResult(resource).toOperationOutcome() as? OperationOutcome
+        val result = validator.validateWithResult(resource).toOperationOutcome() as? OperationOutcome
+            for (issue in result?.issue!!) {
+                if (issue.severity.equals(OperationOutcome.IssueSeverity.ERROR)) {
+                    println("Error found checking file. Error: ${issue.diagnostics}")
+                    println(resource.toString())
+                }
+            }
+        return result
     }
 
     fun getResourcesToValidate(inputResource: IBaseResource?): List<IBaseResource> {
