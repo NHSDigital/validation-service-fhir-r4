@@ -6,7 +6,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.3.5</version>
+        <version>3.4.0</version>
         <relativePath /> <!-- lookup parent from repository -->
     </parent>
     <groupId>com.example</groupId>
@@ -26,7 +26,7 @@
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
         <kotlin.version>2.0.21</kotlin.version>
-        <fhir.version>7.4.5</fhir.version>
+        <fhir.version>7.6.0</fhir.version>
         <fasterxml.version>2.18.1</fasterxml.version>
         <sonar.organization>nhsdigital</sonar.organization>
         <sonar.projectKey>NHSDigital_validation-service-fhir-r4</sonar.projectKey>
@@ -37,7 +37,7 @@
         <dependency>
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
-            <version>2.17.0</version>
+            <version>2.18.0</version>
         </dependency>
         <dependency>
             <groupId>org.xmlunit</groupId>
