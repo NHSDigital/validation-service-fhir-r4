@@ -9,9 +9,11 @@ env:
 
 jobs:
   quality_checks:
-    uses: ./.github/workflows/quality_checks.yml
+    uses: NHSDigital/eps-workflow-quality-checks/.github/workflows/quality-checks.yml@v4.0.4
     secrets:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+    with:
+      install_java: true
 
   pr_title_format_check:
     uses: ./.github/workflows/pr_title_check.yml

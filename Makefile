@@ -1,3 +1,5 @@
+.PHONY: check-licenses
+
 install: install-python install-hooks
 
 install-python:

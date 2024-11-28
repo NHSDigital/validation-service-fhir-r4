@@ -62,6 +62,7 @@
         }
       }
     },
+    "remoteEnv": { "LOCAL_WORKSPACE_FOLDER": "${localWorkspaceFolder}" },
     "postCreateCommand": "rm -f ~/.docker/config.json; git config --global --add safe.directory /workspaces/validation-service-fhir-r4; make install"
     // "features": {},
     // Use 'forwardPorts' to make a list of ports inside the container available locally.
