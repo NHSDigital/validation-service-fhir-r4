@@ -43,20 +43,20 @@ class MessageDefinitionApplier(
     private fun findMessageHeader(bundle: Bundle): MessageHeader? {
         return bundle.entry
             ?.map { it.resource }
-            ?.filterIsInstance(MessageHeader::class.java)
+            ?.filterIsInstance<MessageHeader>()
             ?.singleOrNull()
     }
 
     private fun findMessageDefinition(messageType: Coding, messageDefinitionProfile: String?): MessageDefinition? {
 
-        if (messageDefinitionProfile != null) {
-            return messageDefinitions
+        return if (messageDefinitionProfile != null) {
+            messageDefinitions
                 .filter { it.eventCoding.system == messageType.system }
-                .firstOrNull { it.eventCoding.code == messageType.code &&  it.url == messageDefinitionProfile }
+                .lastOrNull { it.eventCoding.code == messageType.code &&  it.url == messageDefinitionProfile }
         } else {
-            return messageDefinitions
+            messageDefinitions
                 .filter { it.eventCoding.system == messageType.system }
-                .firstOrNull { it.eventCoding.code == messageType.code }
+                .lastOrNull { it.eventCoding.code == messageType.code }
         }
     }
 
