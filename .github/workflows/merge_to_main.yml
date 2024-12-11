@@ -64,7 +64,7 @@ jobs:
             fhir-validator.jar
         
   package_code:
-    needs: quality_checks
+    needs: [quality_checks, build]
     runs-on: ubuntu-latest
 
     steps:
