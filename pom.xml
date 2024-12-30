@@ -27,7 +27,7 @@
         <maven.compiler.target>21</maven.compiler.target>
         <kotlin.version>2.0.21</kotlin.version>
         <fhir.version>7.6.1</fhir.version>
-        <fasterxml.version>2.18.1</fasterxml.version>
+        <fasterxml.version>2.18.2</fasterxml.version>
         <sonar.organization>nhsdigital</sonar.organization>
         <sonar.projectKey>NHSDigital_validation-service-fhir-r4</sonar.projectKey>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
@@ -135,7 +135,7 @@
         <dependency>
             <groupId>io.github.oshai</groupId>
             <artifactId>kotlin-logging-jvm</artifactId>
-            <version>7.0.0</version>
+            <version>7.0.3</version>
         </dependency>
     </dependencies>
     <pluginRepositories>
