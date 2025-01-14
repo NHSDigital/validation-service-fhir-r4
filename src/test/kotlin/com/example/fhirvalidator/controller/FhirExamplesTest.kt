@@ -1,7 +1,7 @@
 package com.example.fhirvalidator.controller
 
 import org.hl7.fhir.r4.model.OperationOutcome
-import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.Named
 import org.junit.jupiter.api.DisplayName
@@ -13,7 +13,6 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.opentest4j.AssertionFailedError
 import java.io.File
 import java.util.stream.Stream
-import javax.print.attribute.standard.Severity
 
 @SpringBootTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -22,6 +21,16 @@ internal class FhirExamplesTest {
 
     @Autowired
     lateinit var testValidateController: ValidateController
+
+    @BeforeAll
+    fun initValidator() {
+        println("Priming the validator")
+        val primerPayload = loader.getResourceAsStream("examples/primary-care/acute/nominated-pharmacy/responsible-party-org/separate-telecom/1-Process-Request-Send-200_OK.json")
+        val lines = primerPayload.bufferedReader().readLines()
+        val fileContent = lines.joinToString(" ")
+        testValidateController.parseAndValidateResource(fileContent)
+        println("Validator primed")
+    }
 
     fun getExampleFhirFiles(): Stream<Arguments> {
         val dir = File( loader.getResource("examples").file)

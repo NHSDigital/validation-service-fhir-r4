@@ -8,7 +8,6 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.io.ClassPathResource
 import java.util.*
-import kotlin.streams.toList
 
 @Configuration
 class PackageConfiguration(val objectMapper: ObjectMapper) {

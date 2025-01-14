@@ -36,6 +36,8 @@ class ValidateController(
         return fhirContext.newJsonParser().encodeResourceToString(result)
     }
 
+    // use Synchronized here to ensure single thread as newJsonParser is not thread safe
+    @Synchronized
     fun parseAndValidateResource(input: String): OperationOutcome {
         return try {
             val inputResource = fhirContext.newJsonParser().parseResource(input)
@@ -48,14 +50,28 @@ class ValidateController(
             createOperationOutcome(e.message ?: "Invalid JSON", null)
         }
     }
-
+    
     fun validateResource(resource: IBaseResource): OperationOutcome? {
         capabilityStatementApplier.applyCapabilityStatementProfiles(resource)
         val messageDefinitionErrors = messageDefinitionApplier.applyMessageDefinition(resource)
         if (messageDefinitionErrors != null) {
             return messageDefinitionErrors
         }
-        return validator.validateWithResult(resource).toOperationOutcome() as? OperationOutcome
+        validator.setConcurrentBundleValidation(true)
+        val result = validator.validateWithResult(resource).toOperationOutcome() as? OperationOutcome
+        var hasError = false
+        for (issue in result?.issue!!) {
+                if (issue.severity.equals(OperationOutcome.IssueSeverity.ERROR)) {
+                    println("Error found checking file. Error: ${issue.diagnostics}")
+                    hasError = true
+                }
+            }
+        if (hasError) {
+            val string_repr = fhirContext.newJsonParser().encodeResourceToString(resource)
+            println("There was an error")
+            println(string_repr)
+        }
+        return result
     }
 
     fun getResourcesToValidate(inputResource: IBaseResource?): List<IBaseResource> {
