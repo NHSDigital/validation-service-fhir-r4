@@ -39,7 +39,7 @@ internal class FhirExamplesTest {
     fun testFhirExamples(exampleFile: File) {
         val lines = exampleFile.bufferedReader().readLines()
         val fileContent = lines.joinToString(" ")
-        val actualResult = testValidateController.parseAndValidateResource(fileContent)
+        val actualResult = testValidateController.parseAndValidateResource(fileContent, "dummy_request_id")
         for (issue in actualResult.issue) {
             if (issue.severity.equals(OperationOutcome.IssueSeverity.ERROR)) {
                 throw AssertionFailedError("Error found checking file ${exampleFile.absolutePath}. Error: ${issue.diagnostics}")
