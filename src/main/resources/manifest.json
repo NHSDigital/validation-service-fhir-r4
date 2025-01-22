@@ -1,7 +1,7 @@
 [
   {
     "packageName": "fhir.r4.ukcore.stu3.currentbuild",
-    "version": "0.0.3-pre-release"
+    "version": "0.0.17-pre-release"
   },
   {
     "packageName": "uk.nhsdigital.r4.test",
