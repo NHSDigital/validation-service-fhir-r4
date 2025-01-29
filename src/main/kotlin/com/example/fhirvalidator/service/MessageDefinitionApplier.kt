@@ -4,13 +4,15 @@ import com.example.fhirvalidator.util.applyProfile
 import com.example.fhirvalidator.util.createOperationOutcome
 import com.example.fhirvalidator.util.createOperationOutcomeIssue
 import com.example.fhirvalidator.util.getResourcesOfType
+import jakarta.annotation.Resource
 import org.hl7.fhir.instance.model.api.IBaseResource
 import org.hl7.fhir.r4.model.*
 import org.hl7.fhir.utilities.npm.NpmPackage
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 
-@Service
-class MessageDefinitionApplier(
+open class BaseMessageDefinitionApplier(
     implementationGuideParser: ImplementationGuideParser,
     npmPackages: List<NpmPackage>
 ) {
@@ -120,4 +122,25 @@ class MessageDefinitionApplier(
 
         return null
     }
+}
+
+@Service
+class MessageDefinitionApplier(
+    implementationGuideParser: ImplementationGuideParser,
+    @Autowired
+    @Qualifier("npmPackages")
+    npmPackages: List<NpmPackage>
+) : BaseMessageDefinitionApplier(implementationGuideParser, npmPackages) {
+
+}
+
+@Service
+@Resource(name="npmPackagesNext")
+class MessageDefinitionApplierNext(
+    implementationGuideParser: ImplementationGuideParser,
+    @Autowired
+    @Qualifier("npmPackagesNext")
+    npmPackagesNext: List<NpmPackage>
+) : BaseMessageDefinitionApplier(implementationGuideParser, npmPackagesNext) {
+
 }
