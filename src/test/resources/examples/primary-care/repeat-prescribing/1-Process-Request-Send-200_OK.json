@@ -129,7 +129,7 @@
                 "extension": [
                   {
                     "url": "numberOfRepeatsAllowed",
-                    "valueInteger": 5
+                    "valueUnsignedInt": 5
                   }
                 ]
               }
@@ -290,7 +290,7 @@
                 "extension": [
                   {
                     "url": "numberOfRepeatsAllowed",
-                    "valueInteger": 5
+                    "valueUnsignedInt": 5
                   }
                 ]
               }
@@ -451,7 +451,7 @@
                 "extension": [
                   {
                     "url": "numberOfRepeatsAllowed",
-                    "valueInteger": 5
+                    "valueUnsignedInt": 5
                   }
                 ]
               }
@@ -612,7 +612,7 @@
                 "extension": [
                   {
                     "url": "numberOfRepeatsAllowed",
-                    "valueInteger": 5
+                    "valueUnsignedInt": 5
                   }
                 ]
               }

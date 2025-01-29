@@ -26,7 +26,7 @@
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
         <kotlin.version>2.1.10</kotlin.version>
-        <fhir.version>7.6.1</fhir.version>
+        <fhir.version>5.4.2</fhir.version>
         <fasterxml.version>2.18.2</fasterxml.version>
         <sonar.organization>nhsdigital</sonar.organization>
         <sonar.projectKey>NHSDigital_validation-service-fhir-r4</sonar.projectKey>
@@ -127,11 +127,14 @@
             <artifactId>hapi-fhir-validation-resources-r4</artifactId>
             <version>${fhir.version}</version>
         </dependency>
+        <!-- 
+            only needed for later fhir-hapi
         <dependency>
             <groupId>ca.uhn.hapi.fhir</groupId>
             <artifactId>hapi-fhir-caching-caffeine</artifactId>
             <version>${fhir.version}</version>
         </dependency>
+        -->
         <dependency>
             <groupId>io.github.oshai</groupId>
             <artifactId>kotlin-logging-jvm</artifactId>
