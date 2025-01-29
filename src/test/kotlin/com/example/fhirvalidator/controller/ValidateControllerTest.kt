@@ -4,6 +4,8 @@ import ca.uhn.fhir.context.FhirContext
 import ca.uhn.fhir.validation.FhirValidator
 import com.example.fhirvalidator.service.CapabilityStatementApplier
 import com.example.fhirvalidator.service.MessageDefinitionApplier
+import com.example.fhirvalidator.service.CapabilityStatementApplierNext
+import com.example.fhirvalidator.service.MessageDefinitionApplierNext
 import org.hl7.fhir.r4.model.Bundle
 import org.hl7.fhir.r4.model.Patient
 import org.junit.jupiter.api.Assertions.*
@@ -22,10 +24,19 @@ internal class ValidateControllerTest {
     lateinit var mockValidator: FhirValidator
 
     @Mock
+    lateinit var mockValidatorNext: FhirValidator
+
+    @Mock
     lateinit var mockMessageDefinitionApplier: MessageDefinitionApplier
 
     @Mock
     lateinit var mockCapabilityStatementApplier: CapabilityStatementApplier
+
+    @Mock
+    lateinit var mockMessageDefinitionApplierNext: MessageDefinitionApplierNext
+
+    @Mock
+    lateinit var mockCapabilityStatementApplierNext: CapabilityStatementApplierNext
 
     @InjectMocks
     lateinit var testValidateController: ValidateController

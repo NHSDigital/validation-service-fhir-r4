@@ -4,7 +4,9 @@ import ca.uhn.fhir.context.FhirContext
 import ca.uhn.fhir.parser.DataFormatException
 import ca.uhn.fhir.validation.FhirValidator
 import com.example.fhirvalidator.service.CapabilityStatementApplier
+import com.example.fhirvalidator.service.CapabilityStatementApplierNext
 import com.example.fhirvalidator.service.MessageDefinitionApplier
+import com.example.fhirvalidator.service.MessageDefinitionApplierNext
 import com.example.fhirvalidator.util.createOperationOutcome
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.hl7.fhir.instance.model.api.IBaseResource
@@ -20,8 +22,11 @@ import org.springframework.web.bind.annotation.RestController
 class ValidateController(
     private val fhirContext: FhirContext,
     private val validator: FhirValidator,
+    private val validatorNext: FhirValidator,
     private val messageDefinitionApplier: MessageDefinitionApplier,
-    private val capabilityStatementApplier: CapabilityStatementApplier
+    private val capabilityStatementApplier: CapabilityStatementApplier,
+    private val messageDefinitionApplierNext: MessageDefinitionApplierNext,
+    private val capabilityStatementApplierNext: CapabilityStatementApplierNext
 ) {
     private val logger = KotlinLogging.logger {} 
 
@@ -63,6 +68,15 @@ class ValidateController(
             return messageDefinitionErrors
         }
         return validator.validateWithResult(resource).toOperationOutcome() as? OperationOutcome
+    }
+
+    fun validateResourceNext(resource: IBaseResource): OperationOutcome? {
+        capabilityStatementApplierNext.applyCapabilityStatementProfiles(resource)
+        val messageDefinitionErrors = messageDefinitionApplierNext.applyMessageDefinition(resource)
+        if (messageDefinitionErrors != null) {
+            return messageDefinitionErrors
+        }
+        return validatorNext.validateWithResult(resource).toOperationOutcome() as? OperationOutcome
     }
 
     fun getResourcesToValidate(inputResource: IBaseResource?): List<IBaseResource> {

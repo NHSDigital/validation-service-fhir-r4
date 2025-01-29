@@ -6,8 +6,10 @@ import ca.uhn.fhir.context.support.DefaultProfileValidationSupport
 import ca.uhn.fhir.context.support.IValidationSupport
 import ca.uhn.fhir.context.support.ValidationSupportContext
 import ca.uhn.fhir.validation.FhirValidator
+import com.example.fhirvalidator.service.BaseCapabilityStatementApplier
 import com.example.fhirvalidator.service.ImplementationGuideParser
 import io.github.oshai.kotlinlogging.KotlinLogging
+import jakarta.annotation.Resource
 import org.hl7.fhir.common.hapi.validation.support.CommonCodeSystemsTerminologyService
 import org.hl7.fhir.common.hapi.validation.support.InMemoryTerminologyServerValidationSupport
 import org.hl7.fhir.common.hapi.validation.support.SnapshotGeneratingValidationSupport
@@ -16,25 +18,23 @@ import org.hl7.fhir.common.hapi.validation.validator.FhirInstanceValidator
 import org.hl7.fhir.instance.model.api.IBaseResource
 import org.hl7.fhir.r4.model.StructureDefinition
 import org.hl7.fhir.utilities.npm.NpmPackage
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
-@Configuration
-class ValidationConfiguration(private val implementationGuideParser: ImplementationGuideParser) {
+open class BaseValidationConfiguration(private val implementationGuideParser: ImplementationGuideParser) {
     private val logger = KotlinLogging.logger {} 
 
-    @Bean
-    fun validator(fhirContext: FhirContext, instanceValidator: FhirInstanceValidator): FhirValidator {
+    fun baseValidator(fhirContext: FhirContext, instanceValidator: FhirInstanceValidator): FhirValidator {
         return fhirContext.newValidator().registerValidatorModule(instanceValidator)
     }
 
-    @Bean
-    fun instanceValidator(supportChain: ValidationSupportChain): FhirInstanceValidator {
+    fun baseInstanceValidator(supportChain: ValidationSupportChain): FhirInstanceValidator {
         return FhirInstanceValidator(supportChain)
     }
 
-    @Bean("SupportChain")
-    fun validationSupportChain(
+    fun baseValidationSupportChain(
         fhirContext: FhirContext,
         terminologyValidationSupport: InMemoryTerminologyServerValidationSupport,
         npmPackages: List<NpmPackage>
@@ -52,8 +52,7 @@ class ValidationConfiguration(private val implementationGuideParser: Implementat
         return supportChain
     }
 
-    @Bean
-    fun terminologyValidationSupport(fhirContext: FhirContext): InMemoryTerminologyServerValidationSupport {
+    fun baseTerminologyValidationSupport(fhirContext: FhirContext): InMemoryTerminologyServerValidationSupport {
         return object : InMemoryTerminologyServerValidationSupport(fhirContext) {
             override fun validateCodeInValueSet(
                 theValidationSupportContext: ValidationSupportContext?,
@@ -154,5 +153,70 @@ class ValidationConfiguration(private val implementationGuideParser: Implementat
     }
     private fun shouldGenerateSnapshot(structureDefinition: StructureDefinition): Boolean {
         return !structureDefinition.hasSnapshot() && structureDefinition.derivation == StructureDefinition.TypeDerivationRule.CONSTRAINT
+    }
+}
+
+@Configuration
+class ValidationConfiguration(
+    private val implementationGuideParser: ImplementationGuideParser
+) : BaseValidationConfiguration(implementationGuideParser) {
+
+    @Bean("validator")
+    fun validator(fhirContext: FhirContext, instanceValidator: FhirInstanceValidator): FhirValidator {
+        return baseValidator(fhirContext, instanceValidator)
+    }
+
+    @Bean("instanceValidator")
+    fun instanceValidator(supportChain: ValidationSupportChain): FhirInstanceValidator {
+        return baseInstanceValidator(supportChain)
+    }
+
+    @Bean("supportChain")
+    fun validationSupportChain(
+        fhirContext: FhirContext,
+        terminologyValidationSupport: InMemoryTerminologyServerValidationSupport,
+        @Autowired
+        @Qualifier("npmPackages")
+        npmPackages: List<NpmPackage>
+    ): ValidationSupportChain {
+        return baseValidationSupportChain(fhirContext, terminologyValidationSupport, npmPackages)
+    }
+
+    @Bean("terminologyValidationSupport")
+    fun terminologyValidationSupport(fhirContext: FhirContext): InMemoryTerminologyServerValidationSupport {
+        return baseTerminologyValidationSupport(fhirContext)
+    }
+}
+
+@Configuration
+@Resource(name="npmPackagesNext")
+class ValidationConfigurationNext(
+    private val implementationGuideParser: ImplementationGuideParser
+) : BaseValidationConfiguration(implementationGuideParser) {
+
+    @Bean("validatorNext")
+    fun validatorNext(fhirContext: FhirContext, instanceValidatorNext: FhirInstanceValidator): FhirValidator {
+        return baseValidator(fhirContext, instanceValidatorNext)
+    }
+
+    @Bean("instanceValidatorNext")
+    fun instanceValidatorNext(supportChainNext: ValidationSupportChain): FhirInstanceValidator {
+        return baseInstanceValidator(supportChainNext)
+    }
+
+    @Bean("supportChainNext")
+    fun validationSupportChainNext(
+        fhirContext: FhirContext,
+        terminologyValidationSupport: InMemoryTerminologyServerValidationSupport,
+        @Autowired
+        @Qualifier("npmPackagesNext")
+        npmPackagesNext: List<NpmPackage>
+    ): ValidationSupportChain {
+        return baseValidationSupportChain(fhirContext, terminologyValidationSupport, npmPackagesNext)
+    }
+
+    @Bean("terminologyValidationSupportNext")
+    fun terminologyValidationSupportNext(fhirContext: FhirContext): InMemoryTerminologyServerValidationSupport {
+        return baseTerminologyValidationSupport(fhirContext)
     }
 }
