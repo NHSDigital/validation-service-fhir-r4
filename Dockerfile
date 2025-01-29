@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-FROM eclipse-temurin:21.0.2_13-jdk-alpine AS jre-build
+FROM eclipse-temurin:23.0.1_11-jdk-alpine-3.21 AS jre-build
 RUN apk update; \
     apk upgrade
 
@@ -27,7 +27,7 @@ RUN jlink \
     --output /javaruntime
 
 # now actually create the runtime image we want
-FROM alpine:3.19.1 AS runtime
+FROM alpine:3.21.2 AS runtime
 RUN apk update; \
     apk upgrade
 ENV JAVA_HOME=/opt/java/openjdk
