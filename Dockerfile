@@ -28,6 +28,10 @@ RUN jlink \
 
 # now actually create the runtime image we want
 FROM alpine:3.21.2 AS runtime
+
+ARG VALIDATOR_VERSION=unknown
+ARG COMMIT_SHA=unknown
+
 RUN apk update; \
     apk upgrade
 ENV JAVA_HOME=/opt/java/openjdk
@@ -40,6 +44,8 @@ COPY fhir-validator.jar ./fhir-validator.jar
 RUN chmod -R a+x /app
 
 USER nobody
+ENV validatorVersion=$VALIDATOR_VERSION
+ENV commitSha=$COMMIT_SHA
 
 #AEA-1024: Setting TEST_SYSTEM_PROP_VALIDATION_RESOURCE_CACHES_MS to max long so our resource cache never expires.
 CMD ["java", "-Xms3000m", "-Xmx3000m", "-DTEST_SYSTEM_PROP_VALIDATION_RESOURCE_CACHES_MS=9223372036854775807", "-jar", "fhir-validator.jar"]

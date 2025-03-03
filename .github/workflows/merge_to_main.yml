@@ -105,19 +105,24 @@ jobs:
       run: poetry install
 
     - name: Set SPEC_VERSION env var
-      run: echo "SPEC_VERSION=$(poetry run python scripts/calculate_version.py)" >> "$GITHUB_ENV"
+      run: |
+        VALIDATOR_VERSION=$(poetry run python scripts/calculate_version.py)
+        COMMIT_SHA={{ github.sha }}
+        sed -i 's/^ARG VALIDATOR_VERSION=.*/ARG VALIDATOR_VERSION='"$VALIDATOR_VERSION"'/; s/^ARG COMMIT_SHA=.*/ARG COMMIT_SHA='"$COMMIT_SHA"'/' Dockerfile
+        echo "VALIDATOR_VERSION=${VALIDATOR_VERSION}" >> "$GITHUB_ENV"
 
     - name: Create release
       id: create_release
-      # using commit hash for version v1.13.0
+      # using commit hash for version v1.16.0
       uses: ncipollo/release-action@440c8c1cb0ed28b9f43e4d1d670870f059653174
       continue-on-error: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        tag: ${{ env.SPEC_VERSION }}
+        tag: ${{ env.VALIDATOR_VERSION }}
         commit: ${{  github.sha }}
         artifacts: "fhir-validator.jar,Dockerfile,src/main/resources/manifest.json"
+        makeLatest: true
         body: |
           ## Commit message
           ${{ github.event.head_commit.message }}
