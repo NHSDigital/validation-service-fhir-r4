@@ -53,7 +53,7 @@ jobs:
       - name: Install python packages
         run: poetry install
 
-      - name: Run tests, generate coverage, and build
+      - name: Run tests, and build
         run: make build
 
       - uses: actions/upload-artifact@v4

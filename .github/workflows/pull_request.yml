@@ -56,5 +56,5 @@ jobs:
       - name: Install python packages
         run: poetry install
 
-      - name: Run tests, generate coverage, and build
+      - name: Run tests, and build (including docker image)
         run: make build
