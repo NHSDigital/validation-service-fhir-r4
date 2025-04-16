@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-FROM eclipse-temurin:23.0.1_11-jdk-alpine-3.21 AS jre-build
+FROM eclipse-temurin:24_36-jdk-alpine-3.21 AS jre-build
 RUN apk update; \
     apk upgrade
 
