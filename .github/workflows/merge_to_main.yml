@@ -21,7 +21,7 @@ jobs:
     steps:
       - uses: actions/setup-java@v4
         with:
-          java-version: '21'
+          java-version: '24'
           distribution: 'temurin'
       - name: Checkout
         uses: actions/checkout@v4
