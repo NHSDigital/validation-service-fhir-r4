@@ -21,7 +21,7 @@ jobs:
     steps:
       - uses: actions/setup-java@v4
         with:
-          java-version: '21'
+          java-version: '24'
           distribution: 'temurin'
       - name: Checkout
         uses: actions/checkout@v4
@@ -53,7 +53,7 @@ jobs:
       - name: Install python packages
         run: poetry install
 
-      - name: Run tests, generate coverage, and build
+      - name: Run tests, and build
         run: make build
 
       - uses: actions/upload-artifact@v4
@@ -105,19 +105,26 @@ jobs:
       run: poetry install
 
     - name: Set SPEC_VERSION env var
-      run: echo "SPEC_VERSION=$(poetry run python scripts/calculate_version.py)" >> "$GITHUB_ENV"
+      # calculate new version number
+      # and update Dockerfile with version and commit sha so its available in docker image when it is built by fhir facade
+      run: |
+        VALIDATOR_VERSION=$(poetry run python scripts/calculate_version.py)
+        COMMIT_SHA=${{ github.sha }}
+        sed -i 's/^ARG VALIDATOR_VERSION=.*/ARG VALIDATOR_VERSION='"$VALIDATOR_VERSION"'/; s/^ARG COMMIT_SHA=.*/ARG COMMIT_SHA='"$COMMIT_SHA"'/' Dockerfile
+        echo "VALIDATOR_VERSION=${VALIDATOR_VERSION}" >> "$GITHUB_ENV"
 
     - name: Create release
       id: create_release
-      # using commit hash for version v1.13.0
+      # using commit hash for version v1.16.0
       uses: ncipollo/release-action@440c8c1cb0ed28b9f43e4d1d670870f059653174
       continue-on-error: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        tag: ${{ env.SPEC_VERSION }}
+        tag: ${{ env.VALIDATOR_VERSION }}
         commit: ${{  github.sha }}
         artifacts: "fhir-validator.jar,Dockerfile,src/main/resources/manifest.json"
+        makeLatest: true
         body: |
           ## Commit message
           ${{ github.event.head_commit.message }}
