@@ -26,7 +26,7 @@
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
         <kotlin.version>2.2.10</kotlin.version>
-        <fhir.version>5.4.2</fhir.version>
+        <fhir.version>8.4.0</fhir.version>
         <fasterxml.version>2.19.2</fasterxml.version>
         <sonar.organization>nhsdigital</sonar.organization>
         <sonar.projectKey>NHSDigital_validation-service-fhir-r4</sonar.projectKey>
