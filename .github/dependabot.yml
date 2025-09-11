@@ -19,7 +19,9 @@ updates:
     # default location of `.github/workflows`
     directory: "/"
     schedule:
-      interval: "daily"
+      interval: "weekly"
+      day: "friday"
+      time: "18:00" # UTC
     commit-message:
       prefix: "Upgrade: [dependabot] - "
 
@@ -30,7 +32,9 @@ updates:
     directory: "/"
     rebase-strategy: "disabled"
     schedule:
-      interval: "daily"
+      interval: "weekly"
+      day: "friday"
+      time: "18:00" # UTC
     commit-message:
       prefix: "Upgrade: [dependabot] - "
 
@@ -40,7 +44,9 @@ updates:
   - package-ecosystem: "pip"
     directory: "/"
     schedule:
-      interval: "daily"
+      interval: "weekly"
+      day: "friday"
+      time: "18:00" # UTC
     versioning-strategy: increase
     commit-message:
       prefix: "Upgrade: [dependabot] - "
