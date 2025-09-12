@@ -24,6 +24,7 @@ updates:
       time: "18:00" # UTC
     commit-message:
       prefix: "Upgrade: [dependabot] - "
+    open-pull-requests-limit: 20
 
   ###################################
   # Java workspace  ##################
@@ -37,6 +38,7 @@ updates:
       time: "18:00" # UTC
     commit-message:
       prefix: "Upgrade: [dependabot] - "
+    open-pull-requests-limit: 20
 
   ###################################
   # Poetry  #########################
@@ -50,3 +52,4 @@ updates:
     versioning-strategy: increase
     commit-message:
       prefix: "Upgrade: [dependabot] - "
+    open-pull-requests-limit: 20
