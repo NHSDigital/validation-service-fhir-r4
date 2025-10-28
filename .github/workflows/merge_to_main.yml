@@ -95,7 +95,7 @@ jobs:
         fetch-depth: 0  # This causes all history to be fetched, which is required for calculate-version to function
 
     - name: download build artifact
-      uses: actions/download-artifact@v5
+      uses: actions/download-artifact@v6
       with:
         name: packaged_code
         path: .
