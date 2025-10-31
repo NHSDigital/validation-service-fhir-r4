@@ -7,7 +7,7 @@ ARG ASDF_VERSION
 COPY .tool-versions.asdf /tmp/.tool-versions.asdf
 
 # Add amd64 architecture if on arm64
-RUN if [ "$TARGETARCH" == "arm64" ] || [ "$TARGETARCH" == "aarch64" ]; then dpkg --add-architecture amd64; fi
+RUN if [ "$TARGETARCH" = "arm64" ] || [ "$TARGETARCH" = "aarch64" ]; then dpkg --add-architecture amd64; fi
 
 RUN apt-get update \
     && export DEBIAN_FRONTEND=noninteractive \
@@ -21,7 +21,7 @@ RUN apt-get update \
     xz-utils tk-dev liblzma-dev netcat-traditional
 
 # Download correct AWS CLI for arch
-RUN if [ "$TARGETARCH" = "arm64" ] || [ "$TARGETARCH" == "aarch64" ]; then \
+RUN if [ "$TARGETARCH" = "arm64" ] || [ "$TARGETARCH" = "aarch64" ]; then \
       wget -O /tmp/awscliv2.zip "https://awscli.amazonaws.com/awscli-exe-linux-aarch64.zip"; \
     else \
       wget -O /tmp/awscliv2.zip "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip"; \
@@ -31,7 +31,7 @@ RUN if [ "$TARGETARCH" = "arm64" ] || [ "$TARGETARCH" == "aarch64" ]; then \
     rm /tmp/awscliv2.zip && rm -rf /tmp/aws-cli
 
 # Download correct SAM CLI for arch
-RUN if [ "$TARGETARCH" = "arm64" ] || [ "$TARGETARCH" == "aarch64" ]; then \
+RUN if [ "$TARGETARCH" = "arm64" ] || [ "$TARGETARCH" = "aarch64" ]; then \
       wget -O /tmp/aws-sam-cli.zip "https://github.com/aws/aws-sam-cli/releases/latest/download/aws-sam-cli-linux-arm64.zip"; \
     else \
       wget -O /tmp/aws-sam-cli.zip "https://github.com/aws/aws-sam-cli/releases/latest/download/aws-sam-cli-linux-x86_64.zip"; \
@@ -42,8 +42,12 @@ RUN if [ "$TARGETARCH" = "arm64" ] || [ "$TARGETARCH" == "aarch64" ]; then \
 
 # Install ASDF
 RUN ASDF_VERSION=$(awk '!/^#/ && NF {print $1; exit}' /tmp/.tool-versions.asdf) && \
-    wget -O /tmp/asdf.tar.gz https://github.com/asdf-vm/asdf/releases/download/v${ASDF_VERSION}/asdf-v${ASDF_VERSION}-linux-amd64.tar.gz; \
-    tar -xvzf /tmp/asdf.tar.gz; \
+    if [ "$TARGETARCH" = "arm64" ] || [ "$TARGETARCH" = "aarch64" ]; then \
+        wget -O /tmp/asdf.tar.gz https://github.com/asdf-vm/asdf/releases/download/v${ASDF_VERSION}/asdf-v${ASDF_VERSION}-linux-arm64.tar.gz; \
+    else \
+        wget -O /tmp/asdf.tar.gz https://github.com/asdf-vm/asdf/releases/download/v${ASDF_VERSION}/asdf-v${ASDF_VERSION}-linux-amd64.tar.gz; \
+    fi && \
+    tar -xvzf /tmp/asdf.tar.gz && \
     mv asdf /usr/bin
 
 USER vscode
@@ -53,16 +57,16 @@ ENV PATH="$PATH:/home/vscode/.asdf/shims/"
 
 
 # Install ASDF plugins
-RUN asdf plugin add python; \
-    asdf plugin add poetry https://github.com/asdf-community/asdf-poetry.git; \
-    asdf plugin add shellcheck https://github.com/luizm/asdf-shellcheck.git; \
-    asdf plugin-add java; \
-    asdf plugin-add maven; \
-    asdf plugin-add actionlint
+RUN asdf plugin add python && \
+    asdf plugin add poetry https://github.com/asdf-community/asdf-poetry.git && \
+    asdf plugin add shellcheck https://github.com/luizm/asdf-shellcheck.git && \
+    asdf plugin add java && \
+    asdf plugin add maven && \
+    asdf plugin add actionlint
 
 WORKDIR /workspaces/validation-service-fhir-r4
 ADD .tool-versions /workspaces/validation-service-fhir-r4/.tool-versions
 ADD .tool-versions /home/vscode/.tool-versions
 
-RUN asdf install python; \
+RUN asdf install python && \
     asdf install
