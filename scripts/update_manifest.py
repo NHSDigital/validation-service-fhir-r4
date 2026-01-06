@@ -9,7 +9,7 @@ with open("src/main/resources/manifest.json", "r") as manifestFile:
     for entry in manifest:
         packageName = entry["packageName"]
         currentVersion = entry["version"]
-        packageInfo = requests.get(f"https://packages.simplifier.net/{packageName}").json()
+        packageInfo = requests.get(f"https://packages.simplifier.net/{packageName}").json()  # noqa: E231
         latestVersion = packageInfo["dist-tags"]["latest"]
         print(f"{packageName}: {currentVersion} -> {latestVersion}")
         entry["version"] = latestVersion

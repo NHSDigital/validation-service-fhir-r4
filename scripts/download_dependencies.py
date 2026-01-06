@@ -9,6 +9,6 @@ with open("src/main/resources/manifest.json", "r") as manifestFile:
     for entry in manifest:
         packageName = entry["packageName"]
         version = entry["version"]
-        packageData = requests.get(f"https://packages.simplifier.net/{packageName}/{version}").content
+        packageData = requests.get(f"https://packages.simplifier.net/{packageName}/{version}").content  # noqa: E231
         with open(f"src/main/resources/{packageName}-{version}.tgz", "wb") as packageFile:
             packageFile.write(packageData)
