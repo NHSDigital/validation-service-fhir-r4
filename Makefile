@@ -21,8 +21,7 @@ run-tests:
 	mvn clean test jacoco:report > target/maven-test-output.txt 2>&1
 
 check-licences:
-	scripts/check_python_licenses.sh
-	mvn validate
+	trivy fs --scanners license --exit-code 1 --severity CRITICAL,HIGH .
 
 clean-packages:
 	rm -f src/main/resources/*.tgz

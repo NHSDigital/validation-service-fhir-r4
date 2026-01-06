@@ -62,7 +62,8 @@ RUN asdf plugin add python && \
     asdf plugin add shellcheck https://github.com/luizm/asdf-shellcheck.git && \
     asdf plugin add java && \
     asdf plugin add maven && \
-    asdf plugin add actionlint
+    asdf plugin add actionlint && \
+    asdf plugin add trivy https://github.com/zufardhiyaulhaq/asdf-trivy.git
 
 WORKDIR /workspaces/validation-service-fhir-r4
 ADD .tool-versions /workspaces/validation-service-fhir-r4/.tool-versions
