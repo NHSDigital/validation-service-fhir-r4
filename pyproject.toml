@@ -1,5 +1,6 @@
 [project]
-python = "^3.8"
+python = "^3.14"
+name = "validation-service-fhir-r4"
 
 [tool.poetry]
 name = "validation-service-fhir-r4"
@@ -7,32 +8,21 @@ version = "0.0.1-alpha"
 description = "Validation Service FHIR R4 API Definitions"
 license = "MIT"
 authors = [
-    "Anthony Brown <anthony.brown8@nhs.net>",
-    "Matthew Popat <matthew.popat1@nhs.net>",
-    "Chris Matus <chris.matus@nhs.net>",
-    "Phil Gee <phil.gee@nhs.net>",
-    "Kris Szlapa <kris.szlapa1@nhs.net>",
-    "Jack Spagnoli <jack.spagnoli1@nhs.net>",
-    "Tom Smith <tom.smith24@nhs.net>",
-    "Adam Brown <adam.brown41@nhs.net>",
-    "Sean Steberis <sean.steberis2@nhs.net>"
+    "EPS"
 ]
 readme = "README.md"
 repository = "https://github.com/NHSDigital/validation-service-fhir-r4"
+package-mode = false
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.14"
 semver = "^3.0.4"
 gitpython = "^3.1.44"
 pre-commit = "^3.5.0"
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev.dependencies]
 requests = "2.32.3"
 flake8 = "^5.0.4"
 pip-licenses = "^4.5.1"
 
 [tool.poetry.scripts]
-
-[build-system]
-requires = ["poetry>=0.12"]
-build-backend = "poetry.masonry.api"
