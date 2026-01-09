@@ -1,5 +1,16 @@
 FROM mcr.microsoft.com/devcontainers/base:ubuntu
 
+# specify DOCKER_GID to force container docker group id to match host
+ARG DOCKER_GID
+RUN if [ -n "${DOCKER_GID}" ]; then \
+      if ! getent group docker; then \
+        groupadd -g ${DOCKER_GID} docker; \
+      else \
+        groupmod -g ${DOCKER_GID} docker; \
+      fi && \
+      usermod -aG docker vscode; \
+    fi
+
 ARG TARGETARCH
 ENV TARGETARCH=${TARGETARCH}
 
@@ -15,7 +26,7 @@ RUN apt-get update \
     && apt-get -y install --no-install-recommends htop vim curl git build-essential \
     libffi-dev libssl-dev libxml2-dev libxslt1-dev libjpeg8-dev libbz2-dev \
     zlib1g-dev unixodbc unixodbc-dev libsecret-1-0 libsecret-1-dev libsqlite3-dev \
-    openjdk-8-jdk jq apt-transport-https ca-certificates gnupg-agent \
+    jq apt-transport-https ca-certificates gnupg-agent \
     software-properties-common bash-completion python3-pip make libbz2-dev \
     libreadline-dev libsqlite3-dev wget llvm libncurses5-dev libncursesw5-dev \
     xz-utils tk-dev liblzma-dev netcat-traditional
@@ -53,7 +64,7 @@ RUN ASDF_VERSION=$(awk '!/^#/ && NF {print $1; exit}' /tmp/.tool-versions.asdf) 
 USER vscode
 
 
-ENV PATH="$PATH:/home/vscode/.asdf/shims/"
+ENV PATH="/home/vscode/.asdf/shims/:$PATH"
 
 
 # Install ASDF plugins
