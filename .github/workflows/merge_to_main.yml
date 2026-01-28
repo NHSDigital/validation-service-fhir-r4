@@ -27,7 +27,7 @@ jobs:
           echo "TAG_FORMAT=$TAG_FORMAT" >> "$GITHUB_OUTPUT"
 
   quality_checks:
-    uses: NHSDigital/eps-common-workflows/.github/workflows/quality-checks.yml@9791a77de7b005056b4ddfb9789306f5179f53da
+    uses: NHSDigital/eps-common-workflows/.github/workflows/quality-checks.yml@27a44fb54f4023136d2c14058e3256e73af9901e
     needs: [get_asdf_version]
     secrets:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
