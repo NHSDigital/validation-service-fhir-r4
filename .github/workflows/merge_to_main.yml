@@ -15,7 +15,7 @@ jobs:
       tag_format: ${{ steps.load-config.outputs.TAG_FORMAT }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
       - name: Get asdf version
         id: asdf-version
@@ -27,7 +27,7 @@ jobs:
           echo "TAG_FORMAT=$TAG_FORMAT" >> "$GITHUB_OUTPUT"
 
   quality_checks:
-    uses: NHSDigital/eps-common-workflows/.github/workflows/quality-checks.yml@9791a77de7b005056b4ddfb9789306f5179f53da
+    uses: NHSDigital/eps-common-workflows/.github/workflows/quality-checks.yml@27a44fb54f4023136d2c14058e3256e73af9901e
     needs: [get_asdf_version]
     secrets:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -45,7 +45,7 @@ jobs:
           java-version: "24"
           distribution: "temurin"
       - name: Checkout
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
           fetch-depth: 0 # This causes all history to be fetched, which is required for calculate-version to function
 
@@ -56,7 +56,7 @@ jobs:
           asdf_version: ${{ needs.get_asdf_version.outputs.asdf_version }}
 
       - name: Cache asdf
-        uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb
+        uses: actions/cache@8b402f58fbc84540c8b491a91e594a4576fec3d7
         with:
           path: |
             ~/.asdf
@@ -90,7 +90,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
           fetch-depth: 0 # This causes all history to be fetched, which is required for calculate-version to function
 
@@ -107,7 +107,7 @@ jobs:
           asdf_version: ${{ needs.get_asdf_version.outputs.asdf_version }}
 
       - name: Cache asdf
-        uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb
+        uses: actions/cache@8b402f58fbc84540c8b491a91e594a4576fec3d7
         with:
           path: |
             ~/.asdf
