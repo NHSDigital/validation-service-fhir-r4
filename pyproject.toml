@@ -1,25 +1,25 @@
 [project]
-python = "^3.14"
 name = "validation-service-fhir-r4"
-
-[tool.poetry]
-name = "validation-service-fhir-r4"
-version = "0.0.1-alpha"
 description = "Validation Service FHIR R4 API Definitions"
+version = "0.0.1-alpha"
 license = "MIT"
 authors = [
-    "EPS"
+    { name = "EPS" }
 ]
 readme = "README.md"
-repository = "https://github.com/NHSDigital/validation-service-fhir-r4"
-package-mode = false
+requires-python = "^3.14"
+dependencies = [
+    "semver (>=3.0.4,<4.0.0)",
+    "gitpython (>=3.1.44,<4.0.0)",
+    "pre-commit (>=4.5.1,<5.0.0)",
+    "flake8 (>=7.3.0,<8.0.0)"
+]
 
-[tool.poetry.dependencies]
-python = "^3.14"
-semver = "^3.0.4"
-gitpython = "^3.1.44"
-pre-commit = "^4.5.1"
-flake8 = "^7.3.0"
+[project.urls]
+repository = "https://github.com/NHSDigital/validation-service-fhir-r4"
+
+[tool.poetry]
+package-mode = false
 
 [tool.poetry.group.dev.dependencies]
 requests = "2.32.5"
