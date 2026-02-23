@@ -18,6 +18,10 @@ import org.mockito.InjectMocks
 import org.mockito.Mock
 import org.mockito.Mockito
 import org.mockito.junit.jupiter.MockitoExtension
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.content
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
+import org.springframework.test.web.servlet.setup.MockMvcBuilders
 
 @ExtendWith(MockitoExtension::class)
 internal class ValidateControllerTest {
@@ -100,7 +104,27 @@ internal class ValidateControllerTest {
 
         val response = testValidateController.validate(payload, null)
 
-        assertEquals(encodedOperationOutcome, response)
+        assertEquals(200, response.statusCode.value())
+        assertEquals(encodedOperationOutcome, response.body)
+    }
+
+    @Test
+    fun validate_returns_bad_request_for_malformed_json_body() {
+        val mockMvc = MockMvcBuilders
+            .standaloneSetup(testValidateController)
+            .build()
+        val encodedOperationOutcome = """{"resourceType":"OperationOutcome"}"""
+
+        Mockito.`when`(mockFhirContext.newJsonParser()).thenReturn(mockInputParser, mockOutputParser)
+        Mockito.`when`(mockInputParser.parseResource("foo")).thenThrow(DataFormatException("bad payload"))
+        Mockito.`when`(mockOutputParser.encodeResourceToString(Mockito.any(IBaseResource::class.java))).thenReturn(encodedOperationOutcome)
+
+        mockMvc.perform(
+            post("/\$validate")
+                .header("Content-Type", "application/json")
+                .content("foo")
+        ).andExpect(status().isBadRequest)
+            .andExpect(content().json(encodedOperationOutcome))
     }
 
     @Test

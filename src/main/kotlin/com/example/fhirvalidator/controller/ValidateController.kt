@@ -11,6 +11,8 @@ import org.hl7.fhir.instance.model.api.IBaseResource
 import org.hl7.fhir.r4.model.Bundle
 import org.hl7.fhir.r4.model.OperationOutcome
 import org.hl7.fhir.r4.model.ResourceType
+import org.springframework.http.HttpStatus
+import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestHeader
@@ -29,11 +31,21 @@ class ValidateController(
     fun validate(
         @RequestBody input: String,
         @RequestHeader("x-request-id", required = false) requestId: String?
-    ): String {
+    ): ResponseEntity<String> {
         requestId?.let { logger.info { "started processing message $it"} }
         val result = parseAndValidateResource(input, requestId ?: "unknown_request_id")
         requestId?.let { logger.info { "finished processing message $it"} }
-        return fhirContext.newJsonParser().encodeResourceToString(result)
+        val payload = fhirContext.newJsonParser().encodeResourceToString(result)
+        val status = if (result.issue.any {
+                it.severity == OperationOutcome.IssueSeverity.ERROR ||
+                    it.severity == OperationOutcome.IssueSeverity.FATAL
+            }
+        ) {
+            HttpStatus.BAD_REQUEST
+        } else {
+            HttpStatus.OK
+        }
+        return ResponseEntity.status(status).body(payload)
     }
 
     fun parseAndValidateResource(input: String, requestId: String): OperationOutcome {
