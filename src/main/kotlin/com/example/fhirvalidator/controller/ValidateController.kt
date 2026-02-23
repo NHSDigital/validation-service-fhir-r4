@@ -36,15 +36,11 @@ class ValidateController(
         val result = parseAndValidateResource(input, requestId ?: "unknown_request_id")
         requestId?.let { logger.info { "finished processing message $it"} }
         val payload = fhirContext.newJsonParser().encodeResourceToString(result)
-        val status = if (result.issue.any {
+        val hasError = result.issue.any {
                 it.severity == OperationOutcome.IssueSeverity.ERROR ||
                     it.severity == OperationOutcome.IssueSeverity.FATAL
             }
-        ) {
-            HttpStatus.BAD_REQUEST
-        } else {
-            HttpStatus.OK
-        }
+        val status = if (hasError) HttpStatus.BAD_REQUEST else HttpStatus.OK
         return ResponseEntity.status(status).body(payload)
     }
 
