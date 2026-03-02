@@ -27,7 +27,7 @@ jobs:
           echo "TAG_FORMAT=$TAG_FORMAT" >> "$GITHUB_OUTPUT"
 
   quality_checks:
-    uses: NHSDigital/eps-common-workflows/.github/workflows/quality-checks.yml@d215f841eb18b803e339e4ed597ed1f30e086e17
+    uses: NHSDigital/eps-common-workflows/.github/workflows/quality-checks.yml@8404cf6e3a61ac8de4d1644e175e288aa4965815
     needs: [get_asdf_version]
     secrets:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -77,7 +77,7 @@ jobs:
       - name: Run tests, and build
         run: make build
 
-      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
         name: upload build artifact
         with:
           name: packaged_code
@@ -95,7 +95,7 @@ jobs:
           fetch-depth: 0 # This causes all history to be fetched, which is required for calculate-version to function
 
       - name: download build artifact
-        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
+        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3
         with:
           name: packaged_code
           path: .
