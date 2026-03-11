@@ -1,5 +1,5 @@
 {
-  "name": "Ubuntu",
+  "name": "eps-validator-docker",
   "build": {
     "dockerfile": "Dockerfile",
     "context": "..",

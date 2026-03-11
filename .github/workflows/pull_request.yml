@@ -31,27 +31,3 @@ jobs:
 
   pr_title_format_check:
     uses: NHSDigital/eps-common-workflows/.github/workflows/pr_title_check.yml@141907b215220e95e3ed3811d0fe8fa18675dbed
-
-  build:
-    name: build
-    runs-on: ubuntu-22.04
-    container:
-      image: ${{ needs.get_config_values.outputs.pinned_image }}
-      options: --user 1001:1001 --group-add 128
-    defaults:
-      run:
-        shell: bash
-    needs: [get_config_values]
-    steps:
-      - name: copy .tool-versions
-        run: |
-          cp /home/vscode/.tool-versions "$HOME/.tool-versions"
-      - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
-        with:
-          fetch-depth: 0 # This causes all history to be fetched, which is required for calculate-version to function
-      - name: Install python packages
-        run: poetry install
-
-      - name: Run tests, and build (including docker image)
-        run: make build
