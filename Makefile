@@ -1,4 +1,4 @@
-.PHONY: check-licenses
+.PHONY: check-licenses install install-python install-hooks lint test run clean build docker-build docker-run docker-rebuild-run show-build-error-log show-test-error-log update-manifest clean-packages
 
 install: install-python install-hooks
 
