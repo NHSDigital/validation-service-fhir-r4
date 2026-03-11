@@ -24,6 +24,8 @@ jobs:
     needs: [get_config_values]
     with:
       pinned_image: ${{ needs.get_config_values.outputs.pinned_image }}
+      run_docker_scan: true
+      docker_images: validator
     secrets:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
