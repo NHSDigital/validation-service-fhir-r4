@@ -10,3 +10,4 @@ CidrBlock:\s?"?10\.0\.\d+\.\d+\/\d+"
 .*tcp:\/\/0\.0\.0\.0:8888.*
 .*\.gitallowed.*
 poetry\.lock
+\.github\/dependabot\.yml
