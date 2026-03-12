@@ -1,4 +1,4 @@
-.PHONY: check-licenses
+.PHONY: check-licenses install install-python install-hooks lint test run clean build docker-build docker-run docker-rebuild-run show-build-error-log show-test-error-log update-manifest clean-packages
 
 install: install-python install-hooks
 
@@ -20,9 +20,6 @@ run-tests:
 	mkdir -p target
 	mvn clean test jacoco:report > target/maven-test-output.txt 2>&1
 
-check-licences:
-	echo "not implemented from console"
-
 clean-packages:
 	rm -f src/main/resources/*.tgz
 
@@ -40,7 +37,9 @@ build-java:
 	poetry run scripts/download_dependencies.py
 	mkdir -p target
 	mvn package > target/maven-build-output.txt 2>&1
-	docker build .
+
+docker-build: build-java
+	docker build -t "validator" .
 
 build-latest: clean-packages update-manifest build
 
@@ -62,3 +61,6 @@ docker-run: build
 
 docker-rebuild-run: build
 	docker-compose up --no-deps --build fhir-validator
+
+%:
+	@$(MAKE) -f /usr/local/share/eps/Mk/common.mk $@
