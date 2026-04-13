@@ -11,3 +11,4 @@ CidrBlock:\s?"?10\.0\.\d+\.\d+\/\d+"
 .*\.gitallowed.*
 poetry\.lock
 \.github\/dependabot\.yml
+id-token: write
