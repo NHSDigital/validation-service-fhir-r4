@@ -1,0 +1,23 @@
+ignore:
+  # picomatch
+  - vulnerability: GHSA-2m67-wjpj-xhg9
+  - vulnerability: GHSA-4cf2-cxp3-rjr7
+  - vulnerability: GHSA-xqfj-vm6h-2x34
+  - vulnerability: GHSA-fgv2-4q4g-wc35
+  - vulnerability: GHSA-6v53-7c9g-w56r
+  - vulnerability: GHSA-563x-q5rq-57qp
+  - vulnerability: GHSA-rv64-5gf8-9qq8
+  - vulnerability: GHSA-6cr6-ph3p-f5rf
+  - vulnerability: GHSA-mgp5-rv84-w37q
+  - vulnerability: GHSA-w9j7-phm3-f97j
+  - vulnerability: GHSA-crv7-7245-f45f
+  - vulnerability: GHSA-9654-pr4f-gh6m
+  - vulnerability: GHSA-7hfm-57qf-j43q
+  - vulnerability: GHSA-mc84-pj99-q6hh 
+  - vulnerability: GHSA-gr3c-q7xf-47vh 
+  - vulnerability: GHSA-x4m4-345f-5h5g
+  - vulnerability: GHSA-599f-7c49-w659 
+  - vulnerability: GHSA-jqh6-9574-5x22
+  - vulnerability: GHSA-95jq-rwvf-vjx4
+  - vulnerability: GHSA-vr79-8m62-wh98
+  - vulnerability: GHSA-p7m9-v2cm-2h7m
