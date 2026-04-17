@@ -1,5 +1,5 @@
 rules:
   unpinned-images:
     ignore:
-      - merge_to_main.yml:61:7
-      - merge_to_main.yml:29:7
+      - merge_to_main.yml:69:18
+      - merge_to_main.yml:37:18
